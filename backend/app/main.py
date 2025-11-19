@@ -76,11 +76,11 @@ async def health_check():
         services["redis"] = "up"
 
         try:
-            pending = await redis.llen("arq:queue")
+            pending = redis.llen("arq:queue")
             arq_stats["pending_tasks"] = pending
 
             failed_key = "arq:failed_tasks_24h"
-            failed = await redis.get(failed_key)
+            failed = redis.get(failed_key)
             arq_stats["failed_tasks_24h"] = int(failed) if failed else 0
         except Exception:
             pass

@@ -23,7 +23,7 @@ class RateLimitMiddleware:
 
     def __init__(self, app):
         self.app = app
-        self.redis = None
+        self.redis: Redis | None = None
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
