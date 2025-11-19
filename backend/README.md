@@ -108,6 +108,18 @@ JWT_SECRET_KEY=your-secret-key-here
 
 ## 🛠️ Development Workflow
 
+### Git Pre-Commit Hook (Auto-installed)
+
+A pre-commit hook runs automatically before every commit:
+- ✅ Runs `ruff check --fix .` to lint code
+- ✅ Runs `pytest` to ensure tests pass
+- ❌ Blocks commit if either check fails
+
+**To bypass (not recommended):**
+```bash
+git commit --no-verify -m "message"
+```
+
 ### Run Linting
 ```bash
 uv run ruff check .           # Check only
