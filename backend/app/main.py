@@ -9,6 +9,9 @@ from app.api.exceptions import register_exception_handlers
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.db.database import async_engine, init_db
+from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
+from app.middleware.size_limit import RequestSizeLimitMiddleware
 
 configure_logging(log_level=settings.LOG_LEVEL)
 
@@ -28,6 +31,11 @@ app = FastAPI(
 
 # Register exception handlers
 register_exception_handlers(app)
+
+# Security middleware (order matters!)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestSizeLimitMiddleware)
+app.middleware("http")(RateLimitMiddleware(app))
 
 # CORS configuration
 app.add_middleware(
