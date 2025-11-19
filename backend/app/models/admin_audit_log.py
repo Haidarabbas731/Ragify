@@ -7,12 +7,9 @@ from sqlmodel import JSON, Column, Field, SQLModel
 class AdminAuditLog(SQLModel, table=True):
     """Admin audit log for tracking all administrative actions."""
 
-    __tablename__ = "admin_audit_logs"
+    __tablename__ = "admin_audit_logs"  # type:ignore
 
-    audit_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()),
-        primary_key=True
-    )
+    audit_id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
 
     admin_user_id: str = Field(index=True)
     action: str = Field(max_length=100)  # delete_user, delete_document, etc.
