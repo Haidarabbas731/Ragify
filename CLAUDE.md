@@ -40,9 +40,15 @@ git commit -m "feat(scope): description"
 2. ✅ **IMPORTANT:** Only check tasks that are ACTUALLY completed, not all tasks
 3. ✅ Run linting: `uv run ruff check --fix .`
 4. ✅ Run tests: `uv run pytest`
-5. ✅ Commit with descriptive message
+5. ✅ Commit with descriptive message (code changes ONLY, NOT task files)
 6. ⏸️ **STOP and wait for user approval before moving to next phase**
 7. ✅ Update TodoWrite tool with current progress
+
+**⚠️ CRITICAL GIT RULE:**
+- ❌ **NEVER** commit `tasks/*.md` files to git
+- ❌ **NEVER** run `git add tasks/`
+- ✅ Task files are tracked locally only (in .gitignore)
+- ✅ Only commit actual code, tests, and configuration files
 
 **Example:**
 ```markdown
