@@ -53,8 +53,8 @@ async def get_user_by_id(session: AsyncSession, user_id: str) -> User | None:
     Returns:
         User instance or None if not found
     """
-    result = await session.execute(select(User).where(User.user_id == user_id))
-    return result.scalar_one_or_none()
+    result = await session.exec(select(User).where(User.user_id == user_id))
+    return result.one_or_none()
 
 
 async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
@@ -68,8 +68,8 @@ async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
     Returns:
         User instance or None if not found
     """
-    result = await session.execute(select(User).where(User.email == email))
-    return result.scalar_one_or_none()
+    result = await session.exec(select(User).where(User.email == email))
+    return result.one_or_none()
 
 
 async def update_user_storage(

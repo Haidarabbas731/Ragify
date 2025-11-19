@@ -71,8 +71,8 @@ async def get_invite_code_by_string(
     Returns:
         InviteCode instance or None if not found
     """
-    result = await session.execute(select(InviteCode).where(InviteCode.code == code))
-    return result.scalar_one_or_none()
+    result = await session.exec(select(InviteCode).where(InviteCode.code == code))
+    return result.one_or_none()
 
 
 async def validate_invite_code(session: AsyncSession, code: str) -> bool:
@@ -184,5 +184,5 @@ async def list_invite_codes(
 
     query = query.order_by(InviteCode.created_at.desc()).limit(limit).offset(offset)
 
-    result = await session.execute(query)
-    return list(result.scalars().all())
+    result = await session.exec(query)
+    return list(result.all())

@@ -25,12 +25,12 @@ async def create_collection(
     Raises:
         ValueError: If collection with same name already exists for user
     """
-    existing = await session.execute(
+    existing = await session.exec(
         select(Collection).where(
             Collection.user_id == user_id, Collection.name == name
         )
     )
-    if existing.scalar_one_or_none():
+    if existing.one_or_none():
         raise ValueError(f"Collection '{name}' already exists for user {user_id}")
 
     collection = Collection(user_id=user_id, name=name, description=description)
@@ -53,12 +53,12 @@ async def list_user_collections(
     Returns:
         List of collections
     """
-    result = await session.execute(
+    result = await session.exec(
         select(Collection)
         .where(Collection.user_id == user_id)
         .order_by(Collection.created_at.desc())
     )
-    return list(result.scalars().all())
+    return list(result.all())
 
 
 async def get_collection_by_id(
@@ -74,10 +74,10 @@ async def get_collection_by_id(
     Returns:
         Collection instance or None if not found
     """
-    result = await session.execute(
+    result = await session.exec(
         select(Collection).where(Collection.collection_id == collection_id)
     )
-    return result.scalar_one_or_none()
+    return result.one_or_none()
 
 
 async def get_collection_document_count(
@@ -93,12 +93,12 @@ async def get_collection_document_count(
     Returns:
         Document count
     """
-    result = await session.execute(
+    result = await session.exec(
         select(func.count(Document.document_id)).where(
             Document.collection_id == collection_id
         )
     )
-    return result.scalar_one() or 0
+    return result.one() or 0
 
 
 async def update_collection(
