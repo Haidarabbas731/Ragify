@@ -45,34 +45,34 @@ Example: feat(models): add User model
 
 ### User Model
 **PRD Reference:** Section 10.1 (User Model - SQLModel Definition)
-- [ ] Create `backend/app/models/user.py`
-- [ ] Import: `from sqlmodel import SQLModel, Field`
-- [ ] Define `User` class: `class User(SQLModel, table=True)`
-- [ ] Add `__tablename__ = "users"`
-- [ ] Add fields: user_id (UUID), email, password_hash, role
-- [ ] Add storage fields: storage_used_bytes, storage_limit_bytes
-- [ ] Add status field with Enum (active, suspended, pending)
-- [ ] Add timestamps: created_at, updated_at, last_login_at
-- [ ] Add soft delete: is_active boolean
-- [ ] Add unique constraint on email
-- [ ] Add indexes on email and user_id
+- [x] Create `backend/app/models/user.py`
+- [x] Import: `from sqlmodel import SQLModel, Field`
+- [x] Define `User` class: `class User(SQLModel, table=True)`
+- [x] Add `__tablename__ = "users"`
+- [x] Add fields: user_id (UUID), email, password_hash, role
+- [x] Add storage fields: storage_used_bytes, storage_limit_bytes
+- [x] Add status field with Enum (active, suspended, pending)
+- [x] Add timestamps: created_at, updated_at, last_login_at
+- [x] Add soft delete: is_active boolean
+- [x] Add unique constraint on email
+- [x] Add indexes on email and user_id
 
 ### Document Model
 **PRD Reference:** Section 10.2 (Document Model), Section 10.1.1 (Document Status State Machine)
-- [ ] Create `backend/app/models/document.py`
-- [ ] Define `DocumentStatus` enum (PROCESSING, ACTIVE, DELETED, ERROR)
-- [ ] Define `Document` class: `class Document(SQLModel, table=True)`
-- [ ] Add `__tablename__ = "documents"`
-- [ ] Add foreign key to User (user_id)
-- [ ] Add foreign key to Collection (collection_id, nullable)
-- [ ] Add fields: document_id, filename, file_type, size_bytes, chunks_count
-- [ ] Add storage_key for B2 object reference
-- [ ] Add metadata JSONB field
-- [ ] Add status field with DocumentStatus enum
-- [ ] Add error_message for failed processing
-- [ ] Add timestamps: uploaded_at, processed_at, deleted_at
-- [ ] Add relationship to User and Collection
-- [ ] Add indexes on user_id, status, uploaded_at
+- [x] Create `backend/app/models/document.py`
+- [x] Define `DocumentStatus` enum (PROCESSING, ACTIVE, DELETED, ERROR)
+- [x] Define `Document` class: `class Document(SQLModel, table=True)`
+- [x] Add `__tablename__ = "documents"`
+- [x] Add foreign key to User (user_id)
+- [x] Add foreign key to Collection (collection_id, nullable)
+- [x] Add fields: document_id, filename, file_type, size_bytes, chunks_count
+- [x] Add storage_key for B2 object reference
+- [x] Add metadata JSONB field
+- [x] Add status field with DocumentStatus enum
+- [x] Add error_message for failed processing
+- [x] Add timestamps: uploaded_at, processed_at, deleted_at
+- [x] Add relationship to User and Collection
+- [x] Add indexes on user_id, status, uploaded_at
 
 ### Collection Model
 **PRD Reference:** Section 10.3 (Collection Model)
@@ -86,57 +86,57 @@ Example: feat(models): add User model
 - [x] Add relationship to User
 - [x] Add unique constraint on (user_id, name)
 
-### DocumentChunk Model (CRITICAL - Missing!)
+### DocumentChunk Model
 **PRD Reference:** Section 11.1 (Project Structure - models/document_chunk.py)
-- [ ] Create `backend/app/models/document_chunk.py`
-- [ ] Define `DocumentChunk` class for Milvus metadata tracking
-- [ ] Add fields: chunk_id, document_id, user_id, chunk_index
-- [ ] Add text field for chunk content
-- [ ] Add milvus_id for vector DB reference
-- [ ] Add embedding_model field (for migration support - Section 14)
-- [ ] Add timestamps: created_at
-- [ ] Add foreign key to Document
-- [ ] Add index on document_id, milvus_id
+- [x] Create `backend/app/models/document_chunk.py`
+- [x] Define `DocumentChunk` class for Milvus metadata tracking
+- [x] Add fields: chunk_id, document_id, user_id, chunk_index
+- [x] Add text field for chunk content
+- [x] Add milvus_id for vector DB reference
+- [x] Add embedding_model field (for migration support - Section 14)
+- [x] Add timestamps: created_at
+- [x] Add foreign key to Document
+- [x] Add index on document_id, milvus_id
 
 ### Conversation Model
 **PRD Reference:** Section 10.4 (Conversation Model)
-- [ ] Create `backend/app/models/conversation.py`
-- [ ] Define `Conversation` class: `class Conversation(SQLModel, table=True)`
-- [ ] Add `__tablename__ = "conversations"`
-- [ ] Add fields: conversation_id, user_id
-- [ ] Add messages JSONB field (array of message objects)
-- [ ] Add message_count integer (denormalized)
-- [ ] Add timestamps: created_at, updated_at
-- [ ] Add foreign key to User
-- [ ] Add relationship to User
-- [ ] Add index on user_id, created_at
+- [x] Create `backend/app/models/conversation.py`
+- [x] Define `Conversation` class: `class Conversation(SQLModel, table=True)`
+- [x] Add `__tablename__ = "conversations"`
+- [x] Add fields: conversation_id, user_id
+- [x] Add messages JSONB field (array of message objects)
+- [x] Add message_count integer (denormalized)
+- [x] Add timestamps: created_at, updated_at
+- [x] Add foreign key to User
+- [x] Add relationship to User
+- [x] Add index on user_id, created_at
 
 ### InviteCode Model
 **PRD Reference:** Section 10.5 (InviteCode Model), Section 13.7 (Invite-Only Registration)
-- [ ] Create `backend/app/models/invite_code.py`
-- [ ] Define `InviteCode` class: `class InviteCode(SQLModel, table=True)`
-- [ ] Add `__tablename__ = "invite_codes"`
-- [ ] Add fields: invite_code_id, code (KB-XXXX-XXXX-XXXX format)
-- [ ] Add created_by (admin user_id, nullable)
-- [ ] Add expiration: expires_at (nullable)
-- [ ] Add usage: max_uses, current_uses
-- [ ] Add status enum (active, expired, revoked)
-- [ ] Add description field
-- [ ] Add created_at timestamp
-- [ ] Add unique constraint on code
-- [ ] Add index on code for fast lookup
+- [x] Create `backend/app/models/invite_code.py`
+- [x] Define `InviteCode` class: `class InviteCode(SQLModel, table=True)`
+- [x] Add `__tablename__ = "invite_codes"`
+- [x] Add fields: invite_code_id, code (KB-XXXX-XXXX-XXXX format)
+- [x] Add created_by (admin user_id, nullable)
+- [x] Add expiration: expires_at (nullable)
+- [x] Add usage: max_uses, current_uses
+- [x] Add status enum (active, expired, revoked)
+- [x] Add description field
+- [x] Add created_at timestamp
+- [x] Add unique constraint on code
+- [x] Add index on code for fast lookup
 
 ### AdminAuditLog Model
 **PRD Reference:** Section 10.6 (AdminAuditLog Model), Section 13.8 (Admin User Management)
-- [ ] Create `backend/app/models/admin_audit_log.py`
-- [ ] Define `AdminAuditLog` class: `class AdminAuditLog(SQLModel, table=True)`
-- [ ] Add `__tablename__ = "admin_audit_logs"`
-- [ ] Add fields: audit_id, admin_user_id, action
-- [ ] Add target_type, target_id
-- [ ] Add details JSONB field
-- [ ] Add ip_address field
-- [ ] Add timestamp
-- [ ] Add indexes on admin_user_id, action, timestamp
+- [x] Create `backend/app/models/admin_audit_log.py`
+- [x] Define `AdminAuditLog` class: `class AdminAuditLog(SQLModel, table=True)`
+- [x] Add `__tablename__ = "admin_audit_logs"`
+- [x] Add fields: audit_id, admin_user_id, action
+- [x] Add target_type, target_id
+- [x] Add details JSONB field
+- [x] Add ip_address field
+- [x] Add timestamp
+- [x] Add indexes on admin_user_id, action, timestamp
 
 ---
 
@@ -276,6 +276,16 @@ Example: feat(models): add User model
 - [x] Implement `use_invite_code(session: AsyncSession, code)` (increment current_uses)
 - [x] Implement `revoke_invite_code(session: AsyncSession, code)`
 - [x] Implement `list_invite_codes(session: AsyncSession, filters)`
+
+### Additional Services (To be implemented in later phases)
+**Note:** These services belong in Phase 2-7 but are listed here for reference
+- [ ] `auth_service.py` - Authentication logic (Phase 2)
+- [ ] `embedding_service.py` - Embedding generation (Phase 4)
+- [ ] `milvus_service.py` - Milvus operations (Phase 3/4)
+- [ ] `b2_service.py` - Backblaze B2 operations (Phase 3)
+- [ ] `chat_service.py` - RAG chat logic (Phase 5)
+- [ ] `email_service.py` - Email sending via Resend (Phase 6)
+- [ ] `admin_service.py` - Admin operations (Phase 7)
 
 ---
 
