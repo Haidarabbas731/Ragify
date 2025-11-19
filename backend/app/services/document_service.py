@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.document import Document, DocumentStatus
@@ -96,7 +96,7 @@ async def list_user_documents(
     if status:
         query = query.where(Document.status == status)
 
-    query = query.order_by(Document.uploaded_at.desc()).limit(limit).offset(offset)
+    query = query.order_by(col(Document.uploaded_at).desc()).limit(limit).offset(offset)
 
     result = await session.exec(query)
     return list(result.all())
