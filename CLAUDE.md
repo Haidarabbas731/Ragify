@@ -23,12 +23,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ❌ **NEVER** commit to `main` branch
 
 ### 2. Before Every Commit:
+**Note:** A pre-commit hook is installed that automatically runs these checks!
 ```bash
 cd backend
 uv run ruff check --fix .
 uv run pytest
 git add .
 git commit -m "feat(scope): description"
+# Pre-commit hook will automatically run ruff and pytest
 ```
 
 ### 3. Task Completion Workflow
@@ -145,8 +147,23 @@ class User(SQLModel, table=True):
 
 ---
 
+## Git Pre-Commit Hook
+
+A pre-commit hook is installed at `.git/hooks/pre-commit` that automatically:
+1. Runs `ruff check --fix .` in backend/
+2. Runs `pytest` in backend/
+3. Blocks commit if either fails
+
+**To bypass (NOT recommended):**
+```bash
+git commit --no-verify -m "message"
+```
+
+---
+
 ## Reference
 
 - **PRD:** `docs/PRD.md` - Verify all implementations
 - **Tasks:** `tasks/*.md` - Track progress with checkboxes
 - **Env:** `backend/.env.example` - All required variables
+- **Pre-commit Hook:** `.git/hooks/pre-commit` - Auto-runs tests and linting
