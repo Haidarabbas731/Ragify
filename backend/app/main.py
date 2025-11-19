@@ -35,7 +35,7 @@ register_exception_handlers(app)
 # Security middleware (order matters!)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestSizeLimitMiddleware)
-app.add_middleware(RateLimitMiddleware)
+app.add_middleware(RateLimitMiddleware)  # type:ignore
 
 # CORS configuration
 app.add_middleware(
@@ -74,7 +74,7 @@ async def health_check():
         services["redis"] = "up"
 
         try:
-            pending = await redis.llen("arq:queue")
+            pending = await redis.llen("arq:queue")  # type: ignore
             arq_stats["pending_tasks"] = pending
 
             failed_key = "arq:failed_tasks_24h"
@@ -87,7 +87,9 @@ async def health_check():
     except Exception:
         pass
 
-    overall_status = "healthy" if all(s == "up" for s in services.values()) else "degraded"
+    overall_status = (
+        "healthy" if all(s == "up" for s in services.values()) else "degraded"
+    )
 
     return {
         "status": overall_status,
@@ -104,5 +106,5 @@ async def root():
     return {
         "message": "AI Knowledge Base API",
         "docs": "/docs",
-        "health": "/api/v1/health"
+        "health": "/api/v1/health",
     }
