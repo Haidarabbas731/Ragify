@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlmodel import Field, SQLModel
 
@@ -18,5 +18,5 @@ class Collection(SQLModel, table=True):
     description: str | None = Field(default=None)
 
     # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
