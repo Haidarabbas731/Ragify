@@ -8,8 +8,12 @@ from app.services.auth_service import authenticate_user, logout_user, register_u
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register(data: UserRegister, session: AsyncSession = Depends(get_db)):  # noqa: B008
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
+async def register(
+    data: UserRegister, session: AsyncSession = Depends(get_db)  # noqa: B008
+):
     """
     Register a new user.
 
@@ -24,7 +28,7 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
 
-    return UserResponse(**user_data)
+    return UserResponse(**user_data)  # type: ignore
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -45,17 +49,15 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_db)):  # no
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=message)
 
     return TokenResponse(
-        access_token=auth_data["access_token"],
-        refresh_token=auth_data["refresh_token"],
-        token_type=auth_data["token_type"],
-        expires_in=auth_data["expires_in"],
+        access_token=auth_data["access_token"],  # type: ignore
+        refresh_token=auth_data["refresh_token"],  # type: ignore
+        token_type=auth_data["token_type"],  # type: ignore
+        expires_in=auth_data["expires_in"],  # type: ignore
     )
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(
-    access_token: str, refresh_token: str
-):
+async def logout(access_token: str, refresh_token: str):
     """
     Logout user by revoking tokens.
 
