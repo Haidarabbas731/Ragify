@@ -56,6 +56,11 @@ async def health_check():
         "redis": "down",
     }
 
+    arq_stats = {
+        "pending_tasks": 0,
+        "failed_tasks_24h": 0,
+    }
+
     try:
         async with async_engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
@@ -66,8 +71,19 @@ async def health_check():
     try:
         redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
         await redis.ping()
-        await redis.aclose()
         services["redis"] = "up"
+
+        try:
+            pending = await redis.llen("arq:queue")
+            arq_stats["pending_tasks"] = pending
+
+            failed_key = "arq:failed_tasks_24h"
+            failed = await redis.get(failed_key)
+            arq_stats["failed_tasks_24h"] = int(failed) if failed else 0
+        except Exception:
+            pass
+
+        await redis.aclose()
     except Exception:
         pass
 
@@ -78,6 +94,7 @@ async def health_check():
         "app_name": settings.APP_NAME,
         "environment": settings.ENVIRONMENT,
         "services": services,
+        "arq_worker": arq_stats,
     }
 
 
