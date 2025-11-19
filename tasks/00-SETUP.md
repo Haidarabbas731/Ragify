@@ -122,10 +122,10 @@ Example: feat(auth): add JWT authentication
 
 ### Security Middleware (CRITICAL)
 **PRD Reference:** Section 13.6 (Additional Security Measures)
-- [ ] Create `backend/app/middleware/security_headers.py` (HSTS, X-Frame-Options, CSP)
-- [ ] Create `backend/app/middleware/size_limit.py` (50MB request size enforcement)
-- [ ] Create `backend/app/middleware/rate_limit.py` (Rate limiting - see PRD Section 11.4)
-- [ ] Register security middleware in `main.py`
+- [x] Create `backend/app/middleware/security_headers.py` (HSTS, X-Frame-Options, CSP)
+- [x] Create `backend/app/middleware/size_limit.py` (50MB request size enforcement)
+- [x] Create `backend/app/middleware/rate_limit.py` (Rate limiting - see PRD Section 11.4)
+- [x] Register security middleware in `main.py`
 
 ### Docker Configuration (Optional for later)
 - [x] Create `backend/Dockerfile`
