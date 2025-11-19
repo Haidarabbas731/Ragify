@@ -49,3 +49,34 @@ def decode_token(token: str) -> dict | None:
         return payload
     except JWTError:
         return None
+
+
+def validate_password_strength(password: str) -> tuple[bool, str | None]:
+    """
+    Validate password meets security requirements.
+
+    Requirements:
+    - Minimum 8 characters
+    - At least 1 uppercase letter
+    - At least 1 number
+    - At least 1 special character
+
+    Args:
+        password: Plain text password to validate
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+
+    if not any(c.isupper() for c in password):
+        return False, "Password must contain at least one uppercase letter"
+
+    if not any(c.isdigit() for c in password):
+        return False, "Password must contain at least one number"
+
+    if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password):
+        return False, "Password must contain at least one special character"
+
+    return True, None
