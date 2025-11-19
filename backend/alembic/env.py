@@ -14,10 +14,7 @@ from app.models.admin_audit_log import AdminAuditLog  # noqa: F401
 from app.models.collection import Collection  # noqa: F401
 from app.models.conversation import Conversation  # noqa: F401
 from app.models.document import Document  # noqa: F401
-from app.models.document_chunk import DocumentChunk  # noqa: F401
 from app.models.invite_code import InviteCode  # noqa: F401
-
-# Import all models to ensure they're registered with SQLModel
 from app.models.user import User  # noqa: F401
 
 # Alembic Config object

@@ -29,7 +29,7 @@ class Document(SQLModel, table=True):
     )
 
     filename: str = Field(max_length=255)
-    file_type: str = Field(max_length=10)  # pdf, txt, docx, md
+    file_type: str = Field(max_length=100)
     size_bytes: int
     chunks_count: int = Field(default=0)
 
