@@ -7,12 +7,10 @@ from sqlmodel import JSON, Column, Field, SQLModel
 class Conversation(SQLModel, table=True):
     """Conversation model for storing chat history with messages in JSONB."""
 
-    __tablename__ = "conversations"
+    __tablename__ = "conversations"  # type:ignore
 
     conversation_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()),
-        primary_key=True,
-        index=True
+        default_factory=lambda: str(uuid.uuid4()), primary_key=True, index=True
     )
     user_id: str = Field(foreign_key="users.user_id", index=True)
 

@@ -1,7 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from redis.asyncio import Redis
+from sqlalchemy import text
 
 from app.core.config import settings
+from app.core.logging import setup_logging
+from app.db.session import engine
+
+setup_logging()
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -20,11 +26,35 @@ app.add_middleware(
 
 @app.get("/api/v1/health")
 async def health_check():
-    """Health check endpoint to verify API is running."""
+    """Health check endpoint to verify API and all services are running."""
+    services = {
+        "api": "up",
+        "database": "down",
+        "redis": "down",
+    }
+
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+            services["database"] = "up"
+    except Exception:
+        pass
+
+    try:
+        redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
+        await redis.ping()
+        await redis.aclose()
+        services["redis"] = "up"
+    except Exception:
+        pass
+
+    overall_status = "healthy" if all(s == "up" for s in services.values()) else "degraded"
+
     return {
-        "status": "healthy",
+        "status": overall_status,
         "app_name": settings.APP_NAME,
         "environment": settings.ENVIRONMENT,
+        "services": services,
     }
 
 

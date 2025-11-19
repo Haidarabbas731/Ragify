@@ -16,11 +16,10 @@ class InviteCodeStatus(str, Enum):
 class InviteCode(SQLModel, table=True):
     """Invite code model for invite-only registration system."""
 
-    __tablename__ = "invite_codes"
+    __tablename__ = "invite_codes"  # type:ignore
 
     invite_code_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()),
-        primary_key=True
+        default_factory=lambda: str(uuid.uuid4()), primary_key=True
     )
 
     # KB-XXXX-XXXX-XXXX format

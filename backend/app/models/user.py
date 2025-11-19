@@ -16,12 +16,10 @@ class UserStatus(str, Enum):
 class User(SQLModel, table=True):
     """User model representing system users with authentication and storage management."""
 
-    __tablename__ = "users"
+    __tablename__ = "users"  # type:ignore
 
     user_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()),
-        primary_key=True,
-        index=True
+        default_factory=lambda: str(uuid.uuid4()), primary_key=True, index=True
     )
     email: str = Field(unique=True, index=True, max_length=255)
     password_hash: str = Field(max_length=255)
