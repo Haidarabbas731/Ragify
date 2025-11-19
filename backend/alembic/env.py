@@ -8,7 +8,7 @@ from sqlmodel import SQLModel
 
 from alembic import context
 
-# Import settings
+# Import settings and database
 from app.core.config import settings
 
 # Import all models to ensure they're registered with SQLModel
