@@ -1,7 +1,7 @@
 import secrets
 from datetime import UTC, datetime
 
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.invite_code import InviteCode
@@ -182,7 +182,7 @@ async def list_invite_codes(
     if status:
         query = query.where(InviteCode.status == status)
 
-    query = query.order_by(InviteCode.created_at.desc()).limit(limit).offset(offset)
+    query = query.order_by(col(InviteCode.created_at).desc()).limit(limit).offset(offset)
 
     result = await session.exec(query)
     return list(result.all())

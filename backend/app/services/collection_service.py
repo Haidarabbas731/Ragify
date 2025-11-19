@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
-from sqlmodel import func, select
+from sqlalchemy import func
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.collection import Collection
@@ -56,7 +57,7 @@ async def list_user_collections(
     result = await session.exec(
         select(Collection)
         .where(Collection.user_id == user_id)
-        .order_by(Collection.created_at.desc())
+        .order_by(col(Collection.created_at).desc())
     )
     return list(result.all())
 
@@ -94,11 +95,12 @@ async def get_collection_document_count(
         Document count
     """
     result = await session.exec(
-        select(func.count(Document.document_id)).where(
+        select(func.count()).select_from(Document).where(
             Document.collection_id == collection_id
         )
     )
-    return result.one() or 0
+    count = result.one()
+    return count if count else 0
 
 
 async def update_collection(
