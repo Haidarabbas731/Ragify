@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.config import settings
 from app.models.invite_code import InviteCode
 
 
@@ -73,6 +74,32 @@ async def get_invite_code_by_string(
     """
     result = await session.exec(select(InviteCode).where(InviteCode.code == code))
     return result.one_or_none()
+
+
+async def validate_invite_code_for_registration(
+    session: AsyncSession, code: str | None
+) -> tuple[bool, str | None]:
+    """
+    Validate invite code for registration based on INVITE_ONLY setting.
+
+    Args:
+        session: Database session
+        code: Invite code string (can be None)
+
+    Returns:
+        Tuple of (is_valid, error_message)
+        - (True, None) if valid or not required
+        - (False, error_message) if invalid
+    """
+    if settings.INVITE_ONLY:
+        if not code:
+            return False, "Invite code is required when INVITE_ONLY mode is enabled"
+
+        is_valid = await validate_invite_code(session, code)
+        if not is_valid:
+            return False, "Invalid or expired invite code"
+
+    return True, None
 
 
 async def validate_invite_code(session: AsyncSession, code: str) -> bool:

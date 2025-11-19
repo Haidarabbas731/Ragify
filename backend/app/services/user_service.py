@@ -10,7 +10,7 @@ async def create_user(
     session: AsyncSession,
     email: str,
     password_hash: str,
-    invite_code: str,
+    invite_code: str | None = None,
 ) -> User:
     """
     Create a new user with the provided credentials.
@@ -19,7 +19,7 @@ async def create_user(
         session: Database session
         email: User email address
         password_hash: Argon2 hashed password
-        invite_code: Valid invite code
+        invite_code: Valid invite code (required only if INVITE_ONLY=true)
 
     Returns:
         Created user instance
