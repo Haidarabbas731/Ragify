@@ -61,10 +61,10 @@ async def get_document_by_id(
     Returns:
         Document instance or None if not found
     """
-    result = await session.execute(
+    result = await session.exec(
         select(Document).where(Document.document_id == document_id)
     )
-    return result.scalar_one_or_none()
+    return result.one_or_none()
 
 
 async def list_user_documents(
@@ -98,8 +98,8 @@ async def list_user_documents(
 
     query = query.order_by(Document.uploaded_at.desc()).limit(limit).offset(offset)
 
-    result = await session.execute(query)
-    return list(result.scalars().all())
+    result = await session.exec(query)
+    return list(result.all())
 
 
 async def update_document_status(
