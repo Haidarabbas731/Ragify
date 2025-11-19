@@ -35,11 +35,12 @@ git commit -m "feat(scope): description"
 **CRITICAL:** After completing ANY task from `tasks/*.md`:
 
 1. ✅ Update checkboxes in the task file (mark completed tasks)
-2. ✅ Run linting: `uv run ruff check --fix .`
-3. ✅ Run tests: `uv run pytest`
-4. ✅ Commit with descriptive message
-5. ⏸️ **STOP and wait for user approval before moving to next phase**
-6. ✅ Update TodoWrite tool with current progress
+2. ✅ **IMPORTANT:** Only check tasks that are ACTUALLY completed, not all tasks
+3. ✅ Run linting: `uv run ruff check --fix .`
+4. ✅ Run tests: `uv run pytest`
+5. ✅ Commit with descriptive message
+6. ⏸️ **STOP and wait for user approval before moving to next phase**
+7. ✅ Update TodoWrite tool with current progress
 
 **Example:**
 ```markdown
@@ -47,6 +48,11 @@ git commit -m "feat(scope): description"
 - [x] Create Document model
 - [ ] Create Pydantic schemas  ← Stop here, ask for approval
 ```
+
+**⚠️ IMPORTANT CHECKBOX RULE:**
+- Always check the tickbox `[x]` ONLY for tasks that are completed
+- Do NOT check all tasks at once
+- Verify each task is actually done before marking it complete
 
 ### 4. Phase Completion
 When a phase file (e.g., `tasks/01-CORE-MODELS.md`) is complete:
