@@ -35,7 +35,9 @@ register_exception_handlers(app)
 # Security middleware (order matters!)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestSizeLimitMiddleware)
-app.middleware("http")(RateLimitMiddleware(app))
+
+rate_limiter = RateLimitMiddleware(app)
+app.middleware("http")(rate_limiter)
 
 # CORS configuration
 app.add_middleware(
