@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "AI Knowledge Base"
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
+    LOG_LEVEL: str = "INFO"
 
     # Database (PostgreSQL with asyncpg)
     DATABASE_URL: str
