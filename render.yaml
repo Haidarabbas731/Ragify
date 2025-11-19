@@ -10,10 +10,10 @@ services:
     envVars:
       # Database & Cache (add these manually in Render dashboard for security)
       - key: DATABASE_URL
-        sync: false  # External service (Aiven/Neon/Supabase)
+        sync: false # External service (Aiven/Neon/Supabase)
       - key: REDIS_URL
-        sync: false  # External service (Upstash) or use fromService below
-      
+        sync: false # External service (Upstash) or use fromService below
+
       # Google Gemini
       - key: GOOGLE_API_KEY
         sync: false
@@ -23,7 +23,7 @@ services:
         value: models/text-embedding-004
       - key: EMBEDDING_DIMENSION
         value: 768
-      
+
       # Milvus (Zilliz Cloud)
       - key: MILVUS_HOST
         sync: false
@@ -33,7 +33,7 @@ services:
         sync: false
       - key: MILVUS_COLLECTION
         value: knowledge_base
-      
+
       # Backblaze B2
       - key: B2_APPLICATION_KEY_ID
         sync: false
@@ -41,7 +41,7 @@ services:
         sync: false
       - key: B2_BUCKET_NAME
         sync: false
-      
+
       # Email (Resend)
       - key: RESEND_API_KEY
         sync: false
@@ -49,7 +49,7 @@ services:
         sync: false
       - key: EMAIL_FROM_NAME
         value: "AI Knowledge Base"
-      
+
       # JWT Security (generate with: openssl rand -hex 32)
       - key: JWT_SECRET_KEY
         sync: false
@@ -59,7 +59,7 @@ services:
         value: 60
       - key: REFRESH_TOKEN_EXPIRE_DAYS
         value: 7
-      
+
       # Application
       - key: APP_NAME
         value: "AI Knowledge Base"
@@ -68,14 +68,14 @@ services:
       - key: DEBUG
         value: false
       - key: FRONTEND_URL
-        sync: false  # Your frontend URL
-      
+        sync: false # Your frontend URL
+
       # Database Config
       - key: DATABASE_POOL_SIZE
         value: 20
       - key: DATABASE_MAX_OVERFLOW
         value: 10
-      
+
       # File Upload
       - key: MAX_FILE_SIZE_MB
         value: 50
@@ -83,21 +83,21 @@ services:
         value: pdf,docx,txt,md
       - key: MAX_UPLOAD_BATCH
         value: 10
-      
+
       # Text Chunking
       - key: CHUNK_SIZE
         value: 1000
       - key: CHUNK_OVERLAP
         value: 200
-      
+
       # Storage Quotas
       - key: STORAGE_QUOTA_DEFAULT
         value: 1073741824
-      
+
       # Rate Limiting
       - key: RATE_LIMIT_PER_MINUTE
         value: 100
-      
+
       # Invite-Only Registration
       - key: INVITE_ONLY
         value: true
@@ -142,7 +142,6 @@ services:
         value: 1000
       - key: CHUNK_OVERLAP
         value: 200
-
 # Optional: Use Render's managed Redis instead of external service
 # Uncomment this section and update REDIS_URL above to use fromService
 # databases:
