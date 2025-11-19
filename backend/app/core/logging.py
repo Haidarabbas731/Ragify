@@ -1,21 +1,33 @@
 import logging
-import sys
+from enum import StrEnum
 
-from app.core.config import settings
-
-
-def setup_logging() -> None:
-    log_level = logging.DEBUG if settings.DEBUG else logging.INFO
-
-    logging.basicConfig(
-        level=log_level,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[logging.StreamHandler(sys.stdout)],
-    )
-
-    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-    logging.getLogger("uvicorn.error").setLevel(logging.INFO)
+LOG_FORMAT_DEBUG = "%(levelname)s:%(message)s:%(pathname)s:%(funcName)s:%(lineno)d"
+LOG_FORMAT_PROD = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 
-def get_logger(name: str) -> logging.Logger:
-    return logging.getLogger(name)
+class LogLevels(StrEnum):
+    info = "INFO"
+    warn = "WARN"
+    error = "ERROR"
+    debug = "DEBUG"
+
+
+def configure_logging(log_level: str = LogLevels.error):
+    """
+    Configure logging with appropriate format and level.
+
+    Args:
+        log_level: Logging level (INFO, WARN, ERROR, DEBUG)
+    """
+    log_level = str(log_level).upper()
+    log_levels = [level.value for level in LogLevels]
+
+    if log_level not in log_levels:
+        logging.basicConfig(level=LogLevels.error, format=LOG_FORMAT_PROD)
+        return
+
+    if log_level == LogLevels.debug:
+        logging.basicConfig(level=log_level, format=LOG_FORMAT_DEBUG)
+        return
+
+    logging.basicConfig(level=log_level, format=LOG_FORMAT_PROD)

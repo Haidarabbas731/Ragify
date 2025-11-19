@@ -5,11 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 from sqlalchemy import text
 
+from app.api.exceptions import register_exception_handlers
 from app.core.config import settings
-from app.core.logging import setup_logging
+from app.core.logging import configure_logging
 from app.db.database import async_engine, init_db
 
-setup_logging()
+configure_logging(log_level=settings.LOG_LEVEL)
 
 
 @asynccontextmanager
@@ -24,6 +25,9 @@ app = FastAPI(
     debug=settings.DEBUG,
     lifespan=lifespan,
 )
+
+# Register exception handlers
+register_exception_handlers(app)
 
 # CORS configuration
 app.add_middleware(
