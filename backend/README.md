@@ -223,99 +223,129 @@ Worker runs automatically as a separate service (see Deployment section).
 
 ## 🚢 Deployment (Render.com)
 
-### Option 1: Automatic Deployment (Recommended)
+### Recommended Cloud Services
 
-Create `render.yaml` in project root:
+**For best performance and avoiding vendor lock-in:**
+
+| Service | Provider | Free Tier |
+|---------|----------|-----------|
+| PostgreSQL | **Neon** or **Aiven** | 3GB storage (Neon) / 1GB (Aiven) |
+| Redis | **Upstash** or **Render** | 10k commands/day (Upstash) / 25MB (Render) |
+| Milvus | **Zilliz Cloud** | Already configured ✅ |
+| Storage | **Backblaze B2** | 10GB free ✅ |
+| Email | **Resend** | 100 emails/day ✅ |
+
+### Deployment Steps
+
+**1. Setup External Services:**
+
+```bash
+# Create accounts and get credentials:
+# - Neon/Aiven: Get DATABASE_URL
+# - Upstash: Get REDIS_URL  
+# - Already have: Milvus, B2, Resend
+```
+
+**2. Deploy to Render:**
+
+```bash
+# Push code to GitHub
+git push origin dev
+
+# On Render.com:
+# 1. New → Blueprint
+# 2. Connect your GitHub repo
+# 3. Render reads render.yaml (in project root)
+# 4. Add secret environment variables in dashboard:
+#    - DATABASE_URL (from Neon/Aiven)
+#    - REDIS_URL (from Upstash)
+#    - GOOGLE_API_KEY
+#    - MILVUS_HOST, MILVUS_TOKEN
+#    - B2_APPLICATION_KEY_ID, B2_APPLICATION_KEY
+#    - RESEND_API_KEY
+#    - JWT_SECRET_KEY (generate with: openssl rand -hex 32)
+```
+
+**3. Render Auto-Deploys:**
+- ✅ FastAPI Web Service (kb-api)
+- ✅ ARQ Background Worker (kb-worker)
+- ✅ Auto-restarts on crashes
+- ✅ Auto-deploys on git push
+
+**4. Access Your API:**
+```
+https://kb-api.onrender.com/docs
+https://kb-api.onrender.com/api/v1/health
+```
+
+### render.yaml Configuration
+
+The project includes `render.yaml` in the root directory. Key features:
 
 ```yaml
 services:
-  # FastAPI Web Service
+  # API Service
   - type: web
     name: kb-api
-    env: python
-    region: oregon
-    plan: free
     buildCommand: "cd backend && pip install uv && uv sync"
     startCommand: "cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: kb-postgres
-          property: connectionString
+        sync: false  # Add in dashboard
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: kb-redis
-          property: connectionString
-      - key: GOOGLE_API_KEY
-        sync: false
+        sync: false  # Add in dashboard
+      # ... (all other environment variables)
 
-  # ARQ Background Worker
+  # Worker Service  
   - type: worker
     name: kb-worker
-    env: python
-    region: oregon
-    plan: free
-    buildCommand: "cd backend && pip install uv && uv sync"
     startCommand: "cd backend && uv run arq app.tasks.worker.WorkerSettings"
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: kb-postgres
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: kb-redis
-          property: connectionString
+    # Same envVars as web service
+```
 
+**Using Render's Managed Services (Alternative):**
+
+If you prefer Render's built-in PostgreSQL and Redis, uncomment this in `render.yaml`:
+
+```yaml
 databases:
   - name: kb-postgres
-    databaseName: knowledge_base
     plan: free
 
   - name: kb-redis
     plan: free
 ```
 
-**Deploy:**
-1. Push to GitHub
-2. Connect Render to your repository
-3. Render auto-deploys 2 services (API + Worker)
-4. Add secret environment variables in dashboard
-
-### Option 2: Docker Deployment
-
-Update `docker-compose.yml` to include API + Worker:
-
+And change envVars to:
 ```yaml
-services:
-  postgres:
-    # ... existing config
-
-  redis:
-    # ... existing config
-
-  api:
-    build: ./backend
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres
-      - redis
-    env_file:
-      - ./backend/.env
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-  worker:
-    build: ./backend
-    depends_on:
-      - postgres
-      - redis
-    env_file:
-      - ./backend/.env
-    command: arq app.tasks.worker.WorkerSettings
+- key: DATABASE_URL
+  fromDatabase:
+    name: kb-postgres
+    property: connectionString
 ```
+
+### Environment Variables Setup
+
+**Never commit secrets!** Add these in **Render Dashboard → Environment**:
+
+```bash
+# Required Secrets
+DATABASE_URL=postgresql+asyncpg://user:pass@host.aivencloud.com:12345/knowledge_base
+REDIS_URL=redis://default:password@abc-123.upstash.io:6379
+GOOGLE_API_KEY=your-google-api-key
+MILVUS_HOST=your-cluster.cloud.zilliz.com
+MILVUS_TOKEN=your-milvus-token
+B2_APPLICATION_KEY_ID=your-b2-key-id
+B2_APPLICATION_KEY=your-b2-application-key
+B2_BUCKET_NAME=your-bucket-name
+RESEND_API_KEY=your-resend-key
+JWT_SECRET_KEY=your-generated-secret-key
+EMAIL_FROM_ADDRESS=noreply@yourdomain.com
+FRONTEND_URL=https://yourfrontend.vercel.app
+ADMIN_EMAIL=admin@example.com
+```
+
+**All other variables** are already configured in `render.yaml` with default values.
 
 ---
 

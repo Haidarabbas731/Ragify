@@ -1,26 +1,30 @@
+# This docker-compose file is for local development only
+# In production, use cloud-hosted PostgreSQL and Redis services
+# Update DATABASE_URL and REDIS_URL in .env to point to cloud services
+
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: kb_postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB:-knowledge_base}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: knowledge_base
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:alpine
     container_name: kb_redis
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:

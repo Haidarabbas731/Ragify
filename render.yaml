@@ -1,0 +1,150 @@
+services:
+  # FastAPI Web Service
+  - type: web
+    name: kb-api
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "cd backend && pip install uv && uv sync"
+    startCommand: "cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      # Database & Cache (add these manually in Render dashboard for security)
+      - key: DATABASE_URL
+        sync: false  # External service (Aiven/Neon/Supabase)
+      - key: REDIS_URL
+        sync: false  # External service (Upstash) or use fromService below
+      
+      # Google Gemini
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash-exp
+      - key: EMBEDDING_MODEL
+        value: models/text-embedding-004
+      - key: EMBEDDING_DIMENSION
+        value: 768
+      
+      # Milvus (Zilliz Cloud)
+      - key: MILVUS_HOST
+        sync: false
+      - key: MILVUS_PORT
+        value: 19530
+      - key: MILVUS_TOKEN
+        sync: false
+      - key: MILVUS_COLLECTION
+        value: knowledge_base
+      
+      # Backblaze B2
+      - key: B2_APPLICATION_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: B2_BUCKET_NAME
+        sync: false
+      
+      # Email (Resend)
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM_ADDRESS
+        sync: false
+      - key: EMAIL_FROM_NAME
+        value: "AI Knowledge Base"
+      
+      # JWT Security (generate with: openssl rand -hex 32)
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 60
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+      
+      # Application
+      - key: APP_NAME
+        value: "AI Knowledge Base"
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: FRONTEND_URL
+        sync: false  # Your frontend URL
+      
+      # Database Config
+      - key: DATABASE_POOL_SIZE
+        value: 20
+      - key: DATABASE_MAX_OVERFLOW
+        value: 10
+      
+      # File Upload
+      - key: MAX_FILE_SIZE_MB
+        value: 50
+      - key: ALLOWED_FILE_TYPES
+        value: pdf,docx,txt,md
+      - key: MAX_UPLOAD_BATCH
+        value: 10
+      
+      # Text Chunking
+      - key: CHUNK_SIZE
+        value: 1000
+      - key: CHUNK_OVERLAP
+        value: 200
+      
+      # Storage Quotas
+      - key: STORAGE_QUOTA_DEFAULT
+        value: 1073741824
+      
+      # Rate Limiting
+      - key: RATE_LIMIT_PER_MINUTE
+        value: 100
+      
+      # Invite-Only Registration
+      - key: INVITE_ONLY
+        value: true
+      - key: ADMIN_EMAIL
+        sync: false
+
+  # ARQ Background Worker
+  - type: worker
+    name: kb-worker
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "cd backend && pip install uv && uv sync"
+    startCommand: "cd backend && uv run arq app.tasks.worker.WorkerSettings"
+    envVars:
+      # Same environment variables as web service
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash-exp
+      - key: EMBEDDING_MODEL
+        value: models/text-embedding-004
+      - key: MILVUS_HOST
+        sync: false
+      - key: MILVUS_PORT
+        value: 19530
+      - key: MILVUS_TOKEN
+        sync: false
+      - key: MILVUS_COLLECTION
+        value: knowledge_base
+      - key: B2_APPLICATION_KEY_ID
+        sync: false
+      - key: B2_APPLICATION_KEY
+        sync: false
+      - key: B2_BUCKET_NAME
+        sync: false
+      - key: CHUNK_SIZE
+        value: 1000
+      - key: CHUNK_OVERLAP
+        value: 200
+
+# Optional: Use Render's managed Redis instead of external service
+# Uncomment this section and update REDIS_URL above to use fromService
+# databases:
+#   - name: kb-redis
+#     plan: free
