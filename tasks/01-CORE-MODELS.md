@@ -87,16 +87,11 @@ Example: feat(models): add User model
 - [x] Add unique constraint on (user_id, name)
 
 ### DocumentChunk Model
-**PRD Reference:** Section 11.1 (Project Structure - models/document_chunk.py)
-- [x] Create `backend/app/models/document_chunk.py`
-- [x] Define `DocumentChunk` class for Milvus metadata tracking
-- [x] Add fields: chunk_id, document_id, user_id, chunk_index
-- [x] Add text field for chunk content
-- [x] Add milvus_id for vector DB reference
-- [x] Add embedding_model field (for migration support - Section 14)
-- [x] Add timestamps: created_at
-- [x] Add foreign key to Document
-- [x] Add index on document_id, milvus_id
+**PRD Reference:** Section 10.2 (Chunk Model - Milvus Collection)
+- [x] ~~Create `backend/app/models/document_chunk.py`~~ **NOT NEEDED - Chunks stored in Milvus only**
+- [x] Document chunks are stored directly in Milvus vector database
+- [x] Chunk schema: chunk_id, document_id, user_id, text, embedding (768-dim), chunk_index, metadata
+- [x] No PostgreSQL table needed for chunks (Phase 3/4 will implement Milvus service)
 
 ### Conversation Model
 **PRD Reference:** Section 10.4 (Conversation Model)
@@ -193,24 +188,24 @@ Example: feat(models): add User model
 **PRD Reference:** Section 11.2.4 (Alembic Configuration)
 
 ### Alembic Configuration
-- [ ] Ensure all models imported in `alembic/env.py`
-- [ ] Import User, Document, Collection, Conversation, InviteCode, AdminAuditLog
-- [ ] Verify Base.metadata includes all tables
+- [x] Ensure all models imported in `alembic/env.py`
+- [x] Import User, Document, Collection, Conversation, InviteCode, AdminAuditLog
+- [x] Verify Base.metadata includes all tables
 
 ### Create Migration
-- [ ] Run `alembic revision --autogenerate -m "Create all core models"`
-- [ ] Review generated migration file
-- [ ] Check foreign key constraints are correct
-- [ ] Check indexes are created
-- [ ] Check enum types are created
-- [ ] Verify unique constraints
+- [x] Run `alembic revision --autogenerate -m "Create all core models"`
+- [x] Review generated migration file
+- [x] Check foreign key constraints are correct
+- [x] Check indexes are created
+- [x] Check enum types are created
+- [x] Verify unique constraints
 
 ### Apply Migration
-- [ ] Run `alembic upgrade head`
-- [ ] Connect to database and verify tables exist
-- [ ] Check table schemas match models
-- [ ] Verify indexes created: `\di` in psql
-- [ ] Verify foreign keys: `\d+ documents` in psql
+- [x] Run `alembic upgrade head`
+- [x] Connect to database and verify tables exist
+- [x] Check table schemas match models
+- [x] Verify indexes created: `\di` in psql
+- [x] Verify foreign keys: `\d+ documents` in psql
 
 ---
 
@@ -218,18 +213,18 @@ Example: feat(models): add User model
 **PRD Reference:** Section 11.2.3 (Database Session Management)
 
 ### Session Management (SQLModel Async)
-- [ ] Create `backend/app/db/session.py`
-- [ ] Import: `from sqlmodel import create_engine`
-- [ ] Import: `from sqlmodel.ext.asyncio.session import AsyncSession, AsyncEngine`
-- [ ] Create async engine: `create_async_engine(DATABASE_URL, echo=DEBUG, ...)`
-- [ ] Create async session maker: `async_sessionmaker(engine, class_=AsyncSession, ...)`
-- [ ] Ensure connection pooling settings
-- [ ] Create `get_db()` dependency function for FastAPI
-- [ ] Test session creation with `get_db()` dependency
+- [x] Session management already implemented in `backend/app/db/database.py`
+- [x] Import: `from sqlmodel import create_engine`
+- [x] Import: `from sqlmodel.ext.asyncio.session import AsyncSession, AsyncEngine`
+- [x] Create async engine: `create_async_engine(DATABASE_URL, echo=DEBUG, ...)`
+- [x] Create async session maker: `async_sessionmaker(engine, class_=AsyncSession, ...)`
+- [x] Ensure connection pooling settings
+- [x] Create `get_session()` dependency function for FastAPI (in database.py)
+- [x] Test session creation with `get_session()` dependency
 
 ### API Dependencies
-- [ ] Create `backend/app/api/dependencies.py`
-- [ ] Import `get_db` from db.session
+- [x] Create `backend/app/api/dependencies.py`
+- [x] Import `get_session` from db.database and create `get_db()` wrapper
 - [ ] Create placeholder for `get_current_user` (will implement in Phase 2)
 - [ ] Create placeholder for `get_current_admin` (will implement in Phase 2)
 
@@ -292,32 +287,32 @@ Example: feat(models): add User model
 ## 1.6 Testing Database Layer
 
 ### Unit Tests for Models
-- [ ] Create `backend/tests/test_models.py`
-- [ ] Test User model creation
-- [ ] Test Document status transitions
-- [ ] Test Collection relationships
-- [ ] Test InviteCode validation logic
+- [x] Create `backend/tests/test_models.py`
+- [x] Test User model creation
+- [x] Test Document status transitions
+- [x] Test Collection relationships
+- [x] Test InviteCode validation logic
 
 ### Unit Tests for CRUD Operations
-- [ ] Create `backend/tests/test_user_service.py`
-- [ ] Test create_user with valid data
-- [ ] Test get_user_by_email
-- [ ] Test storage quota updates
-- [ ] Create `backend/tests/test_document_service.py`
-- [ ] Test document creation and status updates
-- [ ] Test soft delete behavior
-- [ ] Create `backend/tests/test_invite_service.py`
-- [ ] Test invite code generation
-- [ ] Test invite code validation
-- [ ] Test invite code usage increment
+- [x] Create `backend/tests/test_user_service.py`
+- [x] Test create_user with valid data
+- [x] Test get_user_by_email
+- [x] Test storage quota updates
+- [x] Create `backend/tests/test_document_service.py`
+- [x] Test document creation and status updates
+- [x] Test soft delete behavior
+- [x] Create `backend/tests/test_invite_service.py`
+- [x] Test invite code generation
+- [x] Test invite code validation
+- [x] Test invite code usage increment
 
 ### Test Fixtures
-- [ ] Create `backend/tests/conftest.py`
-- [ ] Add fixture for test database session
-- [ ] Add fixture for sample user
-- [ ] Add fixture for sample document
-- [ ] Add fixture for sample invite code
-- [ ] Configure pytest-asyncio
+- [x] Create `backend/tests/conftest.py`
+- [x] Add fixture for test database session
+- [x] Add fixture for sample user
+- [x] Add fixture for sample document
+- [x] Add fixture for sample invite code
+- [x] Configure pytest-asyncio
 
 ---
 
@@ -337,17 +332,17 @@ Example: feat(models): add User model
 - [ ] **Verify AsyncSession imports from sqlmodel.ext.asyncio.session**
 
 Before moving to Phase 2, verify:
-- [ ] All 6 models created (User, Document, Collection, Conversation, InviteCode, AdminAuditLog)
-- [ ] All Pydantic schemas created and validated
-- [ ] Database migration created and applied successfully
-- [ ] All tables visible in database (`\dt` in psql shows 6+ tables)
-- [ ] All CRUD services implemented
-- [ ] Unit tests pass with `pytest`
-- [ ] No linting errors with `ruff check .`
+- [x] All 6 models created (User, Document, Collection, Conversation, InviteCode, AdminAuditLog)
+- [x] All Pydantic schemas created and validated
+- [x] Database migration created and applied successfully
+- [x] All tables visible in database (`\dt` in psql shows 6 tables)
+- [x] All CRUD services implemented
+- [x] Unit tests pass with `pytest` (14/14 passing)
+- [x] No linting errors with `ruff check .`
 - [ ] Type checking passes with `mypy`
-- [ ] Can create a user in database
-- [ ] Can create a document in database
-- [ ] Can generate and validate invite codes
+- [x] Can create a user in database
+- [x] Can create a document in database
+- [x] Can generate and validate invite codes
 
 ---
 

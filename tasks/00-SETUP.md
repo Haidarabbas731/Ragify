@@ -187,10 +187,10 @@ Example: feat(auth): add JWT authentication
 
 ### Initial Migration
 - [x] Create all model files (User, Document, Collection, etc.)
-- [ ] Run `alembic revision --autogenerate -m "Initial migration"`
-- [ ] Review generated migration script
-- [ ] Run `alembic upgrade head` to apply migration
-- [ ] Verify tables created with `psql` or database client
+- [x] Run `alembic revision --autogenerate -m "Initial migration"`
+- [x] Review generated migration script
+- [x] Run `alembic upgrade head` to apply migration
+- [x] Verify tables created with `psql` or database client
 
 ---
 
@@ -203,7 +203,7 @@ Example: feat(auth): add JWT authentication
 - [x] Configure CORS middleware for future frontend
 - [x] Add database connection check in health endpoint
 - [x] Add Redis connection check in health endpoint
-- [ ] Add arq queue statistics to health check (pending_tasks, failed_tasks_24h)
+- [x] Add arq queue statistics to health check (pending_tasks, failed_tasks_24h)
 - [x] Run with `uvicorn app.main:app --reload`
 - [x] Test at `http://localhost:8000/api/v1/health`
 - [x] Test auto-generated docs at `http://localhost:8000/docs`
@@ -219,6 +219,12 @@ Example: feat(auth): add JWT authentication
 - [x] Create `backend/scripts/seed_data.py` (dev data seeding)
 - [x] Create `backend/scripts/run_worker.sh` (arq worker startup)
 - [x] Create `backend/scripts/db_reset.sh` (drop & recreate database)
+
+### Utility Files Setup
+**PRD Reference:** Section 11.1 (Project Structure - utils/)
+- [x] Create `backend/app/utils/text_extraction.py` (PDF/DOCX text extraction)
+- [x] Create `backend/app/utils/chunking.py` (Text chunking utilities)
+- [x] Create `backend/app/utils/sanitization.py` (Input sanitization)
 
 ### Git Hooks (Optional)
 - [x] Set up pre-commit hook for Ruff
@@ -243,7 +249,7 @@ Example: feat(auth): add JWT authentication
 Before moving to Phase 1, verify:
 - [x] All dependencies installed successfully
 - [x] All external services accessible (PostgreSQL, Redis, Milvus, B2, Google AI, Resend)
-- [ ] Database migrations applied and tables created
+- [x] Database migrations applied and tables created
 - [x] Backend server starts without errors (`uvicorn app.main:app --reload`)
 - [x] Health check endpoint responds with all services "up"
 - [x] API docs accessible at `http://localhost:8000/docs`
