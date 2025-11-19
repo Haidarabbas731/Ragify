@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
 from sqlmodel import Field, SQLModel
@@ -42,4 +42,4 @@ class InviteCode(SQLModel, table=True):
     description: str | None = Field(default=None, max_length=255)
 
     # Timestamp
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

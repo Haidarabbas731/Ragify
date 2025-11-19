@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlmodel import JSON, Column, Field, SQLModel
 
@@ -22,4 +22,4 @@ class AdminAuditLog(SQLModel, table=True):
 
     ip_address: str | None = Field(default=None, max_length=45)  # IPv4 or IPv6
 
-    timestamp: datetime = Field(default_factory=datetime.utcnow, index=True)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)

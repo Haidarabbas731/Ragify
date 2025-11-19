@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 
 from sqlmodel import JSON, Column, Field, SQLModel
@@ -47,6 +47,6 @@ class Document(SQLModel, table=True):
     error_message: str | None = Field(default=None)
 
     # Timestamps
-    uploaded_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
     processed_at: datetime | None = Field(default=None)
     deleted_at: datetime | None = Field(default=None)
