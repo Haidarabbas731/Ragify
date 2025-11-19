@@ -5,14 +5,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.core.security import hash_password
-from app.db.session import AsyncSessionLocal
+from app.db.database import get_session
 from app.models.collection import Collection
 from app.models.invite_code import InviteCode, InviteCodeStatus
 from app.models.user import User, UserStatus
 
 
 async def seed_database() -> None:
-    async with AsyncSessionLocal() as session:
+    async for session in get_session():
         test_user = User(
             email="test@example.com",
             password_hash=hash_password("testpassword123"),
@@ -33,9 +33,9 @@ async def seed_database() -> None:
 
         invite_code = InviteCode(
             code="KB-TEST-1234-ABCD",
-            created_by_admin=True,
+            created_by=None,
             max_uses=5,
-            remaining_uses=5,
+            current_uses=0,
             status=InviteCodeStatus.ACTIVE.value,
         )
         session.add(invite_code)
@@ -54,7 +54,8 @@ async def seed_database() -> None:
         print(f"  Collection ID: {test_collection.collection_id}")
         print("\nTest Invite Code:")
         print(f"  Code: {invite_code.code}")
-        print(f"  Remaining Uses: {invite_code.remaining_uses}")
+        print(f"  Max Uses: {invite_code.max_uses}")
+        print(f"  Current Uses: {invite_code.current_uses}")
         print("=" * 50 + "\n")
 
 

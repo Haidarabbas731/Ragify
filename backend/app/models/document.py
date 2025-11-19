@@ -2,7 +2,8 @@ import uuid
 from datetime import UTC, datetime
 from enum import Enum
 
-from sqlmodel import JSON, Column, Field, SQLModel
+from sqlalchemy import Column, DateTime
+from sqlmodel import JSON, Field, SQLModel
 
 
 class DocumentStatus(str, Enum):
@@ -47,6 +48,6 @@ class Document(SQLModel, table=True):
     error_message: str | None = Field(default=None)
 
     # Timestamps
-    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)
-    processed_at: datetime | None = Field(default=None)
-    deleted_at: datetime | None = Field(default=None)
+    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True), index=True))  # type:ignore
+    processed_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))  # type:ignore
+    deleted_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))  # type:ignore

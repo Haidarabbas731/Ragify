@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from enum import Enum
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
 
@@ -29,7 +30,7 @@ class InviteCode(SQLModel, table=True):
     created_by: str | None = Field(default=None)
 
     # Expiration
-    expires_at: datetime | None = Field(default=None)
+    expires_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))  # type:ignore
 
     # Usage limits
     max_uses: int = Field(default=1)
@@ -42,4 +43,4 @@ class InviteCode(SQLModel, table=True):
     description: str | None = Field(default=None, max_length=255)
 
     # Timestamp
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))  # type:ignore

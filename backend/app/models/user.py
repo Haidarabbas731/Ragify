@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from enum import Enum
 
+from sqlalchemy import Column, DateTime
 from sqlmodel import Field, SQLModel
 
 
@@ -33,15 +34,15 @@ class User(SQLModel, table=True):
     status: str = Field(default=UserStatus.ACTIVE.value, max_length=20)
 
     # Login tracking for security & analytics
-    last_login_at: datetime | None = Field(default=None)
+    last_login_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))  # type:ignore
 
     # Timestamps
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))  # type:ignore
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))  # type:ignore
 
     # Soft delete flag
     is_active: bool = Field(default=True)
 
     # Invite tracking
     invited_by_code: str | None = Field(default=None, max_length=24)
-    invited_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    invited_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))  # type:ignore

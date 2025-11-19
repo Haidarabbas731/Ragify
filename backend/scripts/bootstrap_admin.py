@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
-from app.db.session import AsyncSessionLocal
+from app.db.database import get_session
 from app.models.invite_code import InviteCode, InviteCodeStatus
 
 
@@ -16,7 +16,7 @@ def generate_invite_code() -> str:
 
 
 async def create_admin_invite_code() -> None:
-    async with AsyncSessionLocal() as session:
+    async for session in get_session():
         code = generate_invite_code()
         invite = InviteCode(
             code=code,
