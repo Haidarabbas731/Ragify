@@ -36,3 +36,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
+
+
+# docker exec -it kb_postgres psql -U postgres -d knowledge_base
