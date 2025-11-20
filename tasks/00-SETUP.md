@@ -208,6 +208,7 @@ Example: feat(auth): add JWT authentication
 - [x] Test at `http://localhost:8000/api/v1/health`
 - [x] Test auto-generated docs at `http://localhost:8000/docs`
 - [x] Verify all services return "up" status
+- [x] **IMPROVEMENT:** Add graceful startup failure handling (blocks server start if PostgreSQL/Redis unavailable)
 
 ---
 
