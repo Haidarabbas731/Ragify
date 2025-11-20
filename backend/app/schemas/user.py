@@ -60,3 +60,9 @@ class UserProfile(BaseModel):
     storage_percentage: float
     created_at: datetime
     last_login_at: datetime | None
+
+
+class LogoutRequest(BaseModel):
+    """Schema for logout request with optional refresh token."""
+
+    refresh_token: str | None = None

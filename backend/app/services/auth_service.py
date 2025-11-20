@@ -15,9 +15,9 @@ from app.services.invite_service import (
     validate_invite_code_for_registration,
 )
 from app.services.redis_service import (
-    add_to_blocklist,
-    is_token_blocklisted,
+    add_jti_to_blocklist,
     is_user_sessions_revoked,
+    store_token_pair,
 )
 from app.services.user_service import (
     create_user,
@@ -66,6 +66,11 @@ async def register_user(
             "user_id": user.user_id,
             "email": user.email,
             "role": user.role,
+            "status": user.status,
+            "storage_used_bytes": user.storage_used_bytes,
+            "storage_limit_bytes": user.storage_limit_bytes,
+            "created_at": user.created_at,
+            "last_login_at": user.last_login_at,
         },
     )
 
@@ -98,7 +103,17 @@ async def authenticate_user(
         return False, "Session expired, please login again", None
 
     access_token = create_access_token({"sub": user.user_id, "role": user.role})
-    refresh_token = create_refresh_token({"sub": user.user_id})
+    refresh_token = create_refresh_token({"sub": user.user_id, "role": user.role})
+
+    # Store token pair mapping for automatic refresh token lookup on logout
+    access_payload = decode_token(access_token)
+    refresh_payload = decode_token(refresh_token)
+    if access_payload and refresh_payload:
+        access_jti = access_payload.get("jti")
+        refresh_jti = refresh_payload.get("jti")
+        if access_jti and refresh_jti:
+            refresh_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+            await store_token_pair(access_jti, refresh_jti, refresh_ttl)
 
     await update_user_last_login(session, user.user_id)
 
@@ -119,59 +134,93 @@ async def authenticate_user(
     )
 
 
-async def refresh_access_token(refresh_token: str) -> tuple[bool, str, dict | None]:
+async def refresh_access_token_from_details(
+    token_details: dict,
+) -> tuple[bool, str, dict | None]:
     """
-    Generate new access token from refresh token.
+    Generate new access and refresh tokens from existing refresh token.
 
     Args:
-        refresh_token: Valid refresh token
+        token_details: Decoded refresh token payload (from RefreshTokenBearer)
 
     Returns:
         Tuple of (success, message, tokens_dict)
     """
-    if await is_token_blocklisted(refresh_token):
-        return False, "Token has been revoked", None
-
-    payload = decode_token(refresh_token)
-    if not payload:
-        return False, "Invalid or expired token", None
-
-    user_id = payload.get("sub")
+    user_id = token_details.get("sub")
     if not user_id:
         return False, "Invalid token payload", None
 
     if await is_user_sessions_revoked(user_id):
         return False, "Session expired, please login again", None
 
-    role = payload.get("role", "user")
+    # Revoke old refresh token
+    old_jti = token_details.get("jti")
+    if old_jti:
+        refresh_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+        await add_jti_to_blocklist(old_jti, refresh_ttl)
+
+    # Get user role (should be in token or fetch from DB)
+    role = token_details.get("role", "user")
+
+    # Generate new tokens
     access_token = create_access_token({"sub": user_id, "role": role})
+    refresh_token = create_refresh_token({"sub": user_id, "role": role})
+
+    # Store token pair mapping for automatic refresh token lookup on logout
+    access_payload = decode_token(access_token)
+    refresh_payload = decode_token(refresh_token)
+    if access_payload and refresh_payload:
+        access_jti = access_payload.get("jti")
+        refresh_jti = refresh_payload.get("jti")
+        if access_jti and refresh_jti:
+            refresh_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+            await store_token_pair(access_jti, refresh_jti, refresh_ttl)
 
     return (
         True,
         "Token refreshed",
         {
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         },
     )
 
 
-async def logout_user(access_token: str, refresh_token: str) -> tuple[bool, str]:
+async def logout_user(
+    access_jti: str,
+    access_ttl: int,
+    refresh_jti: str | None = None,
+    refresh_ttl: int | None = None,
+    user_id: str | None = None,
+) -> tuple[bool, str]:
     """
-    Logout user by revoking tokens.
+    Logout user by revoking tokens via JTI.
 
     Args:
-        access_token: Access token to revoke
-        refresh_token: Refresh token to revoke
+        access_jti: JWT ID of access token to revoke
+        access_ttl: Time to live for access token in seconds
+        refresh_jti: Optional JWT ID of refresh token to revoke
+        refresh_ttl: Optional time to live for refresh token in seconds
+        user_id: Optional user ID to revoke all sessions
 
     Returns:
         Tuple of (success, message)
     """
-    access_ttl = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    refresh_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    await add_jti_to_blocklist(access_jti, access_ttl)
 
-    await add_to_blocklist(access_token, access_ttl)
-    await add_to_blocklist(refresh_token, refresh_ttl)
+    if refresh_jti and refresh_ttl:
+        await add_jti_to_blocklist(refresh_jti, refresh_ttl)
+
+    # Revoke all other tokens for this user for maximum security
+    if user_id:
+        from app.services.redis_service import revoke_all_user_sessions
+
+        max_ttl = max(
+            access_ttl,
+            refresh_ttl if refresh_ttl else settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        )
+        await revoke_all_user_sessions(user_id, max_ttl)
 
     return True, "Logged out successfully"

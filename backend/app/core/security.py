@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from jose import JWTError, jwt
@@ -17,7 +18,22 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+    """
+    Create JWT access token with JTI for blocklisting.
+
+    Args:
+        data: Token payload data (should include 'sub' for user_id and 'role')
+        expires_delta: Optional custom expiry time
+
+    Returns:
+        Encoded JWT token string
+    """
     to_encode = data.copy()
+
+    # Add JTI (JWT ID) for unique token identification
+    to_encode["jti"] = str(uuid.uuid4())
+    to_encode["refresh"] = False  # Mark as access token
+
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
     else:
@@ -32,7 +48,21 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
 
 def create_refresh_token(data: dict) -> str:
+    """
+    Create JWT refresh token with JTI for blocklisting.
+
+    Args:
+        data: Token payload data (should include 'sub' for user_id and 'role')
+
+    Returns:
+        Encoded JWT token string
+    """
     to_encode = data.copy()
+
+    # Add JTI (JWT ID) for unique token identification
+    to_encode["jti"] = str(uuid.uuid4())
+    to_encode["refresh"] = True  # Mark as refresh token
+
     expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
