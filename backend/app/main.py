@@ -143,8 +143,8 @@ async def health_check():
 
 
 # Register API routes
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(invite_codes.router, prefix="/api/v1/admin")
+app.include_router(auth.router, prefix="/api/v1", tags=["authentication"])
+app.include_router(invite_codes.router, prefix="/api/v1/admin", tags=["admin"])
 
 
 @app.get("/")
