@@ -66,3 +66,16 @@ class LogoutRequest(BaseModel):
     """Schema for logout request with optional refresh token."""
 
     refresh_token: str | None = None
+
+
+class PasswordResetRequest(BaseModel):
+    """Schema for requesting password reset."""
+
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    """Schema for confirming password reset."""
+
+    token: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=128)
