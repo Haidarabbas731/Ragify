@@ -149,3 +149,78 @@ async def get_refresh_jti_from_access_jti(access_jti: str) -> str | None:
         return await redis.get(f"token_pair:{access_jti}")
     finally:
         await redis.aclose()
+
+
+async def store_password_reset_token(token: str, user_id: str, ttl: int) -> None:
+    """
+    Store password reset token in Redis.
+
+    Args:
+        token: Password reset token
+        user_id: User ID
+        ttl: Time to live in seconds
+    """
+    redis = await get_redis()
+    try:
+        await redis.set(f"password_reset:{token}", user_id, ex=ttl)
+    finally:
+        await redis.aclose()
+
+
+async def get_user_id_from_reset_token(token: str) -> str | None:
+    """
+    Get user ID from password reset token.
+
+    Args:
+        token: Password reset token
+
+    Returns:
+        User ID if token exists, None otherwise
+    """
+    redis = await get_redis()
+    try:
+        return await redis.get(f"password_reset:{token}")
+    finally:
+        await redis.aclose()
+
+
+async def delete_password_reset_token(token: str) -> None:
+    """
+    Delete password reset token from Redis (single-use).
+
+    Args:
+        token: Password reset token
+    """
+    redis = await get_redis()
+    try:
+        await redis.delete(f"password_reset:{token}")
+    finally:
+        await redis.aclose()
+
+
+async def check_email_rate_limit(email: str) -> tuple[bool, int]:
+    """
+    Check if email has exceeded password reset rate limit.
+
+    Args:
+        email: Email address to check
+
+    Returns:
+        Tuple of (is_allowed, current_count)
+    """
+    redis = await get_redis()
+    try:
+        key = f"email_rate_limit:{email}"
+        count_str = await redis.get(key)
+        count = int(count_str) if count_str else 0
+
+        if count >= 3:
+            return False, count
+
+        await redis.incr(key)
+        if count == 0:
+            await redis.expire(key, 3600)
+
+        return True, count + 1
+    finally:
+        await redis.aclose()
