@@ -20,7 +20,47 @@ configure_logging(log_level=settings.LOG_LEVEL)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize database on startup."""
-    await init_db()
+    import logging
+    import os
+
+    from redis.asyncio import Redis
+
+    logger = logging.getLogger(__name__)
+
+    db_available = False
+    redis_available = False
+
+    try:
+        await init_db()
+        db_available = True
+        logger.info("✓ Database connection established")
+    except Exception as e:
+        logger.error(f"✗ Database connection failed: {e}")
+        logger.error("  → Make sure PostgreSQL is running")
+        logger.error(f"  → Connection string: {settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else settings.DATABASE_URL}")
+
+    try:
+        redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
+        await redis.ping()
+        await redis.aclose()
+        redis_available = True
+        logger.info("✓ Redis connection established")
+    except Exception as e:
+        logger.error(f"✗ Redis connection failed: {e}")
+        logger.error("  → Make sure Redis is running")
+
+    if not db_available or not redis_available:
+        logger.error("\n" + "=" * 60)
+        logger.error("STARTUP FAILED: Required services are unavailable")
+        logger.error("=" * 60)
+        if not db_available:
+            logger.error("• PostgreSQL is not running or not accessible")
+        if not redis_available:
+            logger.error("• Redis is not running or not accessible")
+        logger.error("\nPlease start the required services and try again.")
+        logger.error("=" * 60 + "\n")
+        os._exit(1)
+
     yield
 
 
