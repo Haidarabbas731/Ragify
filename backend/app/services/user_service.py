@@ -157,3 +157,32 @@ async def soft_delete_user(session: AsyncSession, user_id: str) -> User:
     await session.commit()
     await session.refresh(user)
     return user
+
+
+async def update_user_password(
+    session: AsyncSession, user_id: str, password_hash: str
+) -> User:
+    """
+    Update user password.
+
+    Args:
+        session: Database session
+        user_id: User ID
+        password_hash: New hashed password
+
+    Returns:
+        Updated user instance
+
+    Raises:
+        ValueError: If user not found
+    """
+    user = await get_user_by_id(session, user_id)
+    if not user:
+        raise ValueError(f"User {user_id} not found")
+
+    user.password_hash = password_hash
+    user.updated_at = datetime.now(UTC)
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user

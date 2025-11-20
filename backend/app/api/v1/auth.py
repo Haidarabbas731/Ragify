@@ -1,3 +1,5 @@
+import logging
+import secrets
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,18 +12,34 @@ from app.api.dependencies import (
     get_db,
 )
 from app.core.config import settings
-from app.core.security import decode_token
-from app.schemas.user import LogoutRequest, TokenResponse, UserLogin, UserRegister, UserResponse
+from app.core.security import decode_token, hash_password, validate_password_strength
+from app.schemas.user import (
+    LogoutRequest,
+    PasswordResetConfirm,
+    PasswordResetRequest,
+    TokenResponse,
+    UserLogin,
+    UserRegister,
+    UserResponse,
+)
 from app.services.auth_service import (
     authenticate_user,
     refresh_access_token_from_details,
     register_user,
 )
+from app.services.email_service import send_password_reset_email
 from app.services.redis_service import (
     add_jti_to_blocklist,
+    check_email_rate_limit,
+    delete_password_reset_token,
     get_refresh_jti_from_access_jti,
+    get_user_id_from_reset_token,
     revoke_all_user_sessions,
+    store_password_reset_token,
 )
+from app.services.user_service import get_user_by_email, update_user_password
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -161,5 +179,83 @@ async def logout(
 
     return JSONResponse(
         content={"message": "Logged out successfully"},
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@router.post("/password-reset/request")
+async def request_password_reset(
+    data: PasswordResetRequest, session: AsyncSession = Depends(get_db)  # noqa: B008
+):
+    """
+    Request password reset email.
+
+    - **email**: User email address
+
+    Rate limited to 3 requests per hour per email.
+    Always returns success to prevent email enumeration.
+    """
+    is_allowed, count = await check_email_rate_limit(data.email)
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many password reset requests. Please try again in 1 hour.",
+        )
+
+    user = await get_user_by_email(session, data.email)
+
+    if user:
+        reset_token = secrets.token_urlsafe(32)
+
+        await store_password_reset_token(
+            reset_token, user.user_id, settings.PASSWORD_RESET_TOKEN_EXPIRY
+        )
+
+        try:
+            email_sent = await send_password_reset_email(user.email, reset_token)
+            if not email_sent:
+                logger.error(f"Failed to send password reset email to {data.email}")
+        except Exception as e:
+            logger.error(f"Error sending password reset email to {data.email}: {str(e)}")
+
+    return JSONResponse(
+        content={
+            "message": "If an account with that email exists, a password reset link has been sent"
+        },
+        status_code=status.HTTP_200_OK,
+    )
+
+
+@router.post("/password-reset/confirm")
+async def confirm_password_reset(
+    data: PasswordResetConfirm, session: AsyncSession = Depends(get_db)  # noqa: B008
+):
+    """
+    Confirm password reset with token and new password.
+
+    - **token**: Reset token from email
+    - **new_password**: New password (min 8 chars, 1 uppercase, 1 number, 1 special)
+    """
+    is_valid, error = validate_password_strength(data.new_password)
+    if not is_valid:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+
+    user_id = await get_user_id_from_reset_token(data.token)
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    password_hash = hash_password(data.new_password)
+    await update_user_password(session, user_id, password_hash)
+
+    await delete_password_reset_token(data.token)
+
+    refresh_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    await revoke_all_user_sessions(user_id, refresh_ttl)
+
+    return JSONResponse(
+        content={"message": "Password reset successfully"},
         status_code=status.HTTP_200_OK,
     )

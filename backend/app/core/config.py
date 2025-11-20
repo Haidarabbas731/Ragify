@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str
     EMAIL_FROM_ADDRESS: str
     EMAIL_FROM_NAME: str = "AI Knowledge Base"
+    PASSWORD_RESET_TOKEN_EXPIRY: int = 900  # 15 minutes in seconds
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=True
