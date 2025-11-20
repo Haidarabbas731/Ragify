@@ -80,3 +80,8 @@ alembic/versions/*.pyc
 *.bak
 temp/
 tmp/
+
+
+.cursorrules
+CLAUDE.md
+MISSING_TASKS_ANALYSIS.md

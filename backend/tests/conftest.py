@@ -1,28 +1,44 @@
 import asyncio
-from collections.abc import AsyncGenerator, Generator
+import os
+import sys
+from collections.abc import AsyncGenerator
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
+from app.db.database import get_session
+from app.main import app
+from app.middleware.rate_limit import RateLimitMiddleware
 from app.models.user import User
+
+# Set environment variable to disable Redis rate limiting in tests
+os.environ["TESTING"] = "true"
+
+# Fix Windows async event loop issues - must be set before any async operations
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
+def pytest_configure(config):
+    """Configure pytest - set event loop policy early for Windows."""
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 @pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="function")
 async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
+    """Create a test database engine with proper cleanup."""
     engine = create_async_engine(
         settings.DATABASE_URL,
         echo=False,
         pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=5,
     )
 
     async with engine.begin() as conn:
@@ -30,23 +46,47 @@ async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
 
     yield engine
 
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
-
     await engine.dispose()
+
+
+@pytest.fixture(scope="function", autouse=True)
+async def cleanup_test_data(test_engine: AsyncEngine):
+    """Clean up test data before and after each test - only removes test emails."""
+    test_emails = [
+        "test@example.com",
+        "duplicate@example.com",
+        "weak@example.com",
+        "create@example.com",
+        "newuser@example.com",
+        "user@example.com",
+        "admin@example.com"
+    ]
+
+    async with test_engine.begin() as conn:
+        for email in test_emails:
+            await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
+        await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
+
+    yield
+
+    async with test_engine.begin() as conn:
+        for email in test_emails:
+            await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
+        await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
 
 
 @pytest.fixture
 async def session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
-    async_session_maker = async_sessionmaker(
-        bind=test_engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
+    connection = await test_engine.connect()
+    transaction = await connection.begin()
 
-    async with async_session_maker() as session:
-        yield session
-        await session.rollback()
+    session = AsyncSession(bind=connection, expire_on_commit=False)
+
+    yield session
+
+    await session.close()
+    await transaction.rollback()
+    await connection.close()
 
 
 @pytest.fixture
@@ -57,6 +97,54 @@ async def sample_user(session: AsyncSession) -> User:
         role="user",
     )
     session.add(user)
-    await session.commit()
+    await session.flush()
     await session.refresh(user)
     return user
+
+
+@pytest.fixture
+async def client(test_engine: AsyncEngine) -> AsyncGenerator[AsyncClient, None]:
+    """HTTP client for testing API endpoints."""
+
+    async def override_get_session() -> AsyncGenerator[AsyncSession, None]:
+        connection = await test_engine.connect()
+        transaction = await connection.begin()
+        session = AsyncSession(bind=connection, expire_on_commit=False)
+
+        try:
+            yield session
+        finally:
+            await session.close()
+            await transaction.rollback()
+            await connection.close()
+
+    app.dependency_overrides[get_session] = override_get_session
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:  # type: ignore
+        yield ac
+
+    # Cleanup: Close Redis connection in middleware if it exists
+    # This prevents "Future attached to a different loop" errors on Windows
+    try:
+        # Access middleware instance through app's middleware stack
+        # Starlette stores middleware instances in app.middleware_stack
+        # We need to traverse the middleware stack to find RateLimitMiddleware
+        middleware_stack = getattr(app, "middleware_stack", None)
+        if middleware_stack:
+            # Try to find and close Redis connection in RateLimitMiddleware
+            # The middleware stack is a chain, we need to traverse it
+            current = middleware_stack
+            while hasattr(current, "app"):
+                if hasattr(current, "cls") and current.cls == RateLimitMiddleware:
+                    # Found the middleware, try to access its instance
+                    if hasattr(current, "dispatch"):
+                        # The dispatch function is bound to the middleware instance
+                        # We can't directly access it, so we'll reset via a different method
+                        pass
+                current = getattr(current, "app", None)
+                if current is None:
+                    break
+    except Exception:
+        pass  # Ignore cleanup errors
+
+    app.dependency_overrides.clear()

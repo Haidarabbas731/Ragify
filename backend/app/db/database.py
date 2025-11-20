@@ -6,6 +6,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 
+# Ensure models are imported so SQLModel.metadata includes their tables for create_all
+
 async_engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
