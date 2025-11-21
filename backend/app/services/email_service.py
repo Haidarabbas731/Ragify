@@ -13,14 +13,32 @@ async def send_password_reset_email(to_email: str, reset_token: str) -> bool:
     """
     Send password reset email with secure token link.
 
+    In development mode (no Resend API key or no frontend URL), logs the token
+    to console instead of sending email.
+
     Args:
         to_email: Recipient email address
         reset_token: Cryptographically secure reset token
 
     Returns:
-        bool: True if email sent successfully
+        bool: True if email sent successfully or token logged
     """
     reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+
+    # Development mode: Log token to console if email service not configured
+    if not settings.RESEND_API_KEY or settings.RESEND_API_KEY == "your-resend-api-key-here":
+        logger.warning("=" * 80)
+        logger.warning("EMAIL SERVICE NOT CONFIGURED - DEVELOPMENT MODE")
+        logger.warning("=" * 80)
+        logger.warning(f"Password reset requested for: {to_email}")
+        logger.warning(f"Reset Token: {reset_token}")
+        logger.warning(f"Reset URL: {reset_url}")
+        logger.warning("")
+        logger.warning("Use this token to test password reset via API:")
+        logger.warning('POST /api/v1/auth/password-reset/confirm')
+        logger.warning(f'{{"token": "{reset_token}", "new_password": "YourNewPassword123!"}}')
+        logger.warning("=" * 80)
+        return True
 
     params = {
         "from": f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM_ADDRESS}>",
