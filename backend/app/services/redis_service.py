@@ -116,6 +116,29 @@ async def is_user_sessions_revoked(user_id: str) -> bool:
         await redis.aclose()
 
 
+async def clear_user_session_revocation(user_id: str) -> None:
+    """
+    Clear user session revocation flag to allow new logins.
+
+    This is used after password reset to allow the user to login with new password.
+
+    Args:
+        user_id: User ID
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+    redis = await get_redis()
+    try:
+        key = f"user_revoked:{user_id}"
+        result = await redis.delete(key)
+        logger.warning(
+            f"Cleared user session revocation for {user_id}. Key: {key}, Deleted: {result}"
+        )
+    finally:
+        await redis.aclose()
+
+
 async def store_token_pair(access_jti: str, refresh_jti: str, ttl: int) -> None:
     """
     Store mapping between access token JTI and refresh token JTI.
