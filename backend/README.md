@@ -84,7 +84,8 @@ REDIS_URL=redis://localhost:6379/0
 # Google Gemini (Get from https://aistudio.google.com)
 GOOGLE_API_KEY=your-google-api-key-here
 GEMINI_MODEL=gemini-2.0-flash-exp
-EMBEDDING_MODEL=models/text-embedding-004
+EMBEDDING_MODEL=models/gemini-embedding-001
+EMBEDDING_DIMENSION=1024  # Options: 768 (standard), 1024 (recommended), 3072 (max)
 
 # Milvus Vector DB (Zilliz Cloud - Free Tier)
 MILVUS_HOST=your-cluster.cloud.zilliz.com
@@ -196,11 +197,12 @@ uv run python scripts/seed_data.py
 
 ### What is the Worker?
 The ARQ worker processes **heavy background jobs** that are too slow for HTTP requests:
-- Document text extraction
+- Document text extraction (PDF, DOCX, TXT, MD)
 - Text chunking (1000 chars, 200 overlap)
-- Embedding generation (768-dim vectors)
-- Milvus vector storage
+- Embedding generation (1024-dim vectors with gemini-embedding-001)
+- Milvus vector storage with user isolation
 - Email sending
+- Document cleanup tasks
 
 ### Why Separate Process?
 ```
@@ -365,7 +367,7 @@ ADMIN_EMAIL=admin@example.com
 
 ### Core Models (Completed ✅)
 - **User**: Authentication, storage quotas, user status
-- **Document**: File metadata, processing status, B2 storage keys
+- **Document**: File metadata, processing status, B2 storage keys, chunk counts
 - **Collection**: Organize documents into groups
 - **Conversation**: Chat history with JSONB messages
 - **InviteCode**: Invite-only registration system (KB-XXXX-XXXX-XXXX)
@@ -373,9 +375,10 @@ ADMIN_EMAIL=admin@example.com
 
 ### Key Features
 - **Timezone-aware datetimes**: All timestamps use `TIMESTAMP WITH TIME ZONE`
-- **Soft deletes**: Documents marked as deleted, not removed
-- **Status tracking**: Document processing states (PROCESSING → ACTIVE → DELETED → ERROR)
+- **Soft deletes**: Documents marked as deleted, not removed immediately
+- **Status tracking**: Document processing states (PROCESSING → ACTIVE → ERROR → DELETED)
 - **JSONB fields**: Flexible metadata and message storage
+- **User isolation**: All vector data filtered by user_id in Milvus
 
 ---
 
@@ -471,10 +474,11 @@ uv sync --reinstall
 - **Vector DB**: Milvus (Zilliz Cloud)
 - **Storage**: Backblaze B2
 - **LLM**: Google Gemini 2.0 Flash
-- **Embeddings**: text-embedding-004 (768-dim)
-- **Background Jobs**: ARQ
+- **Embeddings**: gemini-embedding-001 (1024-dim)
+- **Background Jobs**: ARQ (async task queue)
 - **Auth**: JWT + Argon2
 - **Email**: Resend API
+- **Text Extraction**: PyPDF, python-docx
 - **Package Manager**: UV
 - **Linting**: Ruff
 - **Testing**: Pytest + pytest-asyncio
@@ -488,11 +492,16 @@ uv sync --reinstall
 | Max file size | 50MB |
 | Chunk size | 1000 characters |
 | Chunk overlap | 200 characters |
-| Embedding dimension | 768 |
+| Embedding dimension | 1024 (upgraded from 768) |
+| Embedding model | gemini-embedding-001 |
 | Storage quota (default) | 1GB per user |
 | JWT access token | 1 hour |
 | JWT refresh token | 7 days |
-| Rate limit | 100 requests/hour |
+| Rate limit (chat) | 100 requests/hour |
+| Rate limit (upload) | 10 documents/hour |
+| Concurrent uploads | 10 per user |
+| ARQ worker jobs | 10 concurrent |
+| ARQ job timeout | 1 hour |
 
 ---
 
@@ -508,7 +517,7 @@ uv sync --reinstall
 
 ## 🎯 Development Status
 
-### ✅ Completed (Phase 0)
+### ✅ Phase 0: Setup & Foundation (Completed)
 - [x] Project structure setup
 - [x] Database models (User, Document, Collection, Conversation, InviteCode, AdminAuditLog)
 - [x] Database session management (`database.py` with `init_db()`)
@@ -520,13 +529,55 @@ uv sync --reinstall
 - [x] Health check endpoint
 - [x] Bootstrap scripts
 
-### 🚧 In Progress
-- [ ] Pydantic schemas (request/response models)
-- [ ] CRUD services
-- [ ] Authentication endpoints
-- [ ] Document upload/management
-- [ ] RAG chat endpoints
-- [ ] Unit tests
+### ✅ Phase 1: Core Models (Completed)
+- [x] SQLModel database models with relationships
+- [x] Pydantic schemas (request/response models)
+- [x] Timezone-aware datetime handling
+- [x] JSONB metadata fields
+- [x] Status enums and validation
+
+### ✅ Phase 2: Authentication (Completed)
+- [x] User registration with invite codes
+- [x] Login with JWT tokens (access + refresh)
+- [x] Password reset flow with email
+- [x] Token refresh endpoint
+- [x] Logout with token blocklist
+- [x] Email templates (modern design)
+- [x] Middleware (rate limiting, security headers, size limits)
+
+### ✅ Phase 3: Storage Services (Completed)
+- [x] Backblaze B2 service (upload, download, delete)
+- [x] Milvus vector database service (insert, search, delete with user isolation)
+- [x] Google Gemini embedding service (gemini-embedding-001, 1024-dim)
+- [x] Redis service (caching, rate limiting, JWT blocklist)
+- [x] Storage quota management
+- [x] Singleton patterns for service reuse
+
+### ✅ Phase 4: Document Processing Pipeline (Completed)
+- [x] Text extraction utilities (PDF, DOCX, TXT, MD)
+- [x] Text chunking with metadata (1000 chars, 200 overlap)
+- [x] Document upload API endpoint
+- [x] ARQ background worker setup
+- [x] Document processing task (extract → chunk → embed → store)
+- [x] Document management endpoints (list, get, delete, retry, update)
+- [x] Soft delete with cleanup jobs
+- [x] Error handling with retry logic
+- [x] BytesIO support (in-memory processing)
+
+### 🚧 Phase 5: RAG Chat System (Next)
+- [ ] Chat endpoint with streaming responses
+- [ ] Vector similarity search
+- [ ] Context retrieval from Milvus
+- [ ] Conversation history management
+- [ ] Chat rate limiting
+
+### 📋 Deferred Tasks (from Phase 3 & 4)
+- [ ] Unit tests for storage services
+- [ ] Integration tests for document processing
+- [ ] Health check integration (B2, Milvus)
+- [ ] Rate limiting implementation
+- [ ] Orphaned job recovery
+- [ ] Scheduled cleanup jobs
 
 ---
 
@@ -556,4 +607,23 @@ This is a learning project. Contributions welcome!
 
 ---
 
-**Last Updated**: Phase 0 Completed - November 2025
+## 🎉 Recent Updates
+
+### Phase 4 Completion (November 2025)
+- ✅ Full document processing pipeline implemented
+- ✅ ARQ background worker for async processing
+- ✅ Text extraction from PDF, DOCX, TXT, MD files
+- ✅ BytesIO-based in-memory file handling
+- ✅ Embedding model upgraded to gemini-embedding-001 (1024-dim)
+- ✅ 6 document management API endpoints
+- ✅ Soft delete pattern with cleanup jobs
+- ✅ Error recovery with retry functionality
+
+### Test Configuration Fixed
+- ✅ Windows asyncio event loop issues resolved
+- ✅ pytest-asyncio configuration updated
+- ✅ NullPool added to prevent connection pool conflicts
+
+---
+
+**Last Updated**: Phase 4 Completed - November 2025
