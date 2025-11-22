@@ -72,6 +72,28 @@ async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
     return result.one_or_none()
 
 
+async def check_user_storage_quota(
+    session: AsyncSession, user_id: str, file_size_bytes: int
+) -> bool:
+    """
+    Check if user has enough storage quota for file.
+
+    Args:
+        session: Database session
+        user_id: User ID
+        file_size_bytes: Size of file to upload
+
+    Returns:
+        bool: True if user has enough quota, False otherwise
+    """
+    user = await get_user_by_id(session, user_id)
+    if not user:
+        return False
+
+    new_usage = user.storage_used_bytes + file_size_bytes
+    return new_usage <= user.storage_limit_bytes
+
+
 async def update_user_storage(
     session: AsyncSession, user_id: str, delta_bytes: int
 ) -> User:
