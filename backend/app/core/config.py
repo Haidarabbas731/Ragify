@@ -40,7 +40,9 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: str
     GEMINI_MODEL: str = "gemini-2.0-flash-exp"
     EMBEDDING_MODEL: str = "models/gemini-embedding-001"
-    EMBEDDING_DIMENSION: int = 768  # Can be increased up to 3072 for better quality
+    # Embedding dimension: 768 (recommended), 1024 (better quality), 3072 (maximum)
+    # Higher = better semantic understanding but slower search and more storage
+    EMBEDDING_DIMENSION: int = 768
 
     # File Upload
     MAX_FILE_SIZE_MB: int = 50
