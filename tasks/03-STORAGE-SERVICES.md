@@ -46,10 +46,10 @@ Example: feat(storage): implement B2 upload service
 
 ### Storage Service Files
 **PRD Reference:** Section 11.1 (Project Structure - services/)
-- [ ] Verify all service files from Phase 1-2 exist (user, document, collection, invite, auth)
-- [ ] Create `backend/app/services/b2_service.py` (this section)
-- [ ] Create `backend/app/services/milvus_service.py` (section 3.2)
-- [ ] Create `backend/app/services/embedding_service.py` (section 3.3)
+- [x] Verify all service files from Phase 1-2 exist (user, document, collection, invite, auth) ✅
+- [x] Create `backend/app/services/b2_service.py` (this section) ✅
+- [x] Create `backend/app/services/milvus_service.py` (section 3.2) ✅
+- [x] Create `backend/app/services/embedding_service.py` (section 3.3) ✅
 
 ---
 
@@ -216,76 +216,78 @@ Example: feat(storage): implement B2 upload service
 
 ### Redis Client
 **PRD Reference:** Section 5 (Technical Architecture - Redis)
-- [ ] Verify `backend/app/services/redis_service.py` exists
-- [ ] Ensure basic get/set/delete operations work
+- [x] Verify `backend/app/services/redis_service.py` exists (from Phase 2) ✅
+- [x] Ensure basic get/set/delete operations work (from Phase 2) ✅
 
-### Session Management
-- [ ] Implement `store_session(user_id, session_data, ttl=3600)`
-- [ ] Session key: `session:{user_id}:{session_id}`
-- [ ] Store session metadata (IP, user agent, login time)
-- [ ] Test session storage
+### Session Management **[DEFERRED TO PHASE 5]**
+- [ ] Implement `store_session(user_id, session_data, ttl=3600)` - **Phase 5**
+- [ ] Session key: `session:{user_id}:{session_id}` - **Phase 5**
+- [ ] Store session metadata (IP, user agent, login time) - **Phase 5**
+- [ ] Test session storage - **Phase 5**
 
-### Rate Limiting
+### Rate Limiting **[DEFERRED TO PHASE 4]**
 **PRD Reference:** Section 11.4 (Rate Limit Hierarchy)
-- [ ] Implement `check_rate_limit(key, max_requests, window_seconds) -> bool`
-- [ ] Use Redis INCR with EXPIRE
-- [ ] Return False if limit exceeded
-- [ ] Implement hierarchical rate limits:
+- [ ] Implement `check_rate_limit(key, max_requests, window_seconds) -> bool` - **Phase 4**
+- [ ] Use Redis INCR with EXPIRE - **Phase 4**
+- [ ] Return False if limit exceeded - **Phase 4**
+- [ ] Implement hierarchical rate limits: - **Phase 4**
   - Document upload: 10 per hour
   - Chat query: 100 per hour
   - Authentication: 5 failed attempts per 15 minutes
-- [ ] Test rate limiting
+- [ ] Test rate limiting - **Phase 4**
 
-### Cache Operations
-- [ ] Implement `cache_get(key) -> Any`
-- [ ] Implement `cache_set(key, value, ttl)`
-- [ ] Implement `cache_delete(key)`
-- [ ] Test caching
-
----
-
-## 3.6 Testing Storage Services
-
-### B2 Service Tests
-- [ ] Create `backend/tests/test_b2_service.py`
-- [ ] Test file upload with mock data
-- [ ] Test pre-signed URL generation
-- [ ] Test file deletion
-- [ ] Test storage quota checking
-
-### Milvus Service Tests
-- [ ] Create `backend/tests/test_milvus_service.py`
-- [ ] Test collection creation
-- [ ] Test chunk insertion
-- [ ] Test vector search with sample embeddings
-- [ ] Test deletion by document_id
-- [ ] Test deletion by user_id
-- [ ] Test user data isolation (user A cannot see user B's chunks)
-
-### Embedding Service Tests
-- [ ] Create `backend/tests/test_embedding_service.py`
-- [ ] Test embedding generation with sample text
-- [ ] Test batch embedding generation
-- [ ] Test embedding dimension (must be 768)
-- [ ] Test error handling for API failures
-
-### Redis Service Tests
-- [ ] Test rate limiting enforcement
-- [ ] Test session storage and retrieval
-- [ ] Test cache operations
+### Cache Operations **[DEFERRED TO PHASE 5]**
+- [ ] Implement `cache_get(key) -> Any` - **Phase 5**
+- [ ] Implement `cache_set(key, value, ttl)` - **Phase 5**
+- [ ] Implement `cache_delete(key)` - **Phase 5**
+- [ ] Test caching - **Phase 5**
 
 ---
 
-## 3.7 Integration with Health Check
+## 3.6 Testing Storage Services **[DEFERRED TO PHASE 4]**
 
-### Update Health Check Endpoint
+**Note:** Unit tests for storage services will be implemented in Phase 4 alongside integration tests with document processing.
+
+### B2 Service Tests **[Phase 4]**
+- [ ] Create `backend/tests/test_b2_service.py` - **Phase 4**
+- [ ] Test file upload with mock data - **Phase 4**
+- [ ] Test pre-signed URL generation - **Phase 4**
+- [ ] Test file deletion - **Phase 4**
+- [ ] Test storage quota checking - **Phase 4**
+
+### Milvus Service Tests **[Phase 4]**
+- [ ] Create `backend/tests/test_milvus_service.py` - **Phase 4**
+- [ ] Test collection creation - **Phase 4**
+- [ ] Test chunk insertion - **Phase 4**
+- [ ] Test vector search with sample embeddings - **Phase 4**
+- [ ] Test deletion by document_id - **Phase 4**
+- [ ] Test deletion by user_id - **Phase 4**
+- [ ] Test user data isolation (user A cannot see user B's chunks) - **Phase 4**
+
+### Embedding Service Tests **[Phase 4]**
+- [ ] Create `backend/tests/test_embedding_service.py` - **Phase 4**
+- [ ] Test embedding generation with sample text - **Phase 4**
+- [ ] Test batch embedding generation - **Phase 4**
+- [ ] Test embedding dimension (must be 1024) - **Phase 4** *(updated from 768)*
+- [ ] Test error handling for API failures - **Phase 4**
+
+### Redis Service Tests **[Phase 5]**
+- [ ] Test rate limiting enforcement - **Phase 4/5**
+- [ ] Test session storage and retrieval - **Phase 5**
+- [ ] Test cache operations - **Phase 5**
+
+---
+
+## 3.7 Integration with Health Check **[DEFERRED TO PHASE 4]**
+
+### Update Health Check Endpoint **[Phase 4]**
 **PRD Reference:** Section 9.11 (Health Check API)
-- [ ] Update `GET /api/v1/health` endpoint
-- [ ] Add B2 service health check
-- [ ] Add Milvus service health check
-- [ ] Add Redis service health check
-- [ ] Return service status: `{"b2_storage": "up", "milvus": "up", "redis": "up"}`
-- [ ] Test health check returns all services
+- [ ] Update `GET /api/v1/health` endpoint - **Phase 4**
+- [ ] Add B2 service health check - **Phase 4**
+- [ ] Add Milvus service health check - **Phase 4**
+- [ ] Add Redis service health check - **Phase 4**
+- [ ] Return service status: `{"b2_storage": "up", "milvus": "up", "redis": "up"}` - **Phase 4**
+- [ ] Test health check returns all services - **Phase 4**
 
 ---
 
