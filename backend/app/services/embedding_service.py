@@ -1,6 +1,6 @@
 import logging
 
-import google.generativeai as genai
+import google.generativeai as genai  # type: ignore
 
 from app.core.config import settings
 
@@ -27,7 +27,7 @@ class EmbeddingService:
             Exception: If Gemini API key is invalid
         """
         try:
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
+            genai.configure(api_key=settings.GOOGLE_API_KEY)  # type: ignore
             self._configured = True
             logger.info(f"Gemini API configured successfully. Model: {self.model_name}")
             return True
@@ -62,7 +62,7 @@ class EmbeddingService:
             raise ValueError("Text cannot be empty")
 
         try:
-            result = genai.embed_content(
+            result = genai.embed_content(  # type: ignore
                 model=self.model_name,
                 content=text,
                 task_type="retrieval_document",  # For document indexing
@@ -111,7 +111,7 @@ class EmbeddingService:
             # Generate embeddings for valid texts only
             embeddings = []
             for _i, text in valid_texts:
-                result = genai.embed_content(
+                result = genai.embed_content(  # type: ignore
                     model=self.model_name,
                     content=text,
                     task_type="retrieval_document",
@@ -152,7 +152,7 @@ class EmbeddingService:
             raise ValueError("Query cannot be empty")
 
         try:
-            result = genai.embed_content(
+            result = genai.embed_content(  # type: ignore
                 model=self.model_name,
                 content=query,
                 task_type="retrieval_query",  # For query matching
