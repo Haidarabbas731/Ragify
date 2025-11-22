@@ -143,15 +143,29 @@ class B2Service:
         self._ensure_authorized()
 
         try:
-            # Download file from B2 - use save_to method with BytesIO
-            from io import BytesIO
-            buffer = BytesIO()
-            downloaded_file = self._bucket.download_file_by_name(storage_key)  # type:ignore
-            downloaded_file.save_to(buffer)  # type:ignore
-            content = buffer.getvalue()
+            # Download file from B2 using download_file_by_name
+            # This returns a tuple: (download_dest, download_version)
+            import os
+            import tempfile
 
-            logger.info(f"File downloaded from B2: {storage_key} ({len(content)} bytes)")
-            return content
+            # Create a temporary file to download into
+            with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+                tmp_path = tmp_file.name
+
+            try:
+                # Download to temporary file
+                self._bucket.download_file_by_name(storage_key).save_to(tmp_path)  # type:ignore
+
+                # Read the content
+                with open(tmp_path, 'rb') as f:
+                    content = f.read()
+
+                logger.info(f"File downloaded from B2: {storage_key} ({len(content)} bytes)")
+                return content
+            finally:
+                # Clean up temporary file
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
 
         except Exception as e:
             logger.error(f"B2 download failed for {storage_key}: {e}")
