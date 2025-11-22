@@ -15,7 +15,7 @@ from app.core.config import settings
 from app.models.document import Document, DocumentStatus
 from app.models.user import User
 from app.schemas.document import DocumentResponse, DocumentsListResponse
-from app.services.b2_service import B2Service
+from app.services.b2_service import get_b2_service
 from app.tasks.worker import get_arq_redis
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -89,15 +89,15 @@ async def upload_document(
 
     # Check user storage quota
     new_storage_used = current_user.storage_used_bytes + file_size
-    if new_storage_used > current_user.storage_quota_bytes:
-        remaining = current_user.storage_quota_bytes - current_user.storage_used_bytes
+    if new_storage_used > current_user.storage_limit_bytes:
+        remaining = current_user.storage_limit_bytes - current_user.storage_used_bytes
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"Storage quota exceeded. Remaining: {remaining} bytes, Required: {file_size} bytes",
         )
 
     # Upload to B2 - B2Service generates the storage_key internally
-    b2_service = B2Service()
+    b2_service = await get_b2_service()
     try:
         storage_key = await b2_service.upload_file(file, current_user.user_id)
     except Exception as e:
