@@ -7,6 +7,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.pool import NullPool
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -30,15 +31,17 @@ def pytest_configure(config):
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
-    """Create a test database engine with proper cleanup."""
+    """Create a test database engine with proper cleanup.
+
+    Uses NullPool to avoid event loop issues on Windows.
+    Each test gets a fresh engine to prevent 'attached to different loop' errors.
+    """
     engine = create_async_engine(
         settings.DATABASE_URL,
         echo=False,
-        pool_pre_ping=True,
-        pool_size=10,
-        max_overflow=5,
+        poolclass=NullPool,  # Disable connection pooling to avoid event loop issues
     )
 
     async with engine.begin() as conn:
@@ -49,7 +52,7 @@ async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
     await engine.dispose()
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=False)  # Disabled autouse to prevent cleanup issues
 async def cleanup_test_data(test_engine: AsyncEngine):
     """Clean up test data before and after each test - only removes test emails."""
     test_emails = [
@@ -66,6 +69,8 @@ async def cleanup_test_data(test_engine: AsyncEngine):
         for email in test_emails:
             await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
         await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
+        await conn.execute(text("DELETE FROM documents"))
+        await conn.execute(text("DELETE FROM collections"))
 
     yield
 
@@ -73,20 +78,25 @@ async def cleanup_test_data(test_engine: AsyncEngine):
         for email in test_emails:
             await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
         await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
+        await conn.execute(text("DELETE FROM documents"))
+        await conn.execute(text("DELETE FROM collections"))
 
 
 @pytest.fixture
 async def session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
-    connection = await test_engine.connect()
-    transaction = await connection.begin()
+    """Create a test database session with transaction rollback."""
+    async with test_engine.connect() as connection:
+        async with connection.begin() as transaction:
+            session = AsyncSession(
+                bind=connection,
+                expire_on_commit=False,
+                join_transaction_mode="create_savepoint",  # Use savepoints for nested transactions
+            )
 
-    session = AsyncSession(bind=connection, expire_on_commit=False)
+            yield session
 
-    yield session
-
-    await session.close()
-    await transaction.rollback()
-    await connection.close()
+            await session.close()
+            await transaction.rollback()
 
 
 @pytest.fixture
