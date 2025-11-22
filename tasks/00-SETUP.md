@@ -229,13 +229,13 @@ Example: feat(auth): add JWT authentication
 
 ### Git Hooks (Optional)
 - [x] Set up pre-commit hook for Ruff
-- [ ] Set up pre-commit hook for Biome
+- [ ] Set up pre-commit hook for Biome **(Deferred - no frontend yet)**
 - [x] Set up pre-commit hook for tests (pytest)
 
 ### Documentation
 - [x] Create `backend/README.md` with setup instructions
-- [ ] Create `frontend/README.md` with setup instructions
-- [ ] Create root `README.md` with project overview
+- [ ] Create `frontend/README.md` with setup instructions **(Deferred - no frontend yet)**
+- [x] Create root `README.md` with project overview ✅
 - [x] Document environment variables in `.env.example`
 
 ---

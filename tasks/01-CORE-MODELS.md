@@ -225,8 +225,8 @@ Example: feat(models): add User model
 ### API Dependencies
 - [x] Create `backend/app/api/dependencies.py`
 - [x] Import `get_session` from db.database and create `get_db()` wrapper
-- [ ] Create placeholder for `get_current_user` (will implement in Phase 2)
-- [ ] Create placeholder for `get_current_admin` (will implement in Phase 2)
+- [x] Create placeholder for `get_current_user` *(Implemented in Phase 2)* ✅
+- [x] Create placeholder for `get_current_admin` *(Implemented in Phase 2)* ✅
 
 ---
 
@@ -274,12 +274,12 @@ Example: feat(models): add User model
 
 ### Additional Services (To be implemented in later phases)
 **Note:** These services belong in Phase 2-7 but are listed here for reference
-- [ ] `auth_service.py` - Authentication logic (Phase 2)
-- [ ] `embedding_service.py` - Embedding generation (Phase 4)
-- [ ] `milvus_service.py` - Milvus operations (Phase 3/4)
-- [ ] `b2_service.py` - Backblaze B2 operations (Phase 3)
+- [x] `auth_service.py` - Authentication logic *(Phase 2 - Done)* ✅
+- [x] `embedding_service.py` - Embedding generation *(Phase 3 - Done)* ✅
+- [x] `milvus_service.py` - Milvus operations *(Phase 3 - Done)* ✅
+- [x] `b2_service.py` - Backblaze B2 operations *(Phase 3 - Done)* ✅
 - [ ] `chat_service.py` - RAG chat logic (Phase 5)
-- [ ] `email_service.py` - Email sending via Resend (Phase 6)
+- [x] `email_service.py` - Email sending via Resend *(Phase 2 - Done)* ✅
 - [ ] `admin_service.py` - Admin operations (Phase 7)
 
 ---
