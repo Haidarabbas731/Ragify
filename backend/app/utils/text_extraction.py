@@ -20,11 +20,8 @@ def extract_text_from_pdf(file_path: str | BinaryIO) -> str:
         ValueError: If PDF is encrypted or corrupted
     """
     try:
-        # Handle both file paths and file-like objects
-        if isinstance(file_path, (str, Path)):
-            reader = pypdf.PdfReader(file_path)
-        else:
-            reader = pypdf.PdfReader(file_path)
+        # pypdf.PdfReader handles both file paths and file-like objects
+        reader = pypdf.PdfReader(file_path)
 
         if reader.is_encrypted:
             raise ValueError("PDF is encrypted and cannot be processed")
@@ -37,7 +34,7 @@ def extract_text_from_pdf(file_path: str | BinaryIO) -> str:
 
         return "\n".join(text_parts)
 
-    except pypdf.errors.PdfReadError as e:
+    except pypdf.errors.PdfReadError as e:  # type:ignore
         raise ValueError(f"Corrupted or invalid PDF file: {str(e)}") from e
 
 
@@ -89,22 +86,24 @@ def extract_text_from_txt(file_path: str | BinaryIO) -> str:
     Raises:
         ValueError: If file cannot be read
     """
-    encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+    encodings = ["utf-8", "latin-1", "cp1252", "iso-8859-1"]
 
     # Handle file-like objects (BytesIO)
-    if isinstance(file_path, (BytesIO, BinaryIO)) or hasattr(file_path, 'read'):
-        content = file_path.read()
+    if isinstance(file_path, (BytesIO, BinaryIO)) or hasattr(file_path, "read"):
+        content = file_path.read()  # type:ignore
         if isinstance(content, str):
             return content
 
         # Try to decode bytes
         for encoding in encodings:
             try:
-                return content.decode(encoding)
+                return content.decode(encoding)  # type:ignore
             except (UnicodeDecodeError, AttributeError):
                 continue
 
-        raise ValueError(f"Could not decode file with any supported encoding: {encodings}")
+        raise ValueError(
+            f"Could not decode file with any supported encoding: {encodings}"
+        )
 
     # Handle file paths
     for encoding in encodings:
@@ -128,9 +127,9 @@ def detect_file_type(file_path: str) -> str | None:
         File extension (pdf, docx, txt, md) or None if invalid
     """
     path = Path(file_path)
-    extension = path.suffix.lower().lstrip('.')
+    extension = path.suffix.lower().lstrip(".")
 
-    valid_extensions = {'pdf', 'docx', 'txt', 'md'}
+    valid_extensions = {"pdf", "docx", "txt", "md"}
 
     if extension in valid_extensions:
         return extension
@@ -138,7 +137,9 @@ def detect_file_type(file_path: str) -> str | None:
     return None
 
 
-def extract_text(file_path: str | BinaryIO, file_type: str | None = None, filename: str | None = None) -> str:
+def extract_text(
+    file_path: str | BinaryIO, file_type: str | None = None, filename: str | None = None
+) -> str:
     """
     Extract text from file based on type.
 
@@ -165,11 +166,11 @@ def extract_text(file_path: str | BinaryIO, file_type: str | None = None, filena
     if file_type is None:
         raise ValueError(f"Unsupported file type for: {file_path}")
 
-    if file_type == 'pdf':
+    if file_type == "pdf":
         return extract_text_from_pdf(file_path)
-    elif file_type == 'docx':
+    elif file_type == "docx":
         return extract_text_from_docx(file_path)
-    elif file_type in ('txt', 'md'):
+    elif file_type in ("txt", "md"):
         return extract_text_from_txt(file_path)
     else:
         raise ValueError(f"Unsupported file type: {file_type}")
