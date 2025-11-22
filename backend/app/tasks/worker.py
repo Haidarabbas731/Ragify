@@ -76,12 +76,13 @@ class WorkerSettings:
     max_tries = 3
     retry_jobs = True
 
-    # Task functions (will be imported)
-    functions = []
+    # Task functions - imported here to ensure they're registered
+    @staticmethod
+    def functions():
+        """Import and return task functions to avoid circular imports."""
+        from app.tasks.document_processing import process_document
+
+        return [process_document]
 
     # Cron jobs for scheduled tasks
     cron_jobs = []
-
-
-# Note: Task functions will be imported and added to WorkerSettings.functions
-# in document_processing.py and cleanup.py to avoid circular imports
