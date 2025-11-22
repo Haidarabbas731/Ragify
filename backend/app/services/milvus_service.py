@@ -22,7 +22,8 @@ class MilvusService:
     def __init__(self):
         """Initialize Milvus client."""
         self.client: MilvusClient | None = None
-        self.collection_name = "knowledge_base_documents"
+        self.collection_name = settings.MILVUS_COLLECTION
+        self.embedding_dim = settings.EMBEDDING_DIMENSION
         self.collection: Collection | None = None
         self._connected = False
 
@@ -69,7 +70,7 @@ class MilvusService:
         - chunk_id: Primary key (VARCHAR 36)
         - user_id: User ID for isolation (VARCHAR 36)
         - document_id: Reference to document (VARCHAR 36)
-        - embedding: Vector embedding (FLOAT_VECTOR 768)
+        - embedding: Vector embedding (FLOAT_VECTOR from config)
         - chunk_text: Original text chunk (VARCHAR 65535)
         - chunk_index: Chunk position in document (INT64)
         """
@@ -85,7 +86,11 @@ class MilvusService:
             ),
             FieldSchema(name="user_id", dtype=DataType.VARCHAR, max_length=36),
             FieldSchema(name="document_id", dtype=DataType.VARCHAR, max_length=36),
-            FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=768),
+            FieldSchema(
+                name="embedding",
+                dtype=DataType.FLOAT_VECTOR,
+                dim=self.embedding_dim,
+            ),
             FieldSchema(name="chunk_text", dtype=DataType.VARCHAR, max_length=65535),
             FieldSchema(name="chunk_index", dtype=DataType.INT64),
         ]
@@ -104,7 +109,9 @@ class MilvusService:
             "params": {"nlist": 128},  # Number of clusters
         }
 
-        self.collection.create_index(field_name="embedding", index_params=index_params)
+        self.collection.create_index(
+            field_name="embedding", index_params=index_params
+        )  # type:ignore
         logger.info(f"Collection '{self.collection_name}' created with IVF_FLAT index")
 
     async def insert_chunks(
@@ -123,7 +130,7 @@ class MilvusService:
             chunk_ids: List of chunk IDs
             user_id: User ID for isolation
             document_id: Document ID reference
-            embeddings: List of 768-dim embedding vectors
+            embeddings: List of embedding vectors (dimension from config)
             chunk_texts: List of original text chunks
             chunk_indices: List of chunk positions
 
@@ -155,8 +162,8 @@ class MilvusService:
             ]
 
             # Insert into collection
-            self.collection.insert(data)
-            self.collection.flush()
+            self.collection.insert(data)  # type:ignore
+            self.collection.flush()  # type:ignore
 
             logger.info(
                 f"Inserted {len(chunk_ids)} chunks for document {document_id} (user {user_id})"
@@ -179,7 +186,7 @@ class MilvusService:
 
         Args:
             user_id: User ID for isolation
-            query_embedding: Query vector (768-dim)
+            query_embedding: Query vector (dimension from config)
             top_k: Number of results to return (default: 5)
             document_ids: Optional filter by document IDs
 
@@ -193,14 +200,16 @@ class MilvusService:
 
         try:
             # Load collection into memory for search
-            self.collection.load()
+            self.collection.load()  # type:ignore
 
             # Build filter expression for user isolation
             filter_expr = f"user_id == '{user_id}'"
 
             # Add document filter if specified
             if document_ids:
-                doc_filter = " or ".join([f"document_id == '{d}'" for d in document_ids])
+                doc_filter = " or ".join(
+                    [f"document_id == '{d}'" for d in document_ids]
+                )
                 filter_expr += f" and ({doc_filter})"
 
             # Search parameters
@@ -210,7 +219,7 @@ class MilvusService:
             }
 
             # Perform search
-            results = self.collection.search(
+            results = self.collection.search(  # type:ignore
                 data=[query_embedding],
                 anns_field="embedding",
                 param=search_params,
@@ -226,7 +235,7 @@ class MilvusService:
 
             # Format results
             formatted_results = []
-            for hits in results:
+            for hits in results:  # type:ignore
                 for hit in hits:
                     formatted_results.append(
                         {
@@ -264,8 +273,8 @@ class MilvusService:
 
         try:
             filter_expr = f"document_id == '{document_id}'"
-            self.collection.delete(filter_expr)
-            self.collection.flush()
+            self.collection.delete(filter_expr)  # type:ignore
+            self.collection.flush()  # type:ignore
 
             logger.info(f"Deleted chunks for document {document_id}")
             return True
@@ -291,8 +300,8 @@ class MilvusService:
 
         try:
             filter_expr = f"user_id == '{user_id}'"
-            self.collection.delete(filter_expr)
-            self.collection.flush()
+            self.collection.delete(filter_expr)  # type:ignore
+            self.collection.flush()  # type:ignore
 
             logger.info(f"Deleted all chunks for user {user_id}")
             return True
@@ -318,11 +327,11 @@ class MilvusService:
 
         try:
             filter_expr = f"document_id == '{document_id}'"
-            query_result = self.collection.query(
+            query_result = self.collection.query(  # type:ignore
                 expr=filter_expr, output_fields=["chunk_id"]
             )
 
-            count = len(query_result)
+            count = len(query_result)  # type:ignore
             logger.info(f"Document {document_id} has {count} chunks")
             return count
 
