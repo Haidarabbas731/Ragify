@@ -17,6 +17,11 @@ async_engine: AsyncEngine = create_async_engine(
     pool_recycle=3600,
 )
 
+# Module-level session maker for background tasks
+async_session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
+    bind=async_engine, class_=AsyncSession, expire_on_commit=False
+)
+
 
 async def init_db() -> None:
     """Create all database tables."""
@@ -33,9 +38,5 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         async def get_users(session: AsyncSession = Depends(get_session)):
             ...
     """
-    async_session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
-        bind=async_engine, class_=AsyncSession, expire_on_commit=False
-    )
-
     async with async_session_maker() as session:
         yield session
