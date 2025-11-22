@@ -538,33 +538,33 @@ headers={"Authorization": f"Bearer {access_token}"}
 
 ### Unit Tests
 
-- [ ] Create `backend/tests/test_auth.py`
-- [ ] Test password hashing and verification
-- [ ] Test JWT token creation and validation
-- [ ] Test invite code generation and validation
-- [ ] Test token blocklist functionality
+- [x] Create `backend/tests/test_auth.py` ✅
+- [x] Test password hashing and verification ✅
+- [x] Test JWT token creation and validation ✅
+- [x] Test invite code generation and validation ✅
+- [x] Test token blocklist functionality ✅
 
 ### Integration Tests
 
-- [ ] Test full registration flow (valid invite code)
-- [ ] Test registration with invalid invite code
-- [ ] Test registration with expired invite code
-- [ ] Test registration with used-up invite code
-- [ ] Test login with valid credentials
-- [ ] Test login with invalid credentials
-- [ ] Test token refresh
-- [ ] Test logout
-- [ ] Test protected endpoint access
-- [ ] Test admin-only endpoint access
+- [x] Test full registration flow (valid invite code) ✅
+- [ ] Test registration with invalid invite code *(Deferred - see test improvements below)*
+- [ ] Test registration with expired invite code *(Deferred - see test improvements below)*
+- [ ] Test registration with used-up invite code *(Deferred - see test improvements below)*
+- [x] Test login with valid credentials ✅
+- [ ] Test login with invalid credentials *(Deferred - see test improvements below)*
+- [ ] Test token refresh *(Deferred - see test improvements below)*
+- [ ] Test logout *(Deferred - see test improvements below)*
+- [ ] Test protected endpoint access *(Deferred - Phase 4 integration tests)*
+- [ ] Test admin-only endpoint access *(Deferred - Phase 7)*
 
 ### Security Tests
 
-- [ ] Test password strength validation
-- [ ] Test JWT token expiration
-- [ ] Test token blocklist prevents reuse
-- [ ] Test concurrent invite code usage
-- [ ] Test password reset rate limiting
-- [ ] Test password reset token single-use
+- [x] Test password strength validation ✅
+- [ ] Test JWT token expiration *(Deferred - Phase 4)*
+- [ ] Test token blocklist prevents reuse *(Deferred - Phase 4)*
+- [ ] Test concurrent invite code usage *(Deferred - Phase 4)*
+- [ ] Test password reset rate limiting *(Deferred - Phase 4)*
+- [ ] Test password reset token single-use *(Deferred - Phase 4)*
 
 ### Test Infrastructure Improvements
 
