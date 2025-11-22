@@ -1,9 +1,35 @@
 # Phase 4: Document Processing Pipeline
 
-**Priority:** Critical  
-**Estimated Time:** 3-4 days  
-**Dependencies:** Phase 3 (Storage Services)  
+**Priority:** Critical
+**Estimated Time:** 3-4 days
+**Dependencies:** Phase 3 (Storage Services)
 **PRD Reference:** Section 7.1 (Document Upload Flow), Section 11.3 (Background Worker - arq), Section 8.1 (Document Management)
+
+---
+
+## 🔄 PHASE 3 DEFERRED TASKS - COMPLETE THESE AFTER PHASE 4
+
+**IMPORTANT:** After completing Phase 4, return to Phase 3 and complete these deferred tasks:
+
+### From Phase 3 (tasks/03-STORAGE-SERVICES.md):
+1. **Unit Tests** (Section 3.6):
+   - [ ] Create `backend/tests/test_b2_service.py`
+   - [ ] Create `backend/tests/test_milvus_service.py`
+   - [ ] Create `backend/tests/test_embedding_service.py`
+   - [ ] Test user data isolation in Milvus
+   - [ ] Test all storage service operations
+
+2. **Health Check Integration** (Section 3.7):
+   - [ ] Update `GET /api/v1/health` endpoint
+   - [ ] Add B2, Milvus, Redis health checks
+   - [ ] Return service status for all storage services
+
+3. **Rate Limiting** (Section 3.5):
+   - [ ] Implement `check_rate_limit()` in Redis service
+   - [ ] Add rate limits for document upload (10/hour)
+   - [ ] Add rate limits for chat queries (100/hour)
+
+**Why After Phase 4?** These tasks require the full document processing pipeline to be properly tested and integrated. It's more efficient to test storage services alongside document upload/processing rather than in isolation.
 
 ---
 
@@ -352,6 +378,23 @@ Before moving to Phase 5, verify:
 - [ ] Can upload a PDF and see it processed
 - [ ] Can list documents
 - [ ] Can delete document
+
+---
+
+## 🔄 AFTER COMPLETING PHASE 4
+
+**CRITICAL REMINDER:** Before moving to Phase 5, go back to Phase 3 and complete the deferred tasks:
+
+### ✅ Return to Phase 3 (tasks/03-STORAGE-SERVICES.md):
+1. ✅ Complete Section 3.6 - Testing Storage Services
+2. ✅ Complete Section 3.7 - Health Check Integration
+3. ✅ Complete Section 3.5 - Rate Limiting
+
+**These tasks are now easier to complete because:**
+- You have real document processing to test against
+- Storage services are being used in production flow
+- Health checks can verify the entire pipeline
+- Rate limits can be tested with actual uploads
 
 ---
 
