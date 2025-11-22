@@ -6,7 +6,7 @@ from redis.asyncio import Redis
 from sqlalchemy import text
 
 from app.api.exceptions import register_exception_handlers
-from app.api.v1 import auth
+from app.api.v1 import auth, documents
 from app.api.v1.admin import invite_codes
 from app.core.config import settings
 from app.core.logging import configure_logging
@@ -144,6 +144,7 @@ async def health_check():
 
 # Register API routes
 app.include_router(auth.router, prefix="/api/v1", tags=["authentication"])
+app.include_router(documents.router, prefix="/api/v1")
 app.include_router(invite_codes.router, prefix="/api/v1/admin")
 
 

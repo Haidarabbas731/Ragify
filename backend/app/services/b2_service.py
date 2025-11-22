@@ -15,7 +15,7 @@ class B2Service:
     def __init__(self):
         """Initialize B2 API client with credentials from settings."""
         self.info = InMemoryAccountInfo()
-        self.api = B2Api(self.info)
+        self.api = B2Api(self.info)  # type:ignore
         self._authorized = False
         self._bucket = None
 
@@ -37,7 +37,9 @@ class B2Service:
             )
             self._bucket = self.api.get_bucket_by_name(settings.B2_BUCKET_NAME)
             self._authorized = True
-            logger.info(f"B2 authorized successfully. Bucket: {settings.B2_BUCKET_NAME}")
+            logger.info(
+                f"B2 authorized successfully. Bucket: {settings.B2_BUCKET_NAME}"
+            )
             return True
         except Exception as e:
             logger.error(f"B2 authorization failed: {e}")
@@ -73,7 +75,7 @@ class B2Service:
             content = await file.read()
 
             # Upload to B2
-            self._bucket.upload_bytes(
+            self._bucket.upload_bytes(  # type:ignore
                 data_bytes=content,
                 file_name=storage_key,
             )
@@ -87,7 +89,9 @@ class B2Service:
         finally:
             await file.seek(0)  # Reset file pointer
 
-    async def generate_presigned_url(self, storage_key: str, expiration: int = 900) -> str:
+    async def generate_presigned_url(
+        self, storage_key: str, expiration: int = 900
+    ) -> str:
         """
         Generate presigned download URL for file.
 
@@ -109,12 +113,14 @@ class B2Service:
             )
 
             # B2 download URLs with authorization
-            auth_token = self.api.get_download_authorization(
+            auth_token = self.api.get_download_authorization(  # type:ignore
                 settings.B2_BUCKET_NAME, storage_key, expiration
             )
 
             presigned_url = f"{download_url}?Authorization={auth_token}"
-            logger.info(f"Generated presigned URL for {storage_key} (expires in {expiration}s)")
+            logger.info(
+                f"Generated presigned URL for {storage_key} (expires in {expiration}s)"
+            )
             return presigned_url
 
         except Exception as e:
@@ -138,12 +144,12 @@ class B2Service:
 
         try:
             # Get file version ID
-            file_version = self._bucket.get_file_info_by_name(storage_key)
+            file_version = self._bucket.get_file_info_by_name(  # type:ignore
+                storage_key
+            )
 
             # Delete file
-            self.api.delete_file_version(
-                file_version.id_, storage_key
-            )
+            self.api.delete_file_version(file_version.id_, storage_key)
 
             logger.info(f"File deleted from B2: {storage_key}")
             return True

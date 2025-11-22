@@ -1,15 +1,17 @@
+from io import BytesIO
 from pathlib import Path
+from typing import BinaryIO
 
 import pypdf
 from docx import Document
 
 
-def extract_text_from_pdf(file_path: str) -> str:
+def extract_text_from_pdf(file_path: str | BinaryIO) -> str:
     """
     Extract text from PDF file.
 
     Args:
-        file_path: Path to PDF file
+        file_path: Path to PDF file or file-like object (BytesIO)
 
     Returns:
         Extracted text from all pages
@@ -18,7 +20,11 @@ def extract_text_from_pdf(file_path: str) -> str:
         ValueError: If PDF is encrypted or corrupted
     """
     try:
-        reader = pypdf.PdfReader(file_path)
+        # Handle both file paths and file-like objects
+        if isinstance(file_path, (str, Path)):
+            reader = pypdf.PdfReader(file_path)
+        else:
+            reader = pypdf.PdfReader(file_path)
 
         if reader.is_encrypted:
             raise ValueError("PDF is encrypted and cannot be processed")
@@ -35,12 +41,12 @@ def extract_text_from_pdf(file_path: str) -> str:
         raise ValueError(f"Corrupted or invalid PDF file: {str(e)}") from e
 
 
-def extract_text_from_docx(file_path: str) -> str:
+def extract_text_from_docx(file_path: str | BinaryIO) -> str:
     """
     Extract text from DOCX file including paragraphs, tables, headers, and footers.
 
     Args:
-        file_path: Path to DOCX file
+        file_path: Path to DOCX file or file-like object (BytesIO)
 
     Returns:
         Extracted text from document
@@ -49,6 +55,7 @@ def extract_text_from_docx(file_path: str) -> str:
         ValueError: If DOCX is corrupted
     """
     try:
+        # python-docx accepts both file paths and file-like objects
         doc = Document(file_path)
 
         text_parts = []
@@ -69,12 +76,12 @@ def extract_text_from_docx(file_path: str) -> str:
         raise ValueError(f"Corrupted or invalid DOCX file: {str(e)}") from e
 
 
-def extract_text_from_txt(file_path: str) -> str:
+def extract_text_from_txt(file_path: str | BinaryIO) -> str:
     """
     Extract text from TXT/MD file with encoding detection.
 
     Args:
-        file_path: Path to text file
+        file_path: Path to text file or file-like object (BytesIO)
 
     Returns:
         File contents as string
@@ -84,6 +91,22 @@ def extract_text_from_txt(file_path: str) -> str:
     """
     encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
 
+    # Handle file-like objects (BytesIO)
+    if isinstance(file_path, (BytesIO, BinaryIO)) or hasattr(file_path, 'read'):
+        content = file_path.read()
+        if isinstance(content, str):
+            return content
+
+        # Try to decode bytes
+        for encoding in encodings:
+            try:
+                return content.decode(encoding)
+            except (UnicodeDecodeError, AttributeError):
+                continue
+
+        raise ValueError(f"Could not decode file with any supported encoding: {encodings}")
+
+    # Handle file paths
     for encoding in encodings:
         try:
             with open(file_path, encoding=encoding) as f:
@@ -115,13 +138,14 @@ def detect_file_type(file_path: str) -> str | None:
     return None
 
 
-def extract_text(file_path: str, file_type: str | None = None) -> str:
+def extract_text(file_path: str | BinaryIO, file_type: str | None = None, filename: str | None = None) -> str:
     """
     Extract text from file based on type.
 
     Args:
-        file_path: Path to file
+        file_path: Path to file or file-like object (BytesIO)
         file_type: Optional file type override (pdf, docx, txt, md)
+        filename: Original filename (required if file_path is BytesIO)
 
     Returns:
         Extracted text
@@ -130,7 +154,13 @@ def extract_text(file_path: str, file_type: str | None = None) -> str:
         ValueError: If file type is unsupported or extraction fails
     """
     if file_type is None:
-        file_type = detect_file_type(file_path)
+        # For file-like objects, filename must be provided
+        if not isinstance(file_path, (str, Path)):
+            if not filename:
+                raise ValueError("filename must be provided for file-like objects")
+            file_type = detect_file_type(filename)
+        else:
+            file_type = detect_file_type(file_path)
 
     if file_type is None:
         raise ValueError(f"Unsupported file type for: {file_path}")

@@ -48,3 +48,13 @@ class DocumentListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class DocumentsListResponse(BaseModel):
+    """Schema for paginated documents list response (alternative format)."""
+
+    documents: list[DocumentResponse]
+    total: int
+    page: int
+    limit: int
+    pages: int
