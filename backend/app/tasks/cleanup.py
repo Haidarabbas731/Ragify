@@ -11,7 +11,7 @@ from sqlmodel import select
 
 from app.db.database import async_session_maker
 from app.models.document import Document, DocumentStatus
-from app.services.b2_service import B2Service
+from app.services.b2_service import get_b2_service
 from app.services.milvus_service import MilvusService
 from app.tasks.worker import WorkerSettings
 
@@ -66,7 +66,7 @@ async def cleanup_deleted_document(ctx: dict, document_id: str) -> dict:
 
             # Step 3: Delete file from B2
             try:
-                b2_service = B2Service()
+                b2_service = await get_b2_service()
                 await b2_service.delete_file(document.storage_key)
             except Exception as e:
                 # File might already be deleted or not exist

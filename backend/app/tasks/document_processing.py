@@ -13,7 +13,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.config import settings
 from app.db.database import async_session_maker
 from app.models.document import Document, DocumentStatus
-from app.services.b2_service import B2Service
+from app.services.b2_service import get_b2_service
 from app.services.embedding_service import EmbeddingService
 from app.services.milvus_service import MilvusService
 from app.utils.chunking import create_chunks_with_metadata
@@ -65,7 +65,7 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 return {"status": "already_processed", "document_id": document_id}
 
             # Step 2: Download file from B2
-            b2_service = B2Service()
+            b2_service = await get_b2_service()
             try:
                 file_content = await b2_service.download_file(  # type:ignore
                     document.storage_key
