@@ -49,13 +49,13 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
     async with async_session_maker() as db:
         try:
             # Step 1: Get document from database
-            result = await db.execute(
+            result = await db.exec(
                 select(Document).where(
                     Document.document_id == document_id,
                     Document.user_id == user_id,
                 )
             )
-            document = result.scalar_one_or_none()
+            document = result.one_or_none()
 
             if not document:
                 return {"status": "error", "error": f"Document {document_id} not found"}
@@ -202,10 +202,10 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
             # Unexpected errors
             error_msg = f"Unexpected error during processing: {str(e)}"
             try:
-                result = await db.execute(
+                result = await db.exec(
                     select(Document).where(Document.document_id == document_id)
                 )
-                doc = result.scalar_one_or_none()
+                doc = result.one_or_none()
                 if doc:
                     await _mark_document_error(db, doc, error_msg)
             except Exception:

@@ -39,13 +39,13 @@ async def cleanup_deleted_document(ctx: dict, document_id: str) -> dict:
     async with async_session_maker() as db:
         try:
             # Step 1: Get document metadata
-            result = await db.execute(
+            result = await db.exec(
                 select(Document).where(
                     Document.document_id == document_id,
                     Document.status == DocumentStatus.DELETED.value,
                 )
             )
-            document = result.scalar_one_or_none()
+            document = result.one_or_none()
 
             if not document:
                 return {
@@ -115,7 +115,7 @@ async def cleanup_all_deleted_documents(ctx: dict) -> dict:
             # Find deleted documents older than 1 hour
             cutoff_time = datetime.now(UTC) - timedelta(hours=1)
 
-            result = await db.execute(
+            result = await db.exec(
                 select(Document.document_id).where(
                     Document.status == DocumentStatus.DELETED.value,
                     Document.deleted_at <= cutoff_time,  # type:ignore
@@ -170,14 +170,14 @@ async def recover_orphaned_jobs(ctx: dict) -> dict:
             # Find documents stuck in PROCESSING for > 30 minutes
             cutoff_time = datetime.now(UTC) - timedelta(minutes=30)
 
-            result = await db.execute(
+            result = await db.exec(
                 select(Document).where(
                     Document.status == DocumentStatus.PROCESSING.value,
                     Document.uploaded_at <= cutoff_time,
                     Document.processed_at.is_(None),  # Not yet processed # type:ignore
                 )
             )
-            orphaned_docs = result.scalars().all()
+            orphaned_docs = result.all()
 
             if not orphaned_docs:
                 return {
@@ -213,7 +213,7 @@ async def recover_orphaned_jobs(ctx: dict) -> dict:
 
 # Register tasks with ARQ worker
 WorkerSettings.functions.extend(
-    [
+    [  # type:ignore
         cleanup_deleted_document,
         cleanup_all_deleted_documents,
         recover_orphaned_jobs,
