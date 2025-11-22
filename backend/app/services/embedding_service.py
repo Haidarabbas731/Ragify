@@ -13,7 +13,7 @@ class EmbeddingService:
     def __init__(self):
         """Initialize Gemini API client."""
         self.model_name = settings.EMBEDDING_MODEL
-        self.embedding_dim = 768
+        self.embedding_dim = settings.EMBEDDING_DIMENSION
         self._configured = False
 
     async def configure(self) -> bool:
@@ -50,7 +50,7 @@ class EmbeddingService:
             text: Text to embed
 
         Returns:
-            list[float]: 768-dimensional embedding vector
+            list[float]: Embedding vector (dimension from config)
 
         Raises:
             ValueError: If text is empty
@@ -90,7 +90,7 @@ class EmbeddingService:
             texts: List of texts to embed
 
         Returns:
-            list[list[float]]: List of 768-dimensional embedding vectors
+            list[list[float]]: List of embedding vectors (dimension from config)
 
         Raises:
             ValueError: If texts list is empty
@@ -140,7 +140,7 @@ class EmbeddingService:
             query: Search query text
 
         Returns:
-            list[float]: 768-dimensional embedding vector
+            list[float]: Embedding vector (dimension from config)
 
         Raises:
             ValueError: If query is empty
