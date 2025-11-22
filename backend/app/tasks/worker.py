@@ -10,6 +10,9 @@ from arq.connections import RedisSettings
 
 from app.core.config import settings
 
+# Import task functions here to register them with the worker
+from app.tasks.document_processing import process_document
+
 
 def _parse_redis_settings() -> RedisSettings:
     """
@@ -76,13 +79,8 @@ class WorkerSettings:
     max_tries = 3
     retry_jobs = True
 
-    # Task functions - imported here to ensure they're registered
-    @staticmethod
-    def functions():
-        """Import and return task functions to avoid circular imports."""
-        from app.tasks.document_processing import process_document
-
-        return [process_document]
+    # Task functions - must be a list of function references
+    functions = [process_document]
 
     # Cron jobs for scheduled tasks
     cron_jobs = []
