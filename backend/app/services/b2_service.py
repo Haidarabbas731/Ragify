@@ -127,6 +127,33 @@ class B2Service:
             logger.error(f"Failed to generate presigned URL for {storage_key}: {e}")
             raise
 
+    async def download_file(self, storage_key: str) -> bytes:
+        """
+        Download file from B2 bucket.
+
+        Args:
+            storage_key: B2 file path
+
+        Returns:
+            bytes: File content
+
+        Raises:
+            Exception: If download fails
+        """
+        self._ensure_authorized()
+
+        try:
+            # Download file from B2
+            downloaded_file = self._bucket.download_file_by_name(storage_key)  # type:ignore
+            content = downloaded_file.read()
+
+            logger.info(f"File downloaded from B2: {storage_key} ({len(content)} bytes)")
+            return content
+
+        except Exception as e:
+            logger.error(f"B2 download failed for {storage_key}: {e}")
+            raise
+
     async def delete_file(self, storage_key: str) -> bool:
         """
         Delete file from B2 bucket.
