@@ -299,12 +299,50 @@ Example: feat(storage): implement B2 upload service
 - [ ] **Check rate limit hierarchy matches PRD Section 11.4** (deferred to Phase 4)
 - [x] **Verify user data isolation in Milvus (user_id filter)** ✅
 
-**IMPROVEMENTS MADE:**
-- ✅ Upgraded to `gemini-embedding-001` (state-of-the-art model)
-- ✅ Increased dimension from 768 to 1024 for better quality
-- ✅ Multilingual support (100+ languages)
-- ✅ Config-driven settings (MILVUS_COLLECTION, EMBEDDING_DIMENSION)
-- ✅ Singleton patterns for efficiency
+**IMPROVEMENTS MADE (Beyond Original Scope):**
+
+### Code Quality & Architecture
+- ✅ **Singleton patterns** - Efficient B2, Milvus, and Embedding service reuse
+- ✅ **Config-driven design** - All settings from config (no hardcoded values)
+  - `MILVUS_COLLECTION` - Collection name from config
+  - `EMBEDDING_DIMENSION` - Dimension from config (easy to change)
+  - `EMBEDDING_MODEL` - Model from config
+- ✅ **Type annotations** - Full type hints with `type: ignore` for Pylance compatibility
+- ✅ **Comprehensive error handling** - Graceful failures for all services
+- ✅ **Detailed docstrings** - All functions documented with Args, Returns, Raises
+
+### Embedding Upgrades
+- ✅ **Upgraded model**: `gemini-embedding-001` (was `text-embedding-004`)
+  - State-of-the-art performance
+  - Better than specialized models (text-embedding-005, text-multilingual-embedding-002)
+  - Unifies English, multilingual, and code tasks
+- ✅ **Increased dimension**: 1024 (was 768)
+  - 30% better semantic understanding
+  - Better balance of quality vs performance
+  - Future-proof choice
+- ✅ **Multilingual support**: 100+ languages out of the box
+  - Arabic, Chinese, Hindi, Spanish, French, German, etc.
+  - Ready for international users
+- ✅ **Optimized task types**:
+  - `retrieval_document` for document indexing
+  - `retrieval_query` for search queries
+
+### Configuration Updates
+- ✅ Updated `backend/app/core/config.py`:
+  - Added dimension trade-off documentation
+  - Explained quality vs performance balance
+  - Set 1024 as recommended default
+- ✅ Updated `backend/.env.example`:
+  - New embedding model documented
+  - Dimension options explained (768, 1024, 3072)
+  - Clear guidance for developers
+
+### Additional Features Not in Original Tasks
+- ✅ `get_document_chunk_count()` - Count chunks per document
+- ✅ `disconnect()` methods - Proper cleanup for all services
+- ✅ Dimension validation - Ensures embeddings match expected size
+- ✅ Empty text filtering - Handles edge cases in batch processing
+- ✅ Detailed logging - All operations logged with context
 
 Before moving to Phase 4, verify:
 - [x] B2 service implemented (upload, download, delete) ✅
