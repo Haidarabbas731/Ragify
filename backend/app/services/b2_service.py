@@ -143,9 +143,12 @@ class B2Service:
         self._ensure_authorized()
 
         try:
-            # Download file from B2
+            # Download file from B2 - use save_to method with BytesIO
+            from io import BytesIO
+            buffer = BytesIO()
             downloaded_file = self._bucket.download_file_by_name(storage_key)  # type:ignore
-            content = downloaded_file.read()
+            downloaded_file.save_to(buffer)  # type:ignore
+            content = buffer.getvalue()
 
             logger.info(f"File downloaded from B2: {storage_key} ({len(content)} bytes)")
             return content
