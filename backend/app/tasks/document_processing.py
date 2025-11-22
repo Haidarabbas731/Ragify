@@ -16,7 +16,6 @@ from app.models.document import Document, DocumentStatus
 from app.services.b2_service import B2Service
 from app.services.embedding_service import EmbeddingService
 from app.services.milvus_service import MilvusService
-from app.tasks.worker import WorkerSettings
 from app.utils.chunking import create_chunks_with_metadata
 from app.utils.text_extraction import extract_text
 
@@ -232,7 +231,3 @@ async def _mark_document_error(
 
     db.add(document)
     await db.commit()
-
-
-# Register task with ARQ worker
-WorkerSettings.functions.append(process_document)
