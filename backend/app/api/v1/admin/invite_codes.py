@@ -10,7 +10,7 @@ from app.services.invite_service import (
     revoke_invite_code,
 )
 
-router = APIRouter(prefix="/invite-codes", tags=["admin", "invite-codes"])
+router = APIRouter(prefix="/invite-codes", tags=["admin"])
 
 
 @router.post("", response_model=InviteCodeResponse, status_code=status.HTTP_201_CREATED)
