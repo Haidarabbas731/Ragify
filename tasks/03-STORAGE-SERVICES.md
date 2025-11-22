@@ -358,9 +358,9 @@ Before moving to Phase 4, verify:
 - [x] Can generate embeddings for text ✅
 - [x] Can insert embeddings into Milvus ✅
 - [x] Can search Milvus and get similar chunks ✅
-- [ ] User data isolation verified (users cannot see each other's chunks)
-- [ ] Rate limiting working
-- [ ] All tests passing (`pytest backend/tests/test_*_service.py`)
+- [ ] User data isolation verified (users cannot see each other's chunks) - **Phase 4**
+- [ ] Rate limiting working - **Phase 4**
+- [ ] All tests passing (`pytest backend/tests/test_*_service.py`) - **Phase 4**
 
 ---
 
