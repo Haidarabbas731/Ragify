@@ -3,9 +3,7 @@
 Handles document upload, processing status, listing, and management.
 """
 
-import uuid
 from datetime import UTC, datetime
-from io import BytesIO
 
 from arq import ArqRedis
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -23,10 +21,14 @@ from app.tasks.worker import get_arq_redis
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
-@router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED
+)
 async def upload_document(
     file: UploadFile = File(..., description="Document file (PDF, DOCX, TXT, MD)"),
-    collection_id: str | None = Form(None, description="Optional collection ID to organize document"),
+    collection_id: str | None = Form(
+        None, description="Optional collection ID to organize document"
+    ),
     category: str | None = Form(None, description="Optional category tag"),
     tags: str | None = Form(None, description="Optional comma-separated tags"),
     current_user: User = Depends(get_current_user),
@@ -62,27 +64,27 @@ async def upload_document(
     # Validate file type
     if not file.filename:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Filename is required"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required"
         )
 
     file_extension = file.filename.split(".")[-1].lower()
     if file_extension not in settings.allowed_file_types_list:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File type not supported. Allowed types: {settings.ALLOWED_FILE_TYPES}"
+            detail=f"File type not supported. Allowed types: {settings.ALLOWED_FILE_TYPES}",
         )
 
-    # Read file content
-    file_content = await file.read()
-    file_size = len(file_content)
+    # Get file size without fully reading it
+    file.file.seek(0, 2)  # Seek to end
+    file_size = file.file.tell()
+    file.file.seek(0)  # Reset to beginning
 
     # Validate file size
     max_size_bytes = settings.MAX_FILE_SIZE_MB * 1024 * 1024
     if file_size > max_size_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File size ({file_size} bytes) exceeds maximum allowed size ({max_size_bytes} bytes)"
+            detail=f"File size ({file_size} bytes) exceeds maximum allowed size ({max_size_bytes} bytes)",
         )
 
     # Check user storage quota
@@ -91,26 +93,21 @@ async def upload_document(
         remaining = current_user.storage_quota_bytes - current_user.storage_used_bytes
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"Storage quota exceeded. Remaining: {remaining} bytes, Required: {file_size} bytes"
+            detail=f"Storage quota exceeded. Remaining: {remaining} bytes, Required: {file_size} bytes",
         )
 
-    # Generate unique storage key
-    document_id = str(uuid.uuid4())
-    storage_key = f"{current_user.user_id}/{document_id}-{file.filename}"
-
-    # Upload to B2
+    # Upload to B2 - B2Service generates the storage_key internally
     b2_service = B2Service()
     try:
-        await b2_service.upload_file(
-            file_obj=BytesIO(file_content),
-            file_name=storage_key,
-            content_type=file.content_type or "application/octet-stream"
-        )
+        storage_key = await b2_service.upload_file(file, current_user.user_id)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload file to storage: {str(e)}"
+            detail=f"Failed to upload file to storage: {str(e)}",
         ) from e
+
+    # Extract document_id from storage_key (format: documents/{user_id}/{uuid}-{filename})
+    document_id = storage_key.split("/")[-1].split("-")[0]
 
     # Prepare metadata
     doc_metadata = {}
@@ -145,9 +142,7 @@ async def upload_document(
     # Enqueue background processing job
     try:
         await arq.enqueue_job(
-            "process_document",
-            document_id=document_id,
-            user_id=current_user.user_id
+            "process_document", document_id=document_id, user_id=current_user.user_id
         )
     except Exception as e:
         # If job enqueue fails, we still return the document
@@ -177,18 +172,17 @@ async def get_document(
     Raises:
         HTTPException: 404 if document not found or not owned by user
     """
-    result = await db.execute(
+    result = await db.exec(
         select(Document).where(
             Document.document_id == document_id,
             Document.user_id == current_user.user_id,
         )
     )
-    document = result.scalar_one_or_none()
+    document = result.one_or_none()
 
     if not document:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
     return document
@@ -222,14 +216,13 @@ async def list_documents(
     """
     if page < 1:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Page must be >= 1"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Page must be >= 1"
         )
 
     if limit < 1 or limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit must be between 1 and 100"
+            detail="Limit must be between 1 and 100",
         )
 
     # Build query
@@ -254,15 +247,19 @@ async def list_documents(
     if status_filter:
         count_query = count_query.where(Document.status == status_filter)
 
-    total_result = await db.execute(count_query)
+    total_result = await db.exec(count_query)
     total = len(total_result.all())
 
     # Paginate
     offset = (page - 1) * limit
-    query = query.offset(offset).limit(limit).order_by(Document.uploaded_at.desc())
+    query = (
+        query.offset(offset)
+        .limit(limit)
+        .order_by(Document.uploaded_at.desc())  # type:ignore
+    )  # type:ignore
 
-    result = await db.execute(query)
-    documents = result.scalars().all()
+    result = await db.exec(query)
+    documents = result.all()
 
     return {
         "documents": list(documents),
@@ -295,18 +292,17 @@ async def delete_document(
     Raises:
         HTTPException: 404 if document not found
     """
-    result = await db.execute(
+    result = await db.exec(
         select(Document).where(
             Document.document_id == document_id,
             Document.user_id == current_user.user_id,
         )
     )
-    document = result.scalar_one_or_none()
+    document = result.one_or_none()
 
     if not document:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
     # Soft delete
@@ -324,10 +320,7 @@ async def delete_document(
 
     # Enqueue cleanup job (will delete from B2 and Milvus)
     try:
-        await arq.enqueue_job(
-            "cleanup_deleted_document",
-            document_id=document_id
-        )
+        await arq.enqueue_job("cleanup_deleted_document", document_id=document_id)
     except Exception as e:
         print(f"Warning: Failed to enqueue cleanup job for {document_id}: {e}")
 
@@ -354,24 +347,23 @@ async def retry_failed_document(
     Raises:
         HTTPException: 404 if document not found, 400 if not in ERROR status
     """
-    result = await db.execute(
+    result = await db.exec(
         select(Document).where(
             Document.document_id == document_id,
             Document.user_id == current_user.user_id,
         )
     )
-    document = result.scalar_one_or_none()
+    document = result.one_or_none()
 
     if not document:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
     if document.status != DocumentStatus.ERROR.value:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only failed documents can be retried"
+            detail="Only failed documents can be retried",
         )
 
     # Reset status
@@ -385,14 +377,12 @@ async def retry_failed_document(
     # Re-enqueue processing job
     try:
         await arq.enqueue_job(
-            "process_document",
-            document_id=document_id,
-            user_id=current_user.user_id
+            "process_document", document_id=document_id, user_id=current_user.user_id
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to enqueue retry job: {str(e)}"
+            detail=f"Failed to enqueue retry job: {str(e)}",
         ) from e
 
     return document
@@ -424,18 +414,17 @@ async def update_document_metadata(
     Raises:
         HTTPException: 404 if document not found
     """
-    result = await db.execute(
+    result = await db.exec(
         select(Document).where(
             Document.document_id == document_id,
             Document.user_id == current_user.user_id,
         )
     )
-    document = result.scalar_one_or_none()
+    document = result.one_or_none()
 
     if not document:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
     # Update fields
