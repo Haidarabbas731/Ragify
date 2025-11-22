@@ -14,8 +14,8 @@ from app.core.config import settings
 from app.db.database import async_session_maker
 from app.models.document import Document, DocumentStatus
 from app.services.b2_service import get_b2_service
-from app.services.embedding_service import EmbeddingService
-from app.services.milvus_service import MilvusService
+from app.services.embedding_service import get_embedding_service
+from app.services.milvus_service import get_milvus_service
 from app.utils.chunking import create_chunks_with_metadata
 from app.utils.text_extraction import extract_text
 
@@ -112,7 +112,7 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 return {"status": "error", "error": error_msg}
 
             # Step 5: Generate embeddings for all chunks (batch processing)
-            embedding_service = EmbeddingService()
+            embedding_service = await get_embedding_service()
             try:
                 chunk_texts = [chunk["text"] for chunk in chunks_data]
                 embeddings = await embedding_service.embed_batch(chunk_texts)
@@ -131,7 +131,7 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 return {"status": "error", "error": error_msg}
 
             # Step 6: Insert chunks + embeddings into Milvus
-            milvus_service = MilvusService()
+            milvus_service = await get_milvus_service()
             try:
                 await milvus_service.connect()
 

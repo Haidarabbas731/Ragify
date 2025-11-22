@@ -12,7 +12,7 @@ from sqlmodel import select
 from app.db.database import async_session_maker
 from app.models.document import Document, DocumentStatus
 from app.services.b2_service import get_b2_service
-from app.services.milvus_service import MilvusService
+from app.services.milvus_service import get_milvus_service
 from app.tasks.worker import WorkerSettings
 
 
@@ -58,7 +58,7 @@ async def cleanup_deleted_document(ctx: dict, document_id: str) -> dict:
 
             # Step 2: Delete chunks from Milvus
             try:
-                milvus_service = MilvusService()
+                milvus_service = await get_milvus_service()
                 await milvus_service.connect()
                 await milvus_service.delete_by_document_id(document_id)  # type:ignore
             except Exception as e:
