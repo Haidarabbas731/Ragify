@@ -126,10 +126,8 @@ async def logout(
     - Automatically finds and revokes associated refresh token (from token mapping)
     - Optionally accepts refresh_token in request body (overrides automatic lookup)
     - Revokes both access token and refresh token
-    - Also revokes all other tokens for the user for security
 
-    Security: This ensures that even if a hacker has the refresh token,
-    they cannot generate new access tokens after logout.
+    Security: Revoked tokens are blocklisted in Redis and cannot be reused.
     """
     user_id = token_details.get("sub")
     if not user_id:
@@ -166,10 +164,10 @@ async def logout(
         refresh_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
         await add_jti_to_blocklist(refresh_jti, refresh_ttl)
 
-    # Revoke all other tokens for this user (most secure approach)
-    # This invalidates any other refresh tokens the user might have
-    refresh_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
-    await revoke_all_user_sessions(user_id, refresh_ttl)
+    # Note: We do NOT call revoke_all_user_sessions() here because:
+    # - That would block ALL future logins for this user (7 days!)
+    # - Individual token revocation is sufficient for logout
+    # - revoke_all_user_sessions() is only for password reset/admin suspension
 
     return JSONResponse(
         content={"message": "Logged out successfully"},
