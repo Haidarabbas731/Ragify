@@ -34,7 +34,7 @@ async def send_password_reset_email(to_email: str, reset_token: str) -> bool:
     logger.warning(f"Reset URL: {reset_url}")
     logger.warning("")
     logger.warning("Use this token to reset password via API:")
-    logger.warning('POST /api/v1/auth/password-reset/confirm')
+    logger.warning("POST /api/v1/auth/password-reset/confirm")
     logger.warning(f'{{"token": "{reset_token}", "new_password": "YourNewPassword123!"}}')
     logger.warning("=" * 80)
 

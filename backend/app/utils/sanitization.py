@@ -25,9 +25,9 @@ def sanitize_text_input(text: str) -> str:
     Returns:
         Sanitized text
     """
-    text = text.replace('\x00', '')
+    text = text.replace("\x00", "")
 
-    text = ''.join(char for char in text if ord(char) >= 32 or char in '\n\r\t')
+    text = "".join(char for char in text if ord(char) >= 32 or char in "\n\r\t")
 
     return text.strip()
 
@@ -44,14 +44,14 @@ def sanitize_filename(filename: str) -> str:
     """
     filename = Path(filename).name
 
-    filename = re.sub(r'[<>:"|?*\x00-\x1f]', '', filename)
+    filename = re.sub(r'[<>:"|?*\x00-\x1f]', "", filename)
 
-    filename = filename.replace('..', '')
+    filename = filename.replace("..", "")
 
-    filename = re.sub(r'\s+', '_', filename)
+    filename = re.sub(r"\s+", "_", filename)
 
-    if not filename or filename.startswith('.'):
-        filename = 'file' + filename
+    if not filename or filename.startswith("."):
+        filename = "file" + filename
 
     return filename[:255]
 
@@ -67,7 +67,7 @@ def validate_file_extension(filename: str, allowed: list[str]) -> bool:
     Returns:
         True if extension is allowed
     """
-    extension = Path(filename).suffix.lower().lstrip('.')
+    extension = Path(filename).suffix.lower().lstrip(".")
     return extension in [ext.lower() for ext in allowed]
 
 
@@ -102,5 +102,5 @@ def validate_collection_name(name: str) -> bool:
     if not name or len(name) > 255:
         return False
 
-    pattern = r'^[a-zA-Z0-9\s\-_]+$'
+    pattern = r"^[a-zA-Z0-9\s\-_]+$"
     return bool(re.match(pattern, name))

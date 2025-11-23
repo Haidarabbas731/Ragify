@@ -27,9 +27,7 @@ async def create_collection(
         ValueError: If collection with same name already exists for user
     """
     existing = await session.exec(
-        select(Collection).where(
-            Collection.user_id == user_id, Collection.name == name
-        )
+        select(Collection).where(Collection.user_id == user_id, Collection.name == name)
     )
     if existing.one_or_none():
         raise ValueError(f"Collection '{name}' already exists for user {user_id}")
@@ -41,9 +39,7 @@ async def create_collection(
     return collection
 
 
-async def list_user_collections(
-    session: AsyncSession, user_id: str
-) -> list[Collection]:
+async def list_user_collections(session: AsyncSession, user_id: str) -> list[Collection]:
     """
     List all collections for a user.
 
@@ -62,9 +58,7 @@ async def list_user_collections(
     return list(result.all())
 
 
-async def get_collection_by_id(
-    session: AsyncSession, collection_id: str
-) -> Collection | None:
+async def get_collection_by_id(session: AsyncSession, collection_id: str) -> Collection | None:
     """
     Get collection by ID.
 
@@ -75,15 +69,11 @@ async def get_collection_by_id(
     Returns:
         Collection instance or None if not found
     """
-    result = await session.exec(
-        select(Collection).where(Collection.collection_id == collection_id)
-    )
+    result = await session.exec(select(Collection).where(Collection.collection_id == collection_id))
     return result.one_or_none()
 
 
-async def get_collection_document_count(
-    session: AsyncSession, collection_id: str
-) -> int:
+async def get_collection_document_count(session: AsyncSession, collection_id: str) -> int:
     """
     Get the number of documents in a collection.
 
@@ -95,9 +85,7 @@ async def get_collection_document_count(
         Document count
     """
     result = await session.exec(
-        select(func.count()).select_from(Document).where(
-            Document.collection_id == collection_id
-        )
+        select(func.count()).select_from(Document).where(Document.collection_id == collection_id)
     )
     count = result.one()
     return count if count else 0

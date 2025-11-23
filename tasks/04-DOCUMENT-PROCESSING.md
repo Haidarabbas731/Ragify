@@ -243,6 +243,35 @@ Example: feat(docs): implement document processing pipeline
 - [x] Schedule as cron job (every 15 minutes)
 - [ ] Test orphaned job recovery (**Deferred to Phase 4 completion**)
 
+**🐛 CRITICAL BUGFIX:** Worker registration issues fixed - 2024-11-23
+- **Issue #1:** Cleanup tasks were NOT registered with ARQ worker (orphaned job recovery cron never ran!)
+- **Issue #2:** Retry logic prevented recovery (always skipped documents in PROCESSING status on retry)
+- **Issue #3:** Manual retry endpoint only worked for ERROR status (not stuck PROCESSING docs)
+- **Issue #4:** Wrong method name in cleanup.py (`delete_by_document_id` → `delete_document_chunks`)
+- **Issue #5:** Circular import between worker.py and cleanup.py
+
+**✅ FIXES APPLIED:**
+1. **`app/tasks/worker.py`**: Imported all cleanup tasks and registered them in WorkerSettings
+   - Added `cleanup_deleted_document`, `cleanup_all_deleted_documents`, `recover_orphaned_jobs` to functions list
+   - Registered 2 cron jobs: cleanup every 6hrs, recovery every 15min
+
+2. **`app/tasks/document_processing.py`**: Fixed retry logic to allow orphaned job recovery
+   - Changed from "always skip on retry" to "skip only if uploaded < 5 minutes ago"
+   - Allows recovery of stuck documents while preventing duplicate processing
+
+3. **`app/api/v1/documents.py`**: Extended retry endpoint to support stuck PROCESSING docs
+   - Retry now works for both ERROR and PROCESSING (>30 min) status
+   - Provides manual recovery option before automatic recovery kicks in
+
+4. **`app/tasks/cleanup.py`**: Fixed Milvus method name and removed circular import
+   - Fixed: `delete_by_document_id()` → `delete_document_chunks()`
+   - Removed WorkerSettings import (moved registration to worker.py)
+
+**Impact:** Documents stuck in PROCESSING status will now:
+- Be automatically recovered every 15 minutes by cron job
+- Can be manually retried after 30 minutes via retry endpoint
+- Worker restarts no longer leave orphaned documents forever
+
 ---
 
 ## 4.6 Model Migration & Re-indexing Support
