@@ -37,9 +37,7 @@ class B2Service:
             )
             self._bucket = self.api.get_bucket_by_name(settings.B2_BUCKET_NAME)
             self._authorized = True
-            logger.info(
-                f"B2 authorized successfully. Bucket: {settings.B2_BUCKET_NAME}"
-            )
+            logger.info(f"B2 authorized successfully. Bucket: {settings.B2_BUCKET_NAME}")
             return True
         except Exception as e:
             logger.error(f"B2 authorization failed: {e}")
@@ -89,9 +87,7 @@ class B2Service:
         finally:
             await file.seek(0)  # Reset file pointer
 
-    async def generate_presigned_url(
-        self, storage_key: str, expiration: int = 900
-    ) -> str:
+    async def generate_presigned_url(self, storage_key: str, expiration: int = 900) -> str:
         """
         Generate presigned download URL for file.
 
@@ -118,9 +114,7 @@ class B2Service:
             )
 
             presigned_url = f"{download_url}?Authorization={auth_token}"
-            logger.info(
-                f"Generated presigned URL for {storage_key} (expires in {expiration}s)"
-            )
+            logger.info(f"Generated presigned URL for {storage_key} (expires in {expiration}s)")
             return presigned_url
 
         except Exception as e:
@@ -157,7 +151,7 @@ class B2Service:
                 self._bucket.download_file_by_name(storage_key).save_to(tmp_path)  # type:ignore
 
                 # Read the content
-                with open(tmp_path, 'rb') as f:
+                with open(tmp_path, "rb") as f:
                     content = f.read()
 
                 logger.info(f"File downloaded from B2: {storage_key} ({len(content)} bytes)")

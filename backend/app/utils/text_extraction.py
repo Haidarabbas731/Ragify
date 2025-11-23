@@ -101,9 +101,7 @@ def extract_text_from_txt(file_path: str | BinaryIO) -> str:
             except (UnicodeDecodeError, AttributeError):
                 continue
 
-        raise ValueError(
-            f"Could not decode file with any supported encoding: {encodings}"
-        )
+        raise ValueError(f"Could not decode file with any supported encoding: {encodings}")
 
     # Handle file paths
     for encoding in encodings:

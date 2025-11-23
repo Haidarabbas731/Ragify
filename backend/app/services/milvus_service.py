@@ -45,9 +45,7 @@ class MilvusService:
                 token=settings.MILVUS_TOKEN,  # type:ignore
             )
             self._connected = True
-            logger.info(
-                f"Milvus connected successfully. URI: {settings.MILVUS_URI}"
-            )
+            logger.info(f"Milvus connected successfully. URI: {settings.MILVUS_URI}")
 
             # Initialize collection if it doesn't exist
             await self._init_collection()
@@ -82,9 +80,7 @@ class MilvusService:
 
         # Define schema
         fields = [
-            FieldSchema(
-                name="chunk_id", dtype=DataType.VARCHAR, is_primary=True, max_length=36
-            ),
+            FieldSchema(name="chunk_id", dtype=DataType.VARCHAR, is_primary=True, max_length=36),
             FieldSchema(name="user_id", dtype=DataType.VARCHAR, max_length=36),
             FieldSchema(name="document_id", dtype=DataType.VARCHAR, max_length=36),
             FieldSchema(
@@ -110,9 +106,7 @@ class MilvusService:
             "params": {"nlist": 128},  # Number of clusters
         }
 
-        self.collection.create_index(
-            field_name="embedding", index_params=index_params
-        )  # type:ignore
+        self.collection.create_index(field_name="embedding", index_params=index_params)  # type:ignore
         logger.info(f"Collection '{self.collection_name}' created with IVF_FLAT index")
 
     async def insert_chunks(
@@ -145,10 +139,7 @@ class MilvusService:
         self._ensure_connected()
 
         # Validate input
-        if not all(
-            len(chunk_ids) == len(lst)
-            for lst in [embeddings, chunk_texts, chunk_indices]
-        ):
+        if not all(len(chunk_ids) == len(lst) for lst in [embeddings, chunk_texts, chunk_indices]):
             raise ValueError("All input lists must have the same length")
 
         try:
@@ -208,9 +199,7 @@ class MilvusService:
 
             # Add document filter if specified
             if document_ids:
-                doc_filter = " or ".join(
-                    [f"document_id == '{d}'" for d in document_ids]
-                )
+                doc_filter = " or ".join([f"document_id == '{d}'" for d in document_ids])
                 filter_expr += f" and ({doc_filter})"
 
             # Search parameters
@@ -248,9 +237,7 @@ class MilvusService:
                         }
                     )
 
-            logger.info(
-                f"Found {len(formatted_results)} similar chunks for user {user_id}"
-            )
+            logger.info(f"Found {len(formatted_results)} similar chunks for user {user_id}")
             return formatted_results
 
         except Exception as e:

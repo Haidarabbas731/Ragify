@@ -23,4 +23,7 @@ class AdminAuditLog(SQLModel, table=True):
 
     ip_address: str | None = Field(default=None, max_length=45)  # IPv4 or IPv6
 
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True), index=True))  # type:ignore
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), index=True),
+    )  # type:ignore

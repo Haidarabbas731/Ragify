@@ -7,8 +7,14 @@ from urllib.parse import urlparse
 
 from arq import ArqRedis, create_pool
 from arq.connections import RedisSettings
+from arq.cron import cron
 
 from app.core.config import settings
+from app.tasks.cleanup import (
+    cleanup_all_deleted_documents,
+    cleanup_deleted_document,
+    recover_orphaned_jobs,
+)
 
 # Import task functions here to register them with the worker
 from app.tasks.document_processing import process_document
@@ -80,7 +86,15 @@ class WorkerSettings:
     retry_jobs = True
 
     # Task functions - must be a list of function references
-    functions = [process_document]
+    functions = [
+        process_document,
+        cleanup_deleted_document,
+        cleanup_all_deleted_documents,
+        recover_orphaned_jobs,
+    ]
 
     # Cron jobs for scheduled tasks
-    cron_jobs = []
+    cron_jobs = [
+        cron(cleanup_all_deleted_documents, hour={0, 6, 12, 18}, minute=0),  # Every 6 hours
+        cron(recover_orphaned_jobs, minute={0, 15, 30, 45}),  # Every 15 minutes
+    ]
