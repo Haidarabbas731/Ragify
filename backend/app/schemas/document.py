@@ -50,14 +50,21 @@ class DocumentListResponse(BaseModel):
     total_pages: int
 
 
+class DocumentResponseWithUser(DocumentResponse):
+    """Schema for document with user email (admin view)."""
+
+    user_email: str | None = None
+
+
 class DocumentsListResponse(BaseModel):
     """Schema for paginated documents list response (alternative format)."""
 
-    documents: list[DocumentResponse]
+    documents: list[DocumentResponse] | list[dict]  # dict for admin with user_email
     total: int
     page: int
     limit: int
     pages: int
+    is_admin_view: bool = False
 
 
 class BatchDeleteRequest(BaseModel):
