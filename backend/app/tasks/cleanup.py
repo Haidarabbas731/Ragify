@@ -6,14 +6,12 @@ Handles orphaned job recovery and deleted document cleanup.
 from datetime import UTC, datetime, timedelta
 
 from arq.connections import ArqRedis
-from arq.cron import cron
 from sqlmodel import select
 
 from app.db.database import async_session_maker
 from app.models.document import Document, DocumentStatus
 from app.services.b2_service import get_b2_service
 from app.services.milvus_service import get_milvus_service
-from app.tasks.worker import WorkerSettings
 
 
 async def cleanup_deleted_document(ctx: dict, document_id: str) -> dict:
@@ -60,7 +58,7 @@ async def cleanup_deleted_document(ctx: dict, document_id: str) -> dict:
             try:
                 milvus_service = await get_milvus_service()
                 await milvus_service.connect()
-                await milvus_service.delete_by_document_id(document_id)  # type:ignore
+                await milvus_service.delete_document_chunks(document_id)  # type:ignore
             except Exception as e:
                 errors.append(f"Milvus deletion failed: {str(e)}")
 
@@ -136,9 +134,7 @@ async def cleanup_all_deleted_documents(ctx: dict) -> dict:
 
             for doc_id in document_ids:
                 try:
-                    await redis.enqueue_job(
-                        "cleanup_deleted_document", document_id=doc_id
-                    )
+                    await redis.enqueue_job("cleanup_deleted_document", document_id=doc_id)
                     enqueued += 1
                 except Exception as e:
                     print(f"Failed to enqueue cleanup for {doc_id}: {e}")
@@ -209,19 +205,3 @@ async def recover_orphaned_jobs(ctx: dict) -> dict:
 
         except Exception as e:
             return {"status": "error", "error": str(e)}
-
-
-# Register tasks with ARQ worker
-WorkerSettings.functions.extend(
-    [  # type:ignore
-        cleanup_deleted_document,
-        cleanup_all_deleted_documents,
-        recover_orphaned_jobs,
-    ]
-)
-
-# Schedule cron jobs
-WorkerSettings.cron_jobs = [
-    cron(cleanup_all_deleted_documents, hour={0, 6, 12, 18}, minute=0),  # Every 6 hours
-    cron(recover_orphaned_jobs, minute={0, 15, 30, 45}),  # Every 15 minutes
-]

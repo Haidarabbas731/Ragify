@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from main import app
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.pool import NullPool
@@ -13,7 +14,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.db.database import get_session
-from app.main import app
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.models.user import User
 
@@ -62,7 +62,7 @@ async def cleanup_test_data(test_engine: AsyncEngine):
         "create@example.com",
         "newuser@example.com",
         "user@example.com",
-        "admin@example.com"
+        "admin@example.com",
     ]
 
     async with test_engine.begin() as conn:

@@ -29,14 +29,14 @@ async def create_admin_invite_code() -> None:
         await session.commit()
         await session.refresh(invite)
 
-        print(f"\n{'='*50}")
+        print(f"\n{'=' * 50}")
         print("Admin Invite Code Generated Successfully!")
-        print(f"{'='*50}")
+        print(f"{'=' * 50}")
         print(f"\nInvite Code: {code}")
         print(f"Invite ID: {invite.invite_code_id}")
         print(f"Max Uses: {invite.max_uses}")
         print("\nUse this code to create the first admin account.")
-        print(f"{'='*50}\n")
+        print(f"{'=' * 50}\n")
 
 
 if __name__ == "__main__":

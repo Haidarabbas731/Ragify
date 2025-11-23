@@ -40,14 +40,15 @@ class Document(SQLModel, table=True):
     doc_metadata: dict = Field(default_factory=dict, sa_column=Column(JSON))  # type:ignore
 
     # Processing status
-    status: str = Field(
-        default=DocumentStatus.PROCESSING.value, index=True, max_length=20
-    )
+    status: str = Field(default=DocumentStatus.PROCESSING.value, index=True, max_length=20)
 
     # Error tracking for failed processing
     error_message: str | None = Field(default=None)
 
     # Timestamps
-    uploaded_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True), index=True))  # type:ignore
+    uploaded_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), index=True),
+    )  # type:ignore
     processed_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))  # type:ignore
     deleted_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))  # type:ignore

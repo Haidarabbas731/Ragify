@@ -1,4 +1,3 @@
-
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings

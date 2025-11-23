@@ -23,5 +23,10 @@ class Conversation(SQLModel, table=True):
     message_count: int = Field(default=0)
 
     # Timestamps
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True), index=True))  # type:ignore
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))  # type:ignore
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC),
+        sa_column=Column(DateTime(timezone=True), index=True),
+    )  # type:ignore
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )  # type:ignore

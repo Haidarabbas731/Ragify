@@ -64,15 +64,19 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
             if document.status == DocumentStatus.ACTIVE.value:
                 return {"status": "already_processed", "document_id": document_id}
 
-            # If document is in PROCESSING status and this is NOT the first attempt,
-            # it likely means another newer job is handling it - exit gracefully
+            # Only skip if document was recently updated (processing started in last 5 min)
+            # This allows orphaned job recovery to work while preventing duplicate processing
             job_try = ctx.get("job_try", 1) if ctx else 1
             if document.status == DocumentStatus.PROCESSING.value and job_try > 1:
-                return {
-                    "status": "skipped",
-                    "document_id": document_id,
-                    "reason": "Document is already being processed by another job",
-                }
+                # Check if document is actively being processed (updated recently)
+                time_since_upload = datetime.now(UTC) - document.uploaded_at
+                if time_since_upload.total_seconds() < 300:  # 5 minutes
+                    return {
+                        "status": "skipped",
+                        "document_id": document_id,
+                        "reason": "Document is already being processed by another job",
+                    }
+                # Otherwise, allow recovery of orphaned job (stuck > 5 min)
 
             # Step 2: Download file from B2
             b2_service = await get_b2_service()
@@ -150,9 +154,7 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 chunk_texts = []
                 chunk_indices = []
 
-                for i, (chunk, _embedding) in enumerate(
-                    zip(chunks_data, embeddings, strict=True)
-                ):
+                for i, (chunk, _embedding) in enumerate(zip(chunks_data, embeddings, strict=True)):
                     chunk_ids.append(f"{document_id}_{i}")
                     chunk_texts.append(chunk["text"])
                     chunk_indices.append(chunk["chunk_index"])
@@ -196,9 +198,7 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 "status": "success",
                 "document_id": document_id,
                 "chunks_count": len(chunks_data),
-                "processing_time": (
-                    datetime.now(UTC) - document.uploaded_at
-                ).total_seconds(),
+                "processing_time": (datetime.now(UTC) - document.uploaded_at).total_seconds(),
             }
 
         except Retry:
@@ -209,9 +209,7 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
             # Unexpected errors
             error_msg = f"Unexpected error during processing: {str(e)}"
             try:
-                result = await db.exec(
-                    select(Document).where(Document.document_id == document_id)
-                )
+                result = await db.exec(select(Document).where(Document.document_id == document_id))
                 doc = result.one_or_none()
                 if doc:
                     await _mark_document_error(db, doc, error_msg)
@@ -221,9 +219,7 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
             return {"status": "error", "error": error_msg}
 
 
-async def _mark_document_error(
-    db: AsyncSession, document: Document, error_message: str
-) -> None:
+async def _mark_document_error(db: AsyncSession, document: Document, error_message: str) -> None:
     """
     Mark document as ERROR status with error message.
 

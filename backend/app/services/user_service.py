@@ -94,9 +94,7 @@ async def check_user_storage_quota(
     return new_usage <= user.storage_limit_bytes
 
 
-async def update_user_storage(
-    session: AsyncSession, user_id: str, delta_bytes: int
-) -> User:
+async def update_user_storage(session: AsyncSession, user_id: str, delta_bytes: int) -> User:
     """
     Update user storage usage by delta.
 
@@ -117,9 +115,7 @@ async def update_user_storage(
 
     new_usage = user.storage_used_bytes + delta_bytes
     if new_usage > user.storage_limit_bytes:
-        raise ValueError(
-            f"Storage limit exceeded: {new_usage} > {user.storage_limit_bytes}"
-        )
+        raise ValueError(f"Storage limit exceeded: {new_usage} > {user.storage_limit_bytes}")
 
     user.storage_used_bytes = new_usage
     user.updated_at = datetime.now(UTC)
@@ -181,9 +177,7 @@ async def soft_delete_user(session: AsyncSession, user_id: str) -> User:
     return user
 
 
-async def update_user_password(
-    session: AsyncSession, user_id: str, password_hash: str
-) -> User:
+async def update_user_password(session: AsyncSession, user_id: str, password_hash: str) -> User:
     """
     Update user password.
 
