@@ -18,6 +18,7 @@ from app.schemas.document import (
     BatchDeleteRequest,
     BatchDeleteResponse,
     DocumentResponse,
+    DocumentsListResponse,
 )
 from app.services.b2_service import get_b2_service
 from app.tasks.worker import get_arq_redis
@@ -186,7 +187,7 @@ async def get_document(
     return document
 
 
-@router.get("")
+@router.get("", response_model=DocumentsListResponse)
 async def list_documents(
     page: int = 1,
     limit: int = 50,
