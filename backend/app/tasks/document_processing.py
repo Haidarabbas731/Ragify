@@ -64,6 +64,16 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
             if document.status == DocumentStatus.ACTIVE.value:
                 return {"status": "already_processed", "document_id": document_id}
 
+            # If document is in PROCESSING status and this is NOT the first attempt,
+            # it likely means another newer job is handling it - exit gracefully
+            job_try = ctx.get("job_try", 1) if ctx else 1
+            if document.status == DocumentStatus.PROCESSING.value and job_try > 1:
+                return {
+                    "status": "skipped",
+                    "document_id": document_id,
+                    "reason": "Document is already being processed by another job",
+                }
+
             # Step 2: Download file from B2
             b2_service = await get_b2_service()
             try:
