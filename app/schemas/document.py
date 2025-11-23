@@ -63,7 +63,7 @@ class DocumentsListResponse(BaseModel):
 class BatchDeleteRequest(BaseModel):
     """Schema for batch document deletion request."""
 
-    document_ids: list[str] = Field(..., min_length=1, max_length=10, description="List of document IDs to delete (max 10)")
+    document_ids: list[str] = Field(..., min_length=1, description="List of document IDs to delete")
 
 
 class BatchDeleteResponse(BaseModel):
