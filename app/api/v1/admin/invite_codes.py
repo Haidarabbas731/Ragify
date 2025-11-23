@@ -10,7 +10,7 @@ from app.services.invite_service import (
     revoke_invite_code,
 )
 
-router = APIRouter(prefix="/invite-codes", tags=["admin"])
+router = APIRouter(prefix="/invite-codes", tags=["invite"])
 
 
 @router.post("", response_model=InviteCodeResponse, status_code=status.HTTP_201_CREATED)
@@ -74,6 +74,4 @@ async def revoke_code(
         await revoke_invite_code(session=session, code=code)
         return {"message": f"Invite code {code} revoked successfully"}
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
