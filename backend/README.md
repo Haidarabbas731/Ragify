@@ -30,7 +30,7 @@ uv sync
 ### 3. Run Development Server
 ```bash
 # Terminal 1: API Server
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # Terminal 2: Background Worker (for document processing)
 uv run arq app.tasks.worker.WorkerSettings
@@ -140,7 +140,7 @@ uv run pytest --cov=app       # With coverage
 **Auto-create tables (on API startup):**
 ```bash
 # Tables are created automatically when you run:
-uv run uvicorn app.main:app --reload
+uv run uvicorn main:app --reload
 ```
 
 **Manual migrations (optional - Alembic):**
@@ -224,7 +224,7 @@ If processing happened in the API, the HTTP request would timeout!
 ### Development
 ```bash
 # Terminal 1: API
-uv run uvicorn app.main:app --reload
+uv run uvicorn main:app --reload
 
 # Terminal 2: Worker
 uv run arq app.tasks.worker.WorkerSettings
