@@ -338,7 +338,7 @@ async def batch_delete_documents(
     arq: ArqRedis = Depends(get_arq_redis),
 ) -> dict:
     """
-    Soft delete multiple documents (max 10 at once).
+    Soft delete multiple documents.
 
     Sets status=DELETED and enqueues cleanup jobs.
     Storage quota is freed immediately.
@@ -351,15 +351,7 @@ async def batch_delete_documents(
 
     Returns:
         Deletion result with counts and errors
-
-    Raises:
-        HTTPException: 400 if too many document IDs
     """
-    if len(request.document_ids) > 10:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Maximum 10 documents can be deleted at once",
-        )
 
     deleted_count = 0
     failed_count = 0
