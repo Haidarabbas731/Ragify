@@ -5,7 +5,6 @@ from collections.abc import AsyncGenerator
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from main import app
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.pool import NullPool
@@ -16,6 +15,7 @@ from app.core.config import settings
 from app.db.database import get_session
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.models.user import User
+from main import app
 
 # Set environment variable to disable Redis rate limiting in tests
 os.environ["TESTING"] = "true"

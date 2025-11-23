@@ -361,8 +361,17 @@ headers={"Authorization": f"Bearer {access_token}"}
 - [x] **UPDATE:** Uses JTI-based blocklisting (more efficient than full token storage)
 - [x] **SECURITY UPDATE:** Now revokes BOTH access token AND refresh token on logout
 - [x] **SECURITY UPDATE:** Accepts optional `refresh_token` in request body to revoke specific refresh token
-- [x] **SECURITY UPDATE:** Also calls `revoke_all_user_sessions()` to invalidate ALL tokens for the user (prevents token reuse attacks)
 - [x] **IMPROVEMENT:** Token pair mapping stored in Redis (`token_pair:{access_jti}` → `refresh_jti`)
+
+**🐛 CRITICAL BUGFIX:** Logout blocking all future logins - 2024-11-23
+- **Issue:** Logout was calling `revoke_all_user_sessions()` which set `user_revoked:{user_id}` in Redis
+- **Impact:** After logout, user could NOT login again for 7 days (TTL of revocation flag)
+- **Root Cause:** `revoke_all_user_sessions()` is meant for password reset/admin suspension, NOT normal logout
+- **Fix Applied in `app/api/v1/auth.py:169-172`:**
+  - Removed `revoke_all_user_sessions()` call from logout endpoint
+  - Individual token revocation (access + refresh JTI blocklist) is sufficient for logout
+  - Updated docstring to remove misleading "revokes all other tokens" claim
+- **Result:** Users can now logout and login again immediately
 - [x] **IMPROVEMENT:** Logout automatically finds refresh token from mapping - no need to send in body
 - [x] **IMPROVEMENT:** Refresh token in body is now truly optional (only needed if mapping expired)
 
