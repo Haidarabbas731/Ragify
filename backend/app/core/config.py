@@ -25,9 +25,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # Milvus
-    MILVUS_HOST: str = "localhost"
-    MILVUS_PORT: int = 19530
+    # Milvus (use full URI for Zilliz Cloud, e.g., https://your-instance.cloud.zilliz.com)
+    MILVUS_URI: str = "http://localhost:19530"
     MILVUS_COLLECTION: str = "knowledge_base"
     MILVUS_TOKEN: str | None = None
 
@@ -38,7 +37,7 @@ class Settings(BaseSettings):
 
     # Google Gemini
     GOOGLE_API_KEY: str
-    GEMINI_MODEL: str = "gemini-2.0-flash-exp"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     EMBEDDING_MODEL: str = "models/gemini-embedding-001"
     # Embedding dimension: 768 (standard), 1024 (better quality - CURRENT), 3072 (maximum)
     # Higher = better semantic understanding but slower search and more storage
