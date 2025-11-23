@@ -66,6 +66,7 @@ class EmbeddingService:
                 model=self.model_name,
                 content=text,
                 task_type="retrieval_document",  # For document indexing
+                output_dimensionality=self.embedding_dim,  # Specify desired dimension
             )
 
             embedding = result["embedding"]
@@ -115,6 +116,7 @@ class EmbeddingService:
                     model=self.model_name,
                     content=text,
                     task_type="retrieval_document",
+                    output_dimensionality=self.embedding_dim,  # Specify desired dimension
                 )
                 embeddings.append(result["embedding"])
 
@@ -156,6 +158,7 @@ class EmbeddingService:
                 model=self.model_name,
                 content=query,
                 task_type="retrieval_query",  # For query matching
+                output_dimensionality=self.embedding_dim,  # Specify desired dimension
             )
 
             embedding = result["embedding"]
