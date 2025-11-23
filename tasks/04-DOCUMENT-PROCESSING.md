@@ -332,6 +332,28 @@ Example: feat(docs): implement document processing pipeline
 - [x] Return paginated response
 - [ ] Test listing with filters (**Deferred to integration testing**)
 
+**✨ IMPROVEMENT:** Admin can see all users' documents - 2024-11-23
+- **Feature:** Admins can now view ALL users' documents, not just their own
+- **Implementation in `app/api/v1/documents.py:190-311`:**
+  - Added `user_id_filter` query parameter (admin only)
+  - Check `current_user.role == "admin"` to determine access level
+  - Regular users: Only see own documents (filtered by user_id)
+  - Admins: See all documents from all users
+  - Admin response includes `user_email` field for each document
+  - Admin response includes `is_admin_view: true` flag
+- **Response format for admin:**
+  ```json
+  {
+    "documents": [{...document..., "user_email": "user@example.com"}],
+    "total": 10,
+    "page": 1,
+    "limit": 50,
+    "pages": 1,
+    "is_admin_view": true
+  }
+  ```
+- **Benefit:** Admins can monitor all user uploads and manage system-wide documents
+
 ### Get Single Document
 **PRD Reference:** Section 9.10 (Document Metadata API)
 - [x] Already implemented in 4.7
