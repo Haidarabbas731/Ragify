@@ -18,7 +18,6 @@ from app.schemas.document import (
     BatchDeleteRequest,
     BatchDeleteResponse,
     DocumentResponse,
-    DocumentsListResponse,
 )
 from app.services.b2_service import get_b2_service
 from app.tasks.worker import get_arq_redis
@@ -187,28 +186,33 @@ async def get_document(
     return document
 
 
-@router.get("", response_model=DocumentsListResponse)
+@router.get("")
 async def list_documents(
     page: int = 1,
     limit: int = 50,
     collection_id: str | None = None,
     status_filter: str | None = None,
+    user_id_filter: str | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
-    List user documents with pagination and filters.
+    List documents with pagination and filters.
+
+    - Regular users: See only their own documents
+    - Admins: See all users' documents (can filter by user_id)
 
     Args:
         page: Page number (1-indexed)
         limit: Items per page (max 100)
         collection_id: Optional filter by collection
         status_filter: Optional filter by status (processing, active, error)
+        user_id_filter: Optional filter by user_id (admin only)
         current_user: Authenticated user
         db: Database session
 
     Returns:
-        Paginated list of documents
+        Paginated list of documents with user info for admins
 
     Raises:
         HTTPException: 400 if invalid parameters
@@ -222,11 +226,20 @@ async def list_documents(
             detail="Limit must be between 1 and 100",
         )
 
-    # Build query
-    query = select(Document).where(
-        Document.user_id == current_user.user_id,
-        Document.status != DocumentStatus.DELETED.value,  # Exclude deleted
-    )
+    # Admin can see all documents, regular users only see their own
+    is_admin = current_user.role == "admin"
+
+    # Build query - exclude deleted documents
+    query = select(Document).where(Document.status != DocumentStatus.DELETED.value)
+
+    # Apply user filter
+    if is_admin and user_id_filter:
+        # Admin filtering by specific user
+        query = query.where(Document.user_id == user_id_filter)
+    elif not is_admin:
+        # Regular user - only show their documents
+        query = query.where(Document.user_id == current_user.user_id)
+    # else: Admin without filter - show all documents
 
     if collection_id:
         query = query.where(Document.collection_id == collection_id)
@@ -236,9 +249,15 @@ async def list_documents(
 
     # Count total
     count_query = select(Document.document_id).where(
-        Document.user_id == current_user.user_id,
-        Document.status != DocumentStatus.DELETED.value,
+        Document.status != DocumentStatus.DELETED.value
     )
+
+    # Apply same user filter to count
+    if is_admin and user_id_filter:
+        count_query = count_query.where(Document.user_id == user_id_filter)
+    elif not is_admin:
+        count_query = count_query.where(Document.user_id == current_user.user_id)
+
     if collection_id:
         count_query = count_query.where(Document.collection_id == collection_id)
     if status_filter:
@@ -256,12 +275,38 @@ async def list_documents(
     result = await db.exec(query)
     documents = result.all()
 
+    # For admin, enrich response with user email
+    if is_admin:
+        # Get all unique user_ids from documents
+        user_ids = {doc.user_id for doc in documents}
+
+        # Fetch user emails in one query
+        user_result = await db.exec(select(User.user_id, User.email).where(User.user_id.in_(user_ids)))  # type:ignore
+        user_map = dict(user_result.all())
+
+        # Add user_email to each document response
+        documents_list = []
+        for doc in documents:
+            doc_dict = doc.model_dump()
+            doc_dict["user_email"] = user_map.get(doc.user_id, "Unknown")
+            documents_list.append(doc_dict)
+
+        return {
+            "documents": documents_list,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit,
+            "is_admin_view": True,
+        }
+
     return {
         "documents": list(documents),
         "total": total,
         "page": page,
         "limit": limit,
         "pages": (total + limit - 1) // limit,
+        "is_admin_view": False,
     }
 
 
