@@ -69,7 +69,7 @@ git commit -m "feat(scope): description"
 **⚠️ ENDPOINT TESTING RULE:**
 
 - ✅ **ALWAYS** test API endpoints after creation/modification
-- ✅ Check server starts without errors: `uv run uvicorn app.main:app --reload`
+- ✅ Check server starts without errors: `uv run uvicorn main:app --reload`
 - ✅ Verify endpoint appears in `/docs` (Swagger UI)
 - ✅ Test at least one successful request manually
 - ✅ Inform user if any issues found during testing
@@ -113,7 +113,7 @@ uv sync                     # Install all dependencies
 
 ```bash
 cd backend
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 # API docs: http://localhost:8000/docs
 # Health: http://localhost:8000/api/v1/health
 ```
