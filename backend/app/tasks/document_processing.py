@@ -136,29 +136,26 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 await milvus_service.connect()
 
                 # Prepare data for Milvus insertion
-                milvus_data = []
-                for i, (chunk, embedding) in enumerate(
+                chunk_ids = []
+                chunk_texts = []
+                chunk_indices = []
+
+                for i, (chunk, _embedding) in enumerate(
                     zip(chunks_data, embeddings, strict=True)
                 ):
-                    milvus_data.append(
-                        {
-                            "chunk_id": f"{document_id}_{i}",
-                            "document_id": document_id,
-                            "user_id": user_id,
-                            "chunk_index": chunk["chunk_index"],
-                            "text": chunk["text"],
-                            "embedding": embedding,
-                            "metadata": {
-                                "filename": document.filename,
-                                "file_type": document.file_type,
-                                "start_pos": chunk["start_pos"],
-                                "end_pos": chunk["end_pos"],
-                            },
-                        }
-                    )
+                    chunk_ids.append(f"{document_id}_{i}")
+                    chunk_texts.append(chunk["text"])
+                    chunk_indices.append(chunk["chunk_index"])
 
                 # Insert into Milvus
-                await milvus_service.insert_documents(milvus_data)  # type:ignore
+                await milvus_service.insert_chunks(
+                    chunk_ids=chunk_ids,
+                    user_id=user_id,
+                    document_id=document_id,
+                    embeddings=embeddings,
+                    chunk_texts=chunk_texts,
+                    chunk_indices=chunk_indices,
+                )  # type:ignore
 
             except Exception as e:
                 # Milvus errors might be transient (connection issues)

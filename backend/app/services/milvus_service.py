@@ -38,14 +38,15 @@ class MilvusService:
             Exception: If Milvus connection fails
         """
         try:
+            # Use URI directly from settings (supports both local and Zilliz Cloud)
             connections.connect(
                 alias="default",
-                host=settings.MILVUS_HOST,
-                port=settings.MILVUS_PORT,
+                uri=settings.MILVUS_URI,
+                token=settings.MILVUS_TOKEN,  # type:ignore
             )
             self._connected = True
             logger.info(
-                f"Milvus connected successfully. Host: {settings.MILVUS_HOST}:{settings.MILVUS_PORT}"
+                f"Milvus connected successfully. URI: {settings.MILVUS_URI}"
             )
 
             # Initialize collection if it doesn't exist
