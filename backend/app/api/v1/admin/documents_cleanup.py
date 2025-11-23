@@ -3,8 +3,6 @@
 Handles administrative tasks like bulk document cleanup.
 """
 
-from datetime import UTC, datetime
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -45,9 +43,7 @@ async def cleanup_user_documents(
     user = result.one_or_none()
 
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     # Get all user documents
     result = await db.exec(select(Document).where(Document.user_id == user_id))
@@ -79,9 +75,7 @@ async def cleanup_user_documents(
 
             # Delete from Milvus
             try:
-                await milvus_service.delete_chunks(
-                    user_id=doc.user_id, document_id=doc.document_id
-                )
+                await milvus_service.delete_chunks(user_id=doc.user_id, document_id=doc.document_id)
             except Exception as e:
                 errors.append(f"Milvus deletion failed for {doc.document_id}: {e}")
 
@@ -155,9 +149,7 @@ async def cleanup_all_documents(
 
             # Delete from Milvus
             try:
-                await milvus_service.delete_chunks(
-                    user_id=doc.user_id, document_id=doc.document_id
-                )
+                await milvus_service.delete_chunks(user_id=doc.user_id, document_id=doc.document_id)
             except Exception as e:
                 errors.append(f"Milvus deletion failed for {doc.document_id}: {e}")
 

@@ -45,11 +45,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
-@router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
-    data: UserRegister, session: AsyncSession = Depends(get_db)  # noqa: B008
+    data: UserRegister,
+    session: AsyncSession = Depends(get_db),  # noqa: B008
 ):
     """
     Register a new user.
@@ -78,9 +77,7 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_db)):  # no
 
     Returns access token (1 hour) and refresh token (7 days).
     """
-    success, message, auth_data = await authenticate_user(
-        session, data.email, data.password
-    )
+    success, message, auth_data = await authenticate_user(session, data.email, data.password)
 
     if not success:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=message)
@@ -104,9 +101,7 @@ async def refresh_token(
     - Returns new access token and refresh token
     - Old refresh token is automatically revoked
     """
-    success, message, tokens_data = await refresh_access_token_from_details(
-        token_details
-    )
+    success, message, tokens_data = await refresh_access_token_from_details(token_details)
 
     if not success:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=message)
@@ -148,9 +143,7 @@ async def logout(
     if access_jti:
         exp = token_details.get("exp", 0)
         access_ttl = (
-            max(int(exp - time.time()), 0)
-            if exp
-            else settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            max(int(exp - time.time()), 0) if exp else settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
         await add_jti_to_blocklist(access_jti, access_ttl)
 
@@ -186,7 +179,8 @@ async def logout(
 
 @router.post("/password-reset/request")
 async def request_password_reset(
-    data: PasswordResetRequest, session: AsyncSession = Depends(get_db)  # noqa: B008
+    data: PasswordResetRequest,
+    session: AsyncSession = Depends(get_db),  # noqa: B008
 ):
     """
     Request password reset email.
@@ -229,7 +223,8 @@ async def request_password_reset(
 
 @router.post("/password-reset/confirm")
 async def confirm_password_reset(
-    data: PasswordResetConfirm, session: AsyncSession = Depends(get_db)  # noqa: B008
+    data: PasswordResetConfirm,
+    session: AsyncSession = Depends(get_db),  # noqa: B008
 ):
     """
     Confirm password reset with token and new password.

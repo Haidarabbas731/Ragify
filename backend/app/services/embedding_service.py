@@ -123,9 +123,7 @@ class EmbeddingService:
             # Validate dimensions
             for emb in embeddings:
                 if len(emb) != self.embedding_dim:
-                    raise ValueError(
-                        f"Expected {self.embedding_dim}-dim embedding, got {len(emb)}"
-                    )
+                    raise ValueError(f"Expected {self.embedding_dim}-dim embedding, got {len(emb)}")
 
             logger.info(f"Generated {len(embeddings)} embeddings in batch")
             return embeddings

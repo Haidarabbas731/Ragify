@@ -26,9 +26,7 @@ from app.tasks.worker import get_arq_redis
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
-@router.post(
-    "/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     file: UploadFile = File(..., description="Document file (PDF, DOCX, TXT, MD)"),
     collection_id: str | None = Form(
@@ -68,9 +66,7 @@ async def upload_document(
     """
     # Validate file type
     if not file.filename:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required")
 
     file_extension = file.filename.split(".")[-1].lower()
     if file_extension not in settings.allowed_file_types_list:
@@ -186,9 +182,7 @@ async def get_document(
     document = result.one_or_none()
 
     if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
     return document
 
@@ -220,9 +214,7 @@ async def list_documents(
         HTTPException: 400 if invalid parameters
     """
     if page < 1:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Page must be >= 1"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Page must be >= 1")
 
     if limit < 1 or limit > 100:
         raise HTTPException(
@@ -258,9 +250,7 @@ async def list_documents(
     # Paginate
     offset = (page - 1) * limit
     query = (
-        query.offset(offset)
-        .limit(limit)
-        .order_by(Document.uploaded_at.desc())  # type:ignore
+        query.offset(offset).limit(limit).order_by(Document.uploaded_at.desc())  # type:ignore
     )  # type:ignore
 
     result = await db.exec(query)
@@ -306,9 +296,7 @@ async def delete_document(
     document = result.one_or_none()
 
     if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
     # Soft delete
     document.status = DocumentStatus.DELETED.value
@@ -371,10 +359,12 @@ async def batch_delete_documents(
 
             if not document:
                 failed_count += 1
-                errors.append({
-                    "document_id": document_id,
-                    "error": "Document not found or not owned by user"
-                })
+                errors.append(
+                    {
+                        "document_id": document_id,
+                        "error": "Document not found or not owned by user",
+                    }
+                )
                 continue
 
             # Soft delete
@@ -394,10 +384,7 @@ async def batch_delete_documents(
 
         except Exception as e:
             failed_count += 1
-            errors.append({
-                "document_id": document_id,
-                "error": str(e)
-            })
+            errors.append({"document_id": document_id, "error": str(e)})
 
     # Free storage quota
     current_user.storage_used_bytes -= total_size_freed
@@ -445,14 +432,24 @@ async def retry_failed_document(
     document = result.one_or_none()
 
     if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
-    if document.status != DocumentStatus.ERROR.value:
+    # Allow retry for ERROR or stuck PROCESSING documents (> 30 min)
+    if document.status == DocumentStatus.ERROR.value:
+        # Always allow retry for ERROR status
+        pass
+    elif document.status == DocumentStatus.PROCESSING.value:
+        # Only allow retry if stuck for > 30 minutes
+        time_since_upload = datetime.now(UTC) - document.uploaded_at
+        if time_since_upload.total_seconds() < 1800:  # 30 minutes
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Document is still processing. Wait 30 minutes before retry.",
+            )
+    else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only failed documents can be retried",
+            detail="Only failed or stuck documents can be retried",
         )
 
     # Reset status
@@ -512,9 +509,7 @@ async def update_document_metadata(
     document = result.one_or_none()
 
     if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
     # Update fields
     if collection_id is not None:

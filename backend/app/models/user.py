@@ -19,9 +19,7 @@ class User(SQLModel, table=True):
 
     __tablename__ = "users"  # type:ignore
 
-    user_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()), primary_key=True, index=True
-    )
+    user_id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True, index=True)
     email: str = Field(unique=True, index=True, max_length=255)
     password_hash: str = Field(max_length=255)
     role: str = Field(default="user", max_length=20)
@@ -37,12 +35,18 @@ class User(SQLModel, table=True):
     last_login_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))  # type:ignore
 
     # Timestamps
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))  # type:ignore
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))  # type:ignore
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )  # type:ignore
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )  # type:ignore
 
     # Soft delete flag
     is_active: bool = Field(default=True)
 
     # Invite tracking
     invited_by_code: str | None = Field(default=None, max_length=24)
-    invited_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))  # type:ignore
+    invited_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )  # type:ignore

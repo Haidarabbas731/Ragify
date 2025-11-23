@@ -19,9 +19,7 @@ class InviteCode(SQLModel, table=True):
 
     __tablename__ = "invite_codes"  # type:ignore
 
-    invite_code_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()), primary_key=True
-    )
+    invite_code_id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
 
     # KB-XXXX-XXXX-XXXX format
     code: str = Field(unique=True, index=True, max_length=24)
@@ -43,4 +41,6 @@ class InviteCode(SQLModel, table=True):
     description: str | None = Field(default=None, max_length=255)
 
     # Timestamp
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True)))  # type:ignore
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
+    )  # type:ignore

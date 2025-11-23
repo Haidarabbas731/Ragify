@@ -59,9 +59,7 @@ async def generate_invite_code(
     return invite_code
 
 
-async def get_invite_code_by_string(
-    session: AsyncSession, code: str
-) -> InviteCode | None:
+async def get_invite_code_by_string(session: AsyncSession, code: str) -> InviteCode | None:
     """
     Get invite code by code string.
 

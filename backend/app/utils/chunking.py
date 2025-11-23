@@ -1,5 +1,3 @@
-
-
 class RecursiveCharacterTextSplitter:
     """
     Split text into chunks recursively by separators.
@@ -8,10 +6,7 @@ class RecursiveCharacterTextSplitter:
     """
 
     def __init__(
-        self,
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
-        separators: list[str] | None = None
+        self, chunk_size: int = 1000, chunk_overlap: int = 200, separators: list[str] | None = None
     ):
         """
         Initialize text splitter.
@@ -77,9 +72,7 @@ class RecursiveCharacterTextSplitter:
                 if current_chunk:
                     chunk_text = separator.join(current_chunk)
                     if len(chunk_text) > self.chunk_size:
-                        chunks.extend(
-                            self._split_text_recursive(chunk_text, remaining_separators)
-                        )
+                        chunks.extend(self._split_text_recursive(chunk_text, remaining_separators))
                     else:
                         chunks.append(chunk_text)
 
@@ -89,9 +82,7 @@ class RecursiveCharacterTextSplitter:
         if current_chunk:
             chunk_text = separator.join(current_chunk)
             if len(chunk_text) > self.chunk_size:
-                chunks.extend(
-                    self._split_text_recursive(chunk_text, remaining_separators)
-                )
+                chunks.extend(self._split_text_recursive(chunk_text, remaining_separators))
             else:
                 chunks.append(chunk_text)
 
@@ -137,16 +128,18 @@ class RecursiveCharacterTextSplitter:
                 result.append(chunk)
             else:
                 prev_chunk = chunks[i - 1]
-                overlap_text = prev_chunk[-self.chunk_overlap:] if len(prev_chunk) > self.chunk_overlap else prev_chunk
+                overlap_text = (
+                    prev_chunk[-self.chunk_overlap :]
+                    if len(prev_chunk) > self.chunk_overlap
+                    else prev_chunk
+                )
                 result.append(overlap_text + chunk)
 
         return result
 
 
 def create_chunks_with_metadata(
-    text: str,
-    chunk_size: int = 1000,
-    chunk_overlap: int = 200
+    text: str, chunk_size: int = 1000, chunk_overlap: int = 200
 ) -> list[dict]:
     """
     Create chunks with metadata (index, position).
@@ -159,10 +152,7 @@ def create_chunks_with_metadata(
     Returns:
         List of dicts with 'text', 'chunk_index', 'start_pos', 'end_pos'
     """
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap
-    )
+    splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
     chunks = splitter.split_text(text)
 
@@ -172,12 +162,14 @@ def create_chunks_with_metadata(
     for idx, chunk_text in enumerate(chunks):
         chunk_length = len(chunk_text)
 
-        chunks_with_metadata.append({
-            'text': chunk_text,
-            'chunk_index': idx,
-            'start_pos': current_position,
-            'end_pos': current_position + chunk_length
-        })
+        chunks_with_metadata.append(
+            {
+                "text": chunk_text,
+                "chunk_index": idx,
+                "start_pos": current_position,
+                "end_pos": current_position + chunk_length,
+            }
+        )
 
         current_position += chunk_length - chunk_overlap
 

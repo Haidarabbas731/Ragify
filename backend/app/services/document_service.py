@@ -48,9 +48,7 @@ async def create_document(
     return document
 
 
-async def get_document_by_id(
-    session: AsyncSession, document_id: str
-) -> Document | None:
+async def get_document_by_id(session: AsyncSession, document_id: str) -> Document | None:
     """
     Get document by ID.
 
@@ -61,9 +59,7 @@ async def get_document_by_id(
     Returns:
         Document instance or None if not found
     """
-    result = await session.exec(
-        select(Document).where(Document.document_id == document_id)
-    )
+    result = await session.exec(select(Document).where(Document.document_id == document_id))
     return result.one_or_none()
 
 
@@ -143,9 +139,7 @@ async def update_document_status(
     return document
 
 
-async def mark_document_as_deleted(
-    session: AsyncSession, document_id: str
-) -> Document:
+async def mark_document_as_deleted(session: AsyncSession, document_id: str) -> Document:
     """
     Mark document as deleted (soft delete).
 
