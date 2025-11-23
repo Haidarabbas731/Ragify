@@ -40,16 +40,6 @@ class DocumentUpdate(BaseModel):
     tags: list[str] | None = None
 
 
-class DocumentListResponse(BaseModel):
-    """Schema for paginated document list response."""
-
-    documents: list[DocumentResponse]
-    total: int
-    page: int
-    page_size: int
-    total_pages: int
-
-
 class DocumentResponseWithUser(DocumentResponse):
     """Schema for document with user email (admin view)."""
 
