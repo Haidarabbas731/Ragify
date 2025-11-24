@@ -12,6 +12,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_user, get_db
 from app.core.config import settings
+from app.models.collection import Collection
 from app.models.document import Document, DocumentStatus
 from app.models.user import User
 from app.schemas.document import (
@@ -30,7 +31,15 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 async def upload_document(
     file: UploadFile = File(..., description="Document file (PDF, DOCX, TXT, MD)"),
     collection_id: str | None = Form(
-        None, description="Optional collection ID to organize document"
+        None,
+        description="Optional collection ID to organize document",
+        openapi_examples={
+            "none": {"summary": "No collection", "value": None},
+            "with_collection": {
+                "summary": "With collection",
+                "value": "550e8400-e29b-41d4-a716-446655440000",
+            },
+        },
     ),
     category: str | None = Form(None, description="Optional category tag"),
     tags: str | None = Form(None, description="Optional comma-separated tags"),
@@ -110,6 +119,20 @@ async def upload_document(
     # Extract document_id from storage_key (format: documents/{user_id}/{uuid}-{filename})
     document_id = storage_key.split("/")[-1].split("-")[0]
 
+    # Validate collection_id if provided
+    validated_collection_id = None
+    if collection_id:
+        # Check if collection exists and belongs to user
+        result = await db.exec(
+            select(Collection).where(
+                Collection.collection_id == collection_id, Collection.user_id == current_user.user_id
+            )
+        )
+        collection = result.first()
+        if collection:
+            validated_collection_id = collection_id
+        # If collection doesn't exist, silently set to None (don't fail upload)
+
     # Prepare metadata
     doc_metadata = {}
     if category:
@@ -121,7 +144,7 @@ async def upload_document(
     document = Document(
         document_id=document_id,
         user_id=current_user.user_id,
-        collection_id=collection_id,
+        collection_id=validated_collection_id,
         filename=file.filename,
         file_type=file_extension,
         size_bytes=file_size,
