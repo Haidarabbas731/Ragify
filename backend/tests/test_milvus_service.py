@@ -24,6 +24,7 @@ def sample_chunks():
         "embeddings": [[0.1] * 1024, [0.2] * 1024, [0.3] * 1024],
         "chunk_texts": ["Text chunk 1", "Text chunk 2", "Text chunk 3"],
         "chunk_indices": [0, 1, 2],
+        "collection_id": "coll-789",
     }
 
 
