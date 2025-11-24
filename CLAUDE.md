@@ -36,6 +36,14 @@ git commit -m "feat(scope): description"
 # Pre-commit hook will automatically run ruff and pytest
 ```
 
+**⚠️ COMMIT MESSAGE RULE:**
+
+- ❌ **DO NOT** add Claude Code promotional messages to commits
+- ❌ **DO NOT** include "Generated with Claude Code" footer
+- ❌ **DO NOT** include "Co-Authored-By: Claude" attribution
+- ✅ Keep commit messages clean and professional
+- ✅ Use conventional commit format: `<type>(<scope>): <description>`
+
 ### 3. Task Completion Workflow
 
 **CRITICAL:** After completing ANY task from `tasks/*.md`:
