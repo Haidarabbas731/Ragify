@@ -460,6 +460,171 @@ Example: feat(docs): implement document processing pipeline
 
 ---
 
+## 4.9.2 Multiple File Upload Support (FUTURE ENHANCEMENT)
+
+**Status:** Deferred to future phase - Not part of Phase 4 completion
+
+**Purpose:** Allow users to upload multiple files at once (currently single file only)
+
+### Requirements
+- [ ] Modify `POST /api/v1/documents/upload` to accept multiple files
+- [ ] Change signature: `file: UploadFile` → `files: list[UploadFile]`
+- [ ] Add validation: Maximum 5 files per request
+- [ ] Validate each file individually (type, size)
+- [ ] Calculate total storage needed for valid files only
+- [ ] Check user storage quota once for total valid files size
+- [ ] Partial success handling: Upload valid files, skip invalid ones
+- [ ] If total storage quota insufficient, reject ALL files
+
+### Implementation Details
+- [ ] Create `BatchUploadResponse` schema in `backend/app/schemas/document.py`
+  - `uploaded_count: int`
+  - `failed_count: int`
+  - `documents: list[DocumentResponse]`
+  - `failures: list[dict]` with filename and error message
+- [ ] Update upload endpoint to loop through files
+- [ ] Use database savepoints for transaction safety
+- [ ] Maintain backward compatibility (single file still works)
+
+### Validation Flow
+```
+1. FOR EACH FILE: Validate type, size → Add to valid_files or failures list
+2. Calculate total_size = sum(valid_files sizes)
+3. Check quota: user available >= total_size → If fails, reject ALL
+4. FOR EACH valid_file: Upload to B2, create DB record, enqueue ARQ job
+5. Return BatchUploadResponse with successes and failures
+```
+
+### Benefits
+- Better UX: Upload multiple documents at once
+- Reduced API calls
+- Batch operations
+
+**Note:** Keep B2 upload synchronous (current behavior). Moving to async would be a separate optimization.
+
+---
+
+## 4.9.3 Async B2 Upload via Redis Storage (FUTURE ENHANCEMENT)
+
+**Status:** Deferred to future phase - Performance optimization
+
+**Purpose:** Move B2 file upload to background processing for faster API response times
+
+### Current Problem
+- Document upload endpoint blocks for 10-40 seconds waiting for B2 upload
+- Worker then downloads from B2 (another 10-40 seconds)
+- Total wasted time: 20-80 seconds with half blocking the user
+- Poor UX: User waits for slow API response
+
+### Proposed Solution: Redis Binary Storage
+**Approach:** Store file bytes temporarily in Redis, upload to B2 in background
+
+### Architecture Changes
+1. **Upload Endpoint** (Becomes fast - <1 second):
+   ```python
+   # Read file content
+   content = await file.read()  # ~500ms for 50MB
+
+   # Store in Redis with 1-hour TTL
+   redis_key = f"upload:{document_id}"
+   await redis.set(redis_key, content, ex=3600)
+
+   # Create DB record (status=UPLOADING)
+   document = Document(status=DocumentStatus.UPLOADING, ...)
+
+   # Enqueue background job
+   await arq.enqueue_job("process_document", document_id, redis_key)
+
+   # Return immediately
+   return {"document_id": document_id, "status": "uploading"}
+   ```
+
+2. **Background Worker** (Handles B2 upload + processing):
+   ```python
+   async def process_document(ctx, document_id: str, redis_key: str):
+       # Get file from Redis
+       content = await redis.get(redis_key)
+
+       # Upload to B2 (10-40s - doesn't block user)
+       storage_key = await b2_service.upload_bytes(content)
+
+       # Update status: UPLOADING → PROCESSING
+       document.status = DocumentStatus.PROCESSING
+       document.storage_key = storage_key
+
+       # Continue with text extraction (use content from memory)
+       text = extract_text(BytesIO(content), file_type)
+
+       # Delete from Redis (cleanup)
+       await redis.delete(redis_key)
+
+       # Rest of processing pipeline...
+   ```
+
+### New Document Status Flow
+```
+UPLOADING (in Redis) → PROCESSING (in B2) → ACTIVE
+                     ↘ ERROR (if B2 upload fails)
+```
+
+### Benefits
+- ✅ **40x faster API response**: 10-40s → <1s
+- ✅ **Better UX**: User gets immediate feedback
+- ✅ **No temp folder needed**: Uses existing Redis infrastructure
+- ✅ **Auto-cleanup**: Redis TTL handles orphaned files
+- ✅ **Eliminates redundant B2 download**: Process from memory
+- ✅ **Distributed system ready**: Works across multiple servers
+
+### Implementation Requirements
+- [ ] Add `UPLOADING` status to `DocumentStatus` enum in `backend/app/models/document.py`
+- [ ] Add Redis binary storage helpers in `backend/app/services/redis_service.py`
+  - `async def store_upload(document_id: str, content: bytes, ttl: int = 3600) -> str`
+  - `async def get_upload(redis_key: str) -> bytes | None`
+  - `async def delete_upload(redis_key: str) -> bool`
+- [ ] Update upload endpoint in `backend/app/api/v1/documents.py`
+  - Store file in Redis instead of uploading to B2
+  - Set status=UPLOADING
+  - Pass redis_key to ARQ job
+- [ ] Update worker in `backend/app/tasks/document_processing.py`
+  - Add B2 upload step at start of processing
+  - Handle B2 upload failures gracefully
+  - Process from memory (no B2 download needed)
+  - Update status: UPLOADING → PROCESSING → ACTIVE
+- [ ] Handle edge cases:
+  - Redis OOM (Out of Memory): Return 503 error, ask user to retry
+  - Redis key expired before processing: Mark document as ERROR
+  - B2 upload failure: Mark document as ERROR with retry option
+
+### Performance Comparison
+| Metric | Current (Sync) | Proposed (Async) | Improvement |
+|--------|---------------|------------------|-------------|
+| API Response Time | 10-40s | <1s | **40x faster** |
+| User Wait Time | 10-40s (blocking) | 0s (background) | **Instant** |
+| Total Processing Time | 10-40s (upload) + 10-40s (download) + 100-500s (processing) | 10-40s (upload) + 0s (download) + 100-500s (processing) | **Eliminates 10-40s redundant download** |
+
+### Trade-offs
+**Pros:**
+- Much faster user experience
+- Uses existing Redis infrastructure
+- Auto-cleanup with TTL
+- No filesystem management
+
+**Cons:**
+- Redis memory usage (50MB per upload × concurrent uploads)
+- Need to handle Redis OOM scenarios
+- Slightly more complex error handling
+
+### Migration Path
+1. Add new status and helpers (backward compatible)
+2. Add feature flag to toggle async upload
+3. Test with subset of users
+4. Roll out gradually
+5. Monitor Redis memory usage
+
+**Note:** This is a significant architectural change and should be implemented after Phase 4 is stable and well-tested.
+
+---
+
 ## 4.10 Testing Document Processing
 
 ### Unit Tests
