@@ -418,6 +418,48 @@ Example: feat(docs): implement document processing pipeline
 
 ---
 
+## 4.9.1 Admin Nuclear Cleanup (Testing Tool)
+
+**SECURITY UPDATE:** Nuclear cleanup endpoint for complete system reset - 2024-11-24
+
+**Purpose:** Admin-only endpoint for testing and development to completely wipe all data across all systems, including orphaned records.
+
+### Implementation
+- [x] Add `drop_and_recreate_collection()` method to `backend/app/services/milvus_service.py`
+  - Drops entire Milvus collection and recreates with schema
+  - Removes ALL vectors regardless of database records
+- [x] Add `list_all_files()` method to `backend/app/services/b2_service.py`
+  - Lists all files in B2 bucket (returns list of storage keys)
+- [x] Add `delete_all_files()` method to `backend/app/services/b2_service.py`
+  - Deletes ALL files from B2 bucket
+  - Returns (deleted_count, error_list)
+- [x] Create `DELETE /api/v1/admin/documents/cleanup-all` endpoint in `backend/app/api/v1/admin/system_cleanup.py`
+  - Performs nuclear cleanup in order: Milvus → B2 → PostgreSQL
+  - Deletes orphaned data (records in Milvus/B2 without PostgreSQL entries)
+  - Resets all users' storage quotas to 0
+  - Returns cleanup summary with counts and errors
+- [x] Test nuclear cleanup on all 3 systems
+  - ✅ Verified: Removed 35 orphaned chunks from Milvus
+  - ✅ Verified: Removed 10 orphaned files from B2
+  - ✅ Verified: All systems clean (0 documents, 0 chunks, 0 files)
+
+### Why Nuclear Cleanup?
+**Problem:** Standard cleanup only processes documents found in PostgreSQL. If PostgreSQL is cleared first, orphaned data remains in Milvus and B2.
+
+**Solution:** Nuclear cleanup doesn't rely on PostgreSQL records:
+1. Drop/recreate entire Milvus collection (guaranteed clean)
+2. List and delete ALL files from B2 bucket
+3. Then clean PostgreSQL
+
+**Use Cases:**
+- Testing: Reset system to clean state between test runs
+- Development: Quick way to clear all test data
+- Recovery: Remove corrupted or orphaned data
+
+**WARNING:** This is a destructive operation that deletes ALL user data across ALL systems. Admin-only with explicit authentication required.
+
+---
+
 ## 4.10 Testing Document Processing
 
 ### Unit Tests

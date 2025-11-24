@@ -61,10 +61,9 @@ git commit -m "feat(scope): description"
 
 **⚠️ CRITICAL GIT RULE:**
 
-- ❌ **NEVER** commit `tasks/*.md` files to git
-- ❌ **NEVER** run `git add tasks/`
-- ✅ Task files are tracked locally only (in .gitignore)
-- ✅ Only commit actual code, tests, and configuration files
+- ✅ Task files (`tasks/*.md`) and documentation (`docs/*.md`) should be committed to git
+- ✅ This ensures all team members and future AI sessions can track project progress
+- ✅ Commit task files along with code changes that complete those tasks
 
 **⚠️ ENDPOINT TESTING RULE:**
 
