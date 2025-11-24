@@ -167,6 +167,7 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                     embeddings=embeddings,
                     chunk_texts=chunk_texts,
                     chunk_indices=chunk_indices,
+                    collection_id=document.collection_id,
                 )  # type:ignore
 
             except Exception as e:
