@@ -1,0 +1,103 @@
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.api.dependencies import get_current_user
+from app.db.database import get_session
+from app.models.user import User
+from app.schemas.chat import ChatQuery, ChatResponse
+from app.services.chat_service import execute_rag_query
+from app.services.redis_service import check_rate_limit
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(tags=["chat"])
+
+
+@router.post("/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
+async def chat_query(
+    request: ChatQuery,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+):
+    """
+    Execute RAG chat query.
+
+    This endpoint:
+    1. Validates rate limits (100 queries/hour per user)
+    2. Executes RAG flow (embed → search → format → LLM → save)
+    3. Returns AI response with source citations
+
+    **Rate Limit:** 100 requests per hour per user
+
+    **Request Body:**
+    - query: User's question (1-2000 chars)
+    - conversation_id: Optional conversation ID for multi-turn chat
+    - collection_id: Optional collection ID to filter search
+    - top_k: Number of chunks to retrieve (1-20, default: 5)
+
+    **Response:**
+    - answer: AI-generated response based on documents
+    - sources: List of source documents cited
+    - conversation_id: Conversation ID (new or existing)
+    - timestamp: Response timestamp
+
+    **Error Responses:**
+    - 400: Invalid query format
+    - 404: Conversation or collection not found
+    - 429: Rate limit exceeded
+    - 500: Internal server error
+    - 504: LLM timeout
+    """
+    try:
+        # Check rate limit: 100 requests per hour
+        rate_limit_key = f"chat:{current_user.user_id}"
+        is_allowed = await check_rate_limit(rate_limit_key, max_requests=100, window_seconds=3600)
+
+        if not is_allowed:
+            logger.warning(f"Rate limit exceeded for user {current_user.user_id}")
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Rate limit exceeded. You can make 100 chat queries per hour.",
+            )
+
+        # Execute RAG query
+        response = await execute_rag_query(
+            query=request.query,
+            user_id=current_user.user_id,
+            db=db,
+            conversation_id=request.conversation_id,
+            collection_id=request.collection_id,
+            top_k=request.top_k,
+        )
+
+        logger.info(
+            f"Chat query completed for user {current_user.user_id} - "
+            f"conversation {response.conversation_id}"
+        )
+        return response
+
+    except ValueError as e:
+        # Invalid input (conversation not found, empty query, etc.)
+        logger.warning(f"Invalid chat request: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
+    except TimeoutError as e:
+        # LLM timeout
+        logger.error(f"LLM timeout for user {current_user.user_id}")
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail=str(e),
+        ) from e
+
+    except Exception as e:
+        # Unexpected error
+        logger.error(f"Chat query failed for user {current_user.user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while processing your question. Please try again.",
+        ) from e
