@@ -327,6 +327,48 @@ class MilvusService:
             logger.error(f"Milvus chunk count failed for document {document_id}: {e}")
             raise
 
+    async def create_collection(self) -> bool:
+        """
+        Create collection with schema (public method for recreation).
+
+        Returns:
+            bool: True if creation successful
+
+        Raises:
+            Exception: If creation fails
+        """
+        return await self._init_collection()
+
+    async def drop_and_recreate_collection(self) -> bool:
+        """
+        Drop collection and recreate it (nuclear cleanup option).
+
+        This is the most thorough way to clean all vectors from Milvus.
+        USE WITH CAUTION - deletes ALL chunks for ALL users!
+
+        Returns:
+            bool: True if operation successful
+
+        Raises:
+            Exception: If operation fails
+        """
+        self._ensure_connected()
+
+        try:
+            # Drop collection if exists
+            if utility.has_collection(self.collection_name):
+                utility.drop_collection(self.collection_name)
+                logger.info(f"Dropped collection: {self.collection_name}")
+
+            # Recreate collection
+            await self._init_collection()
+            logger.info(f"Recreated collection: {self.collection_name}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to drop/recreate collection: {e}")
+            raise
+
     def disconnect(self):
         """Disconnect from Milvus server."""
         if self._connected:
