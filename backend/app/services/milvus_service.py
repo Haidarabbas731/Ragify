@@ -69,6 +69,7 @@ class MilvusService:
         - chunk_id: Primary key (VARCHAR 36)
         - user_id: User ID for isolation (VARCHAR 36)
         - document_id: Reference to document (VARCHAR 36)
+        - collection_id: Collection ID for filtering (VARCHAR 36, nullable)
         - embedding: Vector embedding (FLOAT_VECTOR from config)
         - chunk_text: Original text chunk (VARCHAR 65535)
         - chunk_index: Chunk position in document (INT64)
@@ -83,6 +84,7 @@ class MilvusService:
             FieldSchema(name="chunk_id", dtype=DataType.VARCHAR, is_primary=True, max_length=36),
             FieldSchema(name="user_id", dtype=DataType.VARCHAR, max_length=36),
             FieldSchema(name="document_id", dtype=DataType.VARCHAR, max_length=36),
+            FieldSchema(name="collection_id", dtype=DataType.VARCHAR, max_length=36, nullable=True),
             FieldSchema(
                 name="embedding",
                 dtype=DataType.FLOAT_VECTOR,
@@ -117,6 +119,7 @@ class MilvusService:
         embeddings: list[list[float]],
         chunk_texts: list[str],
         chunk_indices: list[int],
+        collection_id: str | None = None,
     ) -> bool:
         """
         Insert document chunks with embeddings into Milvus.
@@ -128,6 +131,7 @@ class MilvusService:
             embeddings: List of embedding vectors (dimension from config)
             chunk_texts: List of original text chunks
             chunk_indices: List of chunk positions
+            collection_id: Collection ID for filtering (optional)
 
         Returns:
             bool: True if insertion successful
@@ -148,6 +152,7 @@ class MilvusService:
                 chunk_ids,
                 [user_id] * len(chunk_ids),
                 [document_id] * len(chunk_ids),
+                [collection_id if collection_id else ""] * len(chunk_ids),
                 embeddings,
                 chunk_texts,
                 chunk_indices,
@@ -158,7 +163,7 @@ class MilvusService:
             self.collection.flush()  # type:ignore
 
             logger.info(
-                f"Inserted {len(chunk_ids)} chunks for document {document_id} (user {user_id})"
+                f"Inserted {len(chunk_ids)} chunks for document {document_id} (user {user_id}, collection {collection_id})"
             )
             return True
 
@@ -172,6 +177,7 @@ class MilvusService:
         query_embedding: list[float],
         top_k: int = 5,
         document_ids: list[str] | None = None,
+        collection_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """
         Search for similar chunks using vector similarity.
@@ -181,6 +187,7 @@ class MilvusService:
             query_embedding: Query vector (dimension from config)
             top_k: Number of results to return (default: 5)
             document_ids: Optional filter by document IDs
+            collection_id: Optional filter by collection ID
 
         Returns:
             list[dict]: List of search results with chunk data and scores
@@ -196,6 +203,10 @@ class MilvusService:
 
             # Build filter expression for user isolation
             filter_expr = f"user_id == '{user_id}'"
+
+            # Add collection filter if specified
+            if collection_id:
+                filter_expr += f" and collection_id == '{collection_id}'"
 
             # Add document filter if specified
             if document_ids:
@@ -218,6 +229,7 @@ class MilvusService:
                 output_fields=[
                     "chunk_id",
                     "document_id",
+                    "collection_id",
                     "chunk_text",
                     "chunk_index",
                 ],
@@ -231,6 +243,7 @@ class MilvusService:
                         {
                             "chunk_id": hit.entity.get("chunk_id"),
                             "document_id": hit.entity.get("document_id"),
+                            "collection_id": hit.entity.get("collection_id"),
                             "chunk_text": hit.entity.get("chunk_text"),
                             "chunk_index": hit.entity.get("chunk_index"),
                             "score": hit.score,  # Cosine similarity score
