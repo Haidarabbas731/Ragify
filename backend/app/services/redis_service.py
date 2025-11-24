@@ -221,6 +221,43 @@ async def delete_password_reset_token(token: str) -> None:
         await redis.aclose()
 
 
+async def check_rate_limit(key: str, max_requests: int, window_seconds: int) -> bool:
+    """
+    Check if a key has exceeded its rate limit using Redis INCR.
+
+    This implements a sliding window rate limiter using Redis.
+    Rate limits are hierarchical:
+    - Document upload: 10 per hour
+    - Chat query: 100 per hour
+    - Authentication: 5 failed attempts per 15 minutes
+
+    Args:
+        key: Rate limit key (e.g., "upload:user_id", "chat:user_id")
+        max_requests: Maximum number of requests allowed in window
+        window_seconds: Time window in seconds
+
+    Returns:
+        bool: True if request is allowed, False if limit exceeded
+
+    Raises:
+        Exception: If Redis operation fails
+    """
+    redis = await get_redis()
+    try:
+        # Increment counter
+        count = await redis.incr(key)
+
+        # Set expiry on first request
+        if count == 1:
+            await redis.expire(key, window_seconds)
+
+        # Check if limit exceeded
+        return count <= max_requests
+
+    finally:
+        await redis.aclose()
+
+
 async def check_email_rate_limit(email: str) -> tuple[bool, int]:
     """
     Check if email has exceeded password reset rate limit.

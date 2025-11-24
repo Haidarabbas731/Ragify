@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pymilvus import connections, utility
 from redis.asyncio import Redis
 from sqlalchemy import text
 
@@ -14,6 +15,7 @@ from app.db.database import async_engine, init_db
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.size_limit import RequestSizeLimitMiddleware
+from app.services.b2_service import B2Service
 
 configure_logging(log_level=settings.LOG_LEVEL)
 
@@ -98,6 +100,8 @@ async def health_check():
         "api": "up",
         "database": "down",
         "redis": "down",
+        "b2_storage": "down",
+        "milvus": "down",
     }
 
     arq_stats = {
@@ -105,6 +109,7 @@ async def health_check():
         "failed_tasks_24h": 0,
     }
 
+    # Check PostgreSQL
     try:
         async with async_engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
@@ -112,11 +117,13 @@ async def health_check():
     except Exception:
         pass
 
+    # Check Redis
     try:
         redis = Redis.from_url(settings.REDIS_URL, decode_responses=True)
         await redis.ping()
         services["redis"] = "up"
 
+        # Get ARQ worker stats
         try:
             pending = await redis.llen("arq:queue")  # type: ignore
             arq_stats["pending_tasks"] = pending
@@ -130,6 +137,31 @@ async def health_check():
         await redis.aclose()
     except Exception:
         pass
+
+    # Check Backblaze B2
+    try:
+        b2_service = B2Service()
+        await b2_service.authorize()
+        services["b2_storage"] = "up"
+    except Exception:
+        pass
+
+    # Check Milvus
+    try:
+        connections.connect(
+            alias="health_check",
+            uri=settings.MILVUS_URI,
+            token=settings.MILVUS_TOKEN,  # type: ignore
+        )
+        # Check if collection exists as a health check
+        utility.has_collection(settings.MILVUS_COLLECTION, using="health_check")
+        services["milvus"] = "up"
+        connections.disconnect(alias="health_check")
+    except Exception:
+        try:
+            connections.disconnect(alias="health_check")
+        except Exception:
+            pass
 
     overall_status = "healthy" if all(s == "up" for s in services.values()) else "degraded"
 
