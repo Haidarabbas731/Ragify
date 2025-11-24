@@ -669,21 +669,23 @@ UPLOADING (in Redis) → PROCESSING (in B2) → ACTIVE
 - [ ] **Confirm arq worker config matches PRD Section 11.3**
 
 Before moving to Phase 5, verify:
-- [ ] Document upload endpoint working
-- [ ] Text extraction working for all file types
-- [ ] Chunking working with correct size/overlap
-- [ ] Background processing working (arq worker)
-- [ ] Embeddings generated and stored in Milvus
-- [ ] Document status updates correctly (PROCESSING → ACTIVE)
-- [ ] Error handling working (corrupted files)
-- [ ] Soft delete working
-- [ ] Cleanup jobs working
-- [ ] Retry failed document working
-- [ ] Storage quota enforcement working
-- [ ] All tests passing (`pytest backend/tests/test_document*.py`)
-- [ ] Can upload a PDF and see it processed
-- [ ] Can list documents
-- [ ] Can delete document
+- [x] Document upload endpoint working ✅ **Tested - Previous session**
+- [x] Text extraction working for all file types ✅ **Tested - Previous session**
+- [x] Chunking working with correct size/overlap ✅ **Tested - Previous session**
+- [x] Background processing working (arq worker) ✅ **Tested - Previous session**
+- [x] Embeddings generated and stored in Milvus ✅ **Tested - Previous session**
+- [x] Document status updates correctly (PROCESSING → ACTIVE) ✅ **Tested - Previous session**
+- [x] Error handling working (corrupted files) ✅ **Tested - Previous session**
+- [x] Soft delete working ✅ **Tested - Previous session**
+- [x] Cleanup jobs working ✅ **Tested - Previous session (B2 deletion verified)**
+- [x] Retry failed document working ✅ **Tested - Previous session**
+- [x] Storage quota enforcement working ✅ **Tested - Previous session**
+- [ ] All tests passing (`pytest backend/tests/test_document*.py`) - **Integration tests not yet created**
+- [x] Can upload a PDF and see it processed ✅ **Tested - Previous session**
+- [x] Can list documents ✅ **Tested - Previous session**
+- [x] Can delete document ✅ **Tested - Previous session**
+
+**Note:** Phase 4 manual/integration testing was completed in previous session. Unit tests for document processing endpoints can be added in future iterations.
 
 ---
 
