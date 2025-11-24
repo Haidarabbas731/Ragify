@@ -447,6 +447,83 @@ async def batch_delete_documents(
     }
 
 
+@router.post("/delete-all-mine", response_model=BatchDeleteResponse)
+async def delete_all_my_documents(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    arq: ArqRedis = Depends(get_arq_redis),
+) -> dict:
+    """
+    Soft delete ALL documents owned by current user.
+
+    Sets status=DELETED for all user's documents and enqueues cleanup jobs.
+    Storage quota is freed immediately.
+
+    Args:
+        current_user: Authenticated user
+        db: Database session
+        arq: ARQ Redis connection
+
+    Returns:
+        Deletion result with counts
+    """
+    # Get all user's documents
+    result = await db.exec(
+        select(Document).where(
+            Document.user_id == current_user.user_id,
+            Document.status != DocumentStatus.DELETED.value,
+        )
+    )
+    documents = result.all()
+
+    if not documents:
+        return {
+            "deleted_count": 0,
+            "failed_count": 0,
+            "errors": None,
+        }
+
+    deleted_count = 0
+    failed_count = 0
+    errors = []
+    total_size_freed = 0
+
+    for document in documents:
+        try:
+            # Soft delete
+            document.status = DocumentStatus.DELETED.value
+            document.deleted_at = datetime.now(UTC)
+            total_size_freed += document.size_bytes
+
+            db.add(document)
+
+            # Enqueue cleanup job
+            try:
+                await arq.enqueue_job("cleanup_deleted_document", document_id=document.document_id)
+            except Exception as e:
+                print(f"Warning: Failed to enqueue cleanup job for {document.document_id}: {e}")
+
+            deleted_count += 1
+
+        except Exception as e:
+            failed_count += 1
+            errors.append({"document_id": document.document_id, "error": str(e)})
+
+    # Free storage quota
+    current_user.storage_used_bytes -= total_size_freed
+    if current_user.storage_used_bytes < 0:
+        current_user.storage_used_bytes = 0
+
+    db.add(current_user)
+    await db.commit()
+
+    return {
+        "deleted_count": deleted_count,
+        "failed_count": failed_count,
+        "errors": errors if errors else None,
+    }
+
+
 @router.post("/{document_id}/retry", response_model=DocumentResponse)
 async def retry_failed_document(
     document_id: str,

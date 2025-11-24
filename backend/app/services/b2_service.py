@@ -200,6 +200,72 @@ class B2Service:
             logger.error(f"B2 deletion failed for {storage_key}: {e}")
             raise
 
+    async def list_all_files(self) -> list[str]:
+        """
+        List all file names in the B2 bucket.
+
+        Returns:
+            list[str]: List of all file names (storage keys)
+
+        Raises:
+            Exception: If listing fails
+        """
+        self._ensure_authorized()
+
+        try:
+            all_files = []
+            for file_version, _folder_name in self._bucket.ls(recursive=True):  # type:ignore
+                all_files.append(file_version.file_name)
+
+            logger.info(f"Listed {len(all_files)} files from B2 bucket")
+            return all_files
+
+        except Exception as e:
+            logger.error(f"Failed to list files from B2: {e}")
+            raise
+
+    async def delete_all_files(self) -> tuple[int, list[str]]:
+        """
+        Delete ALL files from the B2 bucket (nuclear cleanup option).
+
+        USE WITH CAUTION - deletes all files in the bucket!
+
+        Returns:
+            tuple[int, list[str]]: (deleted_count, list of errors)
+
+        Raises:
+            Exception: If critical operation fails
+        """
+        self._ensure_authorized()
+
+        try:
+            # List all files
+            all_files = await self.list_all_files()
+
+            if not all_files:
+                logger.info("No files to delete from B2")
+                return (0, [])
+
+            deleted_count = 0
+            errors = []
+
+            # Delete each file
+            for storage_key in all_files:
+                try:
+                    await self.delete_file(storage_key)
+                    deleted_count += 1
+                except Exception as e:
+                    errors.append(f"Failed to delete {storage_key}: {str(e)}")
+
+            logger.info(
+                f"Deleted {deleted_count}/{len(all_files)} files from B2 bucket"
+            )
+            return (deleted_count, errors)
+
+        except Exception as e:
+            logger.error(f"Failed to delete all files from B2: {e}")
+            raise
+
 
 # Singleton instance
 _b2_service: B2Service | None = None
