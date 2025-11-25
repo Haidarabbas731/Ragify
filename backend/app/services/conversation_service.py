@@ -30,16 +30,18 @@ async def get_or_create_conversation(
     """
     if conversation_id:
         # Get existing conversation
-        result = await db.execute(
+        result = await db.exec(
             select(Conversation).where(
                 Conversation.conversation_id == conversation_id,
                 Conversation.user_id == user_id,
             )
         )
-        conversation = result.scalar_one_or_none()
+        conversation = result.one_or_none()
 
         if not conversation:
-            raise ValueError(f"Conversation {conversation_id} not found for user {user_id}")
+            raise ValueError(
+                f"Conversation {conversation_id} not found for user {user_id}"
+            )
 
         return conversation
 
@@ -54,12 +56,18 @@ async def get_or_create_conversation(
     await db.commit()
     await db.refresh(conversation)
 
-    logger.info(f"Created new conversation {conversation.conversation_id} for user {user_id}")
+    logger.info(
+        f"Created new conversation {conversation.conversation_id} for user {user_id}"
+    )
     return conversation
 
 
 async def add_message(
-    db: AsyncSession, conversation_id: str, role: str, content: str, sources: list[dict] | None = None
+    db: AsyncSession,
+    conversation_id: str,
+    role: str,
+    content: str,
+    sources: list[dict] | None = None,
 ) -> Conversation:
     """
     Add a message to a conversation.
@@ -81,10 +89,10 @@ async def add_message(
         raise ValueError(f"Invalid role: {role}. Must be 'user' or 'assistant'")
 
     # Get conversation
-    result = await db.execute(
+    result = await db.exec(
         select(Conversation).where(Conversation.conversation_id == conversation_id)
     )
-    conversation = result.scalar_one_or_none()
+    conversation = result.one_or_none()
 
     if not conversation:
         raise ValueError(f"Conversation {conversation_id} not found")
@@ -97,7 +105,7 @@ async def add_message(
     }
 
     if sources and role == "assistant":
-        message["sources"] = sources
+        message["sources"] = sources  # type:ignore
 
     # Add message to conversation
     conversation.messages.append(message)
@@ -118,7 +126,9 @@ async def add_message(
     return conversation
 
 
-async def get_conversation_by_id(db: AsyncSession, conversation_id: str, user_id: str) -> Conversation | None:
+async def get_conversation_by_id(
+    db: AsyncSession, conversation_id: str, user_id: str
+) -> Conversation | None:
     """
     Get conversation by ID (with user isolation).
 
@@ -130,13 +140,13 @@ async def get_conversation_by_id(db: AsyncSession, conversation_id: str, user_id
     Returns:
         Conversation | None: Conversation if found, None otherwise
     """
-    result = await db.execute(
+    result = await db.exec(
         select(Conversation).where(
             Conversation.conversation_id == conversation_id,
             Conversation.user_id == user_id,
         )
     )
-    return result.scalar_one_or_none()
+    return result.one_or_none()
 
 
 async def list_user_conversations(
@@ -154,18 +164,20 @@ async def list_user_conversations(
     Returns:
         list[Conversation]: List of conversations ordered by updated_at DESC
     """
-    result = await db.execute(
+    result = await db.exec(
         select(Conversation)
         .where(Conversation.user_id == user_id)
-        .order_by(Conversation.updated_at.desc())
+        .order_by(Conversation.updated_at.desc())  # type:ignore
         .limit(limit)
         .offset(offset)
     )
-    conversations = result.scalars().all()
+    conversations = result.all()
     return list(conversations)
 
 
-async def delete_conversation(db: AsyncSession, conversation_id: str, user_id: str) -> bool:
+async def delete_conversation(
+    db: AsyncSession, conversation_id: str, user_id: str
+) -> bool:
     """
     Delete a conversation (hard delete).
 
@@ -193,7 +205,9 @@ async def delete_conversation(db: AsyncSession, conversation_id: str, user_id: s
     return True
 
 
-async def get_last_messages(db: AsyncSession, conversation_id: str, limit: int = 5) -> list[dict]:
+async def get_last_messages(
+    db: AsyncSession, conversation_id: str, limit: int = 5
+) -> list[dict]:
     """
     Get last N messages from a conversation.
 
@@ -208,10 +222,10 @@ async def get_last_messages(db: AsyncSession, conversation_id: str, limit: int =
     Note:
         Returns empty list if conversation not found
     """
-    result = await db.execute(
+    result = await db.exec(
         select(Conversation).where(Conversation.conversation_id == conversation_id)
     )
-    conversation = result.scalar_one_or_none()
+    conversation = result.one_or_none()
 
     if not conversation or not conversation.messages:
         return []
@@ -231,6 +245,9 @@ async def get_conversation_count(db: AsyncSession, user_id: str) -> int:
     Returns:
         int: Number of conversations
     """
-    result = await db.execute(text("SELECT COUNT(*) FROM conversations WHERE user_id = :user_id"), {"user_id": user_id})
+    result = await db.execute(
+        text("SELECT COUNT(*) FROM conversations WHERE user_id = :user_id"),
+        {"user_id": user_id},
+    )
     count = result.scalar()
     return count if count else 0
