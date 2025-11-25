@@ -1,13 +1,18 @@
 import asyncio
+import os
 import secrets
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Change to backend directory so pydantic-settings can find .env
+backend_dir = Path(__file__).parent.parent
+os.chdir(backend_dir)
+
+sys.path.insert(0, str(backend_dir))
 
 
-from app.db.database import get_session
-from app.models.invite_code import InviteCode, InviteCodeStatus
+from app.db.database import get_session  # noqa: E402
+from app.models.invite_code import InviteCode, InviteCodeStatus  # noqa: E402
 
 
 def generate_invite_code() -> str:
