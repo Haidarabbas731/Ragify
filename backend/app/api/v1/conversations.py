@@ -40,14 +40,15 @@ async def list_conversations(
     return [
         ConversationListItem(  # type:ignore
             conversation_id=conv.conversation_id,
+            user_id=conv.user_id,
             message_count=conv.message_count,
             created_at=conv.created_at,
             updated_at=conv.updated_at,
             # Get preview from first user message if exists
-            preview=(  # type:ignore
+            last_message=(  # type:ignore
                 conv.messages[0]["content"][:100]
                 if conv.messages
-                else "New conversation"
+                else None
             ),
         )
         for conv in conversations

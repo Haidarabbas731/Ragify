@@ -1,13 +1,15 @@
+import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_user
 from app.db.database import get_session
 from app.models.user import User
-from app.schemas.chat import ChatQuery, ChatResponse
-from app.services.chat_service import execute_rag_query
+from app.schemas.chat import ChatQuery
+from app.services.chat_service import execute_rag_query, execute_rag_query_stream
 from app.services.redis_service import check_rate_limit
 
 logger = logging.getLogger(__name__)
@@ -15,19 +17,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["chat"])
 
 
-@router.post("/chat", response_model=ChatResponse, status_code=status.HTTP_200_OK)
+@router.post("/chat")
 async def chat_query(
     request: ChatQuery,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
 ):
     """
-    Execute RAG chat query.
+    Execute RAG chat query (with optional streaming).
 
     This endpoint:
     1. Validates rate limits (100 queries/hour per user)
     2. Executes RAG flow (embed → search → format → LLM → save)
-    3. Returns AI response with source citations
+    3. Returns AI response with source citations (JSON or SSE stream)
 
     **Rate Limit:** 100 requests per hour per user
 
@@ -36,12 +38,11 @@ async def chat_query(
     - conversation_id: Optional conversation ID for multi-turn chat
     - collection_id: Optional collection ID to filter search
     - top_k: Number of chunks to retrieve (1-20, default: 5)
+    - stream: Enable streaming response (SSE) for word-by-word output
 
     **Response:**
-    - answer: AI-generated response based on documents
-    - sources: List of source documents cited
-    - conversation_id: Conversation ID (new or existing)
-    - timestamp: Response timestamp
+    - If stream=false: JSON with answer, sources, conversation_id, timestamp
+    - If stream=true: SSE stream with text chunks (data: {...})
 
     **Error Responses:**
     - 400: Invalid query format
@@ -62,21 +63,56 @@ async def chat_query(
                 detail="Rate limit exceeded. You can make 100 chat queries per hour.",
             )
 
-        # Execute RAG query
-        response = await execute_rag_query(
-            query=request.query,
-            user_id=current_user.user_id,
-            db=db,
-            conversation_id=request.conversation_id,
-            collection_id=request.collection_id,
-            top_k=request.top_k,
-        )
+        # Handle streaming vs non-streaming
+        if request.stream:
+            # Return streaming response (SSE)
+            async def stream_generator():
+                try:
+                    async for chunk in execute_rag_query_stream(
+                        query=request.query,
+                        user_id=current_user.user_id,
+                        db=db,
+                        conversation_id=request.conversation_id,
+                        collection_id=request.collection_id,
+                        top_k=request.top_k,
+                    ):
+                        # Format as SSE (Server-Sent Events)
+                        yield f"data: {json.dumps({'chunk': chunk})}\n\n"
 
-        logger.info(
-            f"Chat query completed for user {current_user.user_id} - "
-            f"conversation {response.conversation_id}"
-        )
-        return response
+                    # Send final message to indicate completion
+                    yield "data: {\"done\": true}\n\n"
+
+                except Exception as e:
+                    logger.error(f"Streaming error: {e}")
+                    error_data = json.dumps({"error": str(e)})
+                    yield f"data: {error_data}\n\n"
+
+            logger.info(f"Starting streaming chat for user {current_user.user_id}")
+            return StreamingResponse(
+                stream_generator(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "X-Accel-Buffering": "no",
+                },
+            )
+
+        else:
+            # Execute regular RAG query (non-streaming)
+            response = await execute_rag_query(
+                query=request.query,
+                user_id=current_user.user_id,
+                db=db,
+                conversation_id=request.conversation_id,
+                collection_id=request.collection_id,
+                top_k=request.top_k,
+            )
+
+            logger.info(
+                f"Chat query completed for user {current_user.user_id} - "
+                f"conversation {response.conversation_id}"
+            )
+            return response
 
     except ValueError as e:
         # Invalid input (conversation not found, empty query, etc.)
