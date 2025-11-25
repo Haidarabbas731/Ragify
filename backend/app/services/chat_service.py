@@ -1,15 +1,22 @@
 import logging
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
+from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.models.document import Document
 from app.prompts.chat_prompt import (
     SYSTEM_PROMPT,
     format_context_with_metadata,
     format_user_prompt,
 )
 from app.schemas.chat import ChatResponse, SourceCitation
-from app.services.conversation_service import add_message, get_or_create_conversation
+from app.services.conversation_service import (
+    add_message,
+    get_last_messages,
+    get_or_create_conversation,
+)
 from app.services.document_service import get_document_by_id
 from app.services.embedding_service import get_embedding_service
 from app.services.llm_service import get_llm_service
@@ -30,14 +37,17 @@ async def execute_rag_query(
     Execute complete RAG (Retrieval-Augmented Generation) query flow.
 
     Flow:
-    1. Generate query embedding
-    2. Search Milvus for similar chunks
-    3. Enrich chunks with document metadata
-    4. Format context from results
-    5. Build RAG prompt
-    6. Call LLM for answer
-    7. Save user query and assistant response to conversation
-    8. Return response with sources
+    1. Get or create conversation
+    2. Generate query embedding
+    3. Search Milvus for similar chunks
+    4. Enrich chunks with document metadata
+    5. Handle no results edge case
+    6. Format context from results
+    7. Get conversation history (last 5 messages)
+    8. Build RAG prompt with conversation context
+    9. Call LLM for answer
+    10. Save user query and assistant response to conversation
+    11. Return response with sources
 
     Args:
         query: User's question
@@ -84,7 +94,7 @@ async def execute_rag_query(
 
         # Step 5: Handle no results edge case
         if not enriched_chunks:
-            response_text = _generate_no_results_response(user_id, db)
+            response_text = await _generate_no_results_response(user_id, db)
             await _save_to_conversation(
                 db, conversation.conversation_id, query, response_text, []
             )
@@ -98,22 +108,27 @@ async def execute_rag_query(
         # Step 6: Format context and extract sources
         formatted_context, sources = format_context_with_metadata(enriched_chunks)
 
-        # Step 7: Build prompts
-        user_prompt = format_user_prompt(formatted_context, query)
+        # Step 7: Get conversation history (last 5 messages for context)
+        conversation_history = await get_last_messages(
+            db, conversation.conversation_id, limit=5
+        )
 
-        # Step 8: Call LLM for response
+        # Step 8: Build prompts with conversation history
+        user_prompt = format_user_prompt(formatted_context, query, conversation_history)
+
+        # Step 9: Call LLM for response
         llm_service = await get_llm_service()
         response_text = await llm_service.generate_response(
             SYSTEM_PROMPT, user_prompt, timeout=10
         )
         logger.info(f"Generated LLM response ({len(response_text)} chars)")
 
-        # Step 9: Save to conversation
+        # Step 10: Save to conversation
         await _save_to_conversation(
             db, conversation.conversation_id, query, response_text, sources
         )
 
-        # Step 10: Return response
+        # Step 11: Return response
         return ChatResponse(
             answer=response_text,
             sources=[
@@ -162,9 +177,9 @@ async def _enrich_chunks_with_metadata(
             continue
 
         # Get document metadata
-        document = await get_document_by_id(db, document_id, user_id)  # type:ignore
-        if not document:
-            logger.warning(f"Document {document_id} not found for chunk enrichment")
+        document = await get_document_by_id(db, document_id)  # type:ignore
+        if not document or document.user_id != user_id:  # Verify user ownership
+            logger.warning(f"Document {document_id} not found or access denied for user {user_id}")
             continue
 
         # Add document name to chunk
@@ -175,25 +190,57 @@ async def _enrich_chunks_with_metadata(
     return enriched
 
 
-def _generate_no_results_response(user_id: str, db: AsyncSession) -> str:
+async def _generate_no_results_response(user_id: str, db: AsyncSession) -> str:
     """
     Generate helpful response when no results found.
+
+    Checks if user has any documents to provide more specific guidance.
 
     Args:
         user_id: User ID
         db: Database session
 
     Returns:
-        str: Helpful error message
+        str: Helpful error message tailored to user's situation
     """
-    # TODO: Check if user has any documents uploaded
+    # Check if user has any documents
+    result = await db.exec(
+        select(func.count(Document.document_id))
+        .where(Document.user_id == user_id)
+        .where(Document.deleted_at.is_(None))  # type: ignore
+    )
+    doc_count = result.one()
+
+    if doc_count == 0:
+        # User has no documents at all
+        return (
+            "You haven't uploaded any documents yet. "
+            "Please upload documents to your knowledge base so I can answer your questions."
+        )
+
+    # Check if user has any active (processed) documents
+    result = await db.exec(
+        select(func.count(Document.document_id))
+        .where(Document.user_id == user_id)
+        .where(Document.status == "active")
+        .where(Document.deleted_at.is_(None))  # type: ignore
+    )
+    active_count = result.one()
+
+    if active_count == 0:
+        # User has documents but they're all still processing
+        return (
+            "Your documents are still being processed. "
+            "Please wait a moment and try again."
+        )
+
+    # User has active documents but no results found for this query
     return (
         "I don't have enough information in your documents to answer that question. "
         "This could mean:\n"
         "- The information isn't in your uploaded documents\n"
-        "- Your documents are still being processed\n"
-        "- You haven't uploaded any documents yet\n\n"
-        "Try uploading relevant documents or rephrasing your question."
+        "- Try rephrasing your question with different keywords\n\n"
+        "You can also try uploading more relevant documents to expand my knowledge."
     )
 
 
@@ -221,3 +268,109 @@ async def _save_to_conversation(
     await add_message(db, conversation_id, "assistant", assistant_response, sources)
 
     logger.info(f"Saved messages to conversation {conversation_id}")
+
+
+async def execute_rag_query_stream(
+    query: str,
+    user_id: str,
+    db: AsyncSession,
+    conversation_id: str | None = None,
+    collection_id: str | None = None,
+    top_k: int = 5,
+) -> AsyncIterator[str]:
+    """
+    Execute RAG query with streaming response.
+
+    This function performs the same RAG flow as execute_rag_query but streams
+    the LLM response word-by-word for better user experience.
+
+    Flow:
+    1-7. Same as execute_rag_query (prepare context)
+    8. Build prompt with conversation history
+    9. Stream LLM response chunks
+    10. Save complete response to conversation after streaming finishes
+
+    Args:
+        query: User's question
+        user_id: User ID for data isolation
+        db: Database session
+        conversation_id: Optional conversation ID (creates new if None)
+        collection_id: Optional collection filter
+        top_k: Number of chunks to retrieve (default: 5)
+
+    Yields:
+        str: Response chunks as they are generated
+
+    Raises:
+        ValueError: If query is empty
+        TimeoutError: If LLM times out
+        Exception: If any step fails
+    """
+    if not query or not query.strip():
+        raise ValueError("Query cannot be empty")
+
+    logger.info(f"Starting streaming RAG query for user {user_id}: {query[:100]}...")
+
+    try:
+        # Steps 1-2: Get/create conversation and generate embedding
+        conversation = await get_or_create_conversation(db, user_id, conversation_id)
+        embedding_service = await get_embedding_service()
+        query_embedding = await embedding_service.embed_query(query)
+
+        # Steps 3-4: Search Milvus and enrich chunks
+        milvus_service = await get_milvus_service()
+        chunks = await milvus_service.search_similar(
+            user_id=user_id,
+            query_embedding=query_embedding,
+            top_k=top_k,
+            collection_id=collection_id,
+        )
+        enriched_chunks = await _enrich_chunks_with_metadata(db, chunks, user_id)
+
+        # Step 5: Handle no results
+        if not enriched_chunks:
+            response_text = await _generate_no_results_response(user_id, db)
+            await _save_to_conversation(
+                db, conversation.conversation_id, query, response_text, []
+            )
+            yield response_text
+            return
+
+        # Steps 6-7: Format context and get conversation history
+        formatted_context, sources = format_context_with_metadata(enriched_chunks)
+        conversation_history = await get_last_messages(
+            db, conversation.conversation_id, limit=5
+        )
+
+        # Step 8: Build prompt
+        user_prompt = format_user_prompt(formatted_context, query, conversation_history)
+
+        # Step 9: Stream LLM response
+        llm_service = await get_llm_service()
+        full_response = []
+
+        async for chunk in llm_service.generate_response_stream(
+            SYSTEM_PROMPT, user_prompt, timeout=10
+        ):
+            full_response.append(chunk)
+            yield chunk
+
+        # Step 10: Save complete response to conversation
+        response_text = "".join(full_response)
+        await _save_to_conversation(
+            db, conversation.conversation_id, query, response_text, sources
+        )
+
+        logger.info(
+            f"Completed streaming RAG query for conversation {conversation.conversation_id}"
+        )
+
+    except TimeoutError as e:
+        logger.error("LLM streaming request timed out")
+        raise TimeoutError(
+            "The AI is taking too long to respond. Please try again or simplify your question."
+        ) from e
+
+    except Exception as e:
+        logger.error(f"Streaming RAG query failed: {e}")
+        raise
