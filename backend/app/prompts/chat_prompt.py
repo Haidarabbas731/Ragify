@@ -17,26 +17,45 @@ IMPORTANT RULES:
 Your responses should be helpful, accurate, and directly based on the user's uploaded documents."""
 
 
-def format_user_prompt(context: str, query: str) -> str:
+def format_user_prompt(
+    context: str, query: str, conversation_history: list[dict] | None = None
+) -> str:
     """
-    Format the user prompt with context and query.
+    Format the user prompt with context, query, and optional conversation history.
 
     Args:
         context: Formatted context from search results
         query: User's question
+        conversation_history: Optional list of previous messages (last 5)
 
     Returns:
-        str: Formatted prompt combining context and query
+        str: Formatted prompt combining conversation history, context, and query
     """
-    return f"""Context from your documents:
+    # Build conversation history section if provided
+    history_section = ""
+    if conversation_history and len(conversation_history) > 0:
+        history_lines = []
+        for msg in conversation_history:
+            role = msg.get("role", "").capitalize()
+            content = msg.get("content", "")
+            history_lines.append(f"{role}: {content}")
+
+        history_section = f"""Previous conversation:
+{chr(10).join(history_lines)}
+
+---
+
+"""
+
+    return f"""{history_section}Context from your documents:
 
 {context}
 
 ---
 
-User Question: {query}
+Current Question: {query}
 
-Answer the question based ONLY on the context above. If the information is not in the context, say you don't have enough information."""
+Answer the question based on the context above. If this is a follow-up question, use the conversation history to understand the context, but still answer ONLY using information from the documents."""
 
 
 def format_context(chunks: list[dict]) -> str:

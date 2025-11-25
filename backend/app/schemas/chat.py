@@ -10,6 +10,7 @@ class ChatQuery(BaseModel):
     conversation_id: str | None = Field(None, description="Optional conversation ID for multi-turn chat")
     collection_id: str | None = Field(None, description="Optional collection ID to filter search")
     top_k: int = Field(default=5, ge=1, le=20, description="Number of chunks to retrieve")
+    stream: bool = Field(default=False, description="Enable streaming response (SSE)")
 
 
 class SourceCitation(BaseModel):
