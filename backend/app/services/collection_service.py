@@ -58,18 +58,25 @@ async def list_user_collections(session: AsyncSession, user_id: str) -> list[Col
     return list(result.all())
 
 
-async def get_collection_by_id(session: AsyncSession, collection_id: str) -> Collection | None:
+async def get_collection_by_id(
+    session: AsyncSession, collection_id: str, user_id: str
+) -> Collection | None:
     """
-    Get collection by ID.
+    Get collection by ID for a specific user.
 
     Args:
         session: Database session
         collection_id: Collection ID
+        user_id: User ID (for security - ensure user owns collection)
 
     Returns:
         Collection instance or None if not found
     """
-    result = await session.exec(select(Collection).where(Collection.collection_id == collection_id))
+    result = await session.exec(
+        select(Collection).where(
+            Collection.collection_id == collection_id, Collection.user_id == user_id
+        )
+    )
     return result.one_or_none()
 
 
@@ -94,6 +101,7 @@ async def get_collection_document_count(session: AsyncSession, collection_id: st
 async def update_collection(
     session: AsyncSession,
     collection_id: str,
+    user_id: str,
     name: str | None = None,
     description: str | None = None,
 ) -> Collection:
@@ -103,6 +111,7 @@ async def update_collection(
     Args:
         session: Database session
         collection_id: Collection ID
+        user_id: User ID (for security)
         name: Optional new name
         description: Optional new description
 
@@ -112,7 +121,7 @@ async def update_collection(
     Raises:
         ValueError: If collection not found
     """
-    collection = await get_collection_by_id(session, collection_id)
+    collection = await get_collection_by_id(session, collection_id, user_id)
     if not collection:
         raise ValueError(f"Collection {collection_id} not found")
 
@@ -128,18 +137,19 @@ async def update_collection(
     return collection
 
 
-async def delete_collection(session: AsyncSession, collection_id: str) -> None:
+async def delete_collection(session: AsyncSession, collection_id: str, user_id: str) -> None:
     """
     Delete a collection.
 
     Args:
         session: Database session
         collection_id: Collection ID
+        user_id: User ID (for security)
 
     Raises:
         ValueError: If collection not found
     """
-    collection = await get_collection_by_id(session, collection_id)
+    collection = await get_collection_by_id(session, collection_id, user_id)
     if not collection:
         raise ValueError(f"Collection {collection_id} not found")
 

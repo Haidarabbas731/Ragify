@@ -3,7 +3,11 @@ from datetime import UTC, datetime
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.prompts.chat_prompt import SYSTEM_PROMPT, format_context_with_metadata, format_user_prompt
+from app.prompts.chat_prompt import (
+    SYSTEM_PROMPT,
+    format_context_with_metadata,
+    format_user_prompt,
+)
 from app.schemas.chat import ChatResponse, SourceCitation
 from app.services.conversation_service import add_message, get_or_create_conversation
 from app.services.document_service import get_document_by_id
@@ -99,7 +103,9 @@ async def execute_rag_query(
 
         # Step 8: Call LLM for response
         llm_service = await get_llm_service()
-        response_text = await llm_service.generate_response(SYSTEM_PROMPT, user_prompt, timeout=10)
+        response_text = await llm_service.generate_response(
+            SYSTEM_PROMPT, user_prompt, timeout=10
+        )
         logger.info(f"Generated LLM response ({len(response_text)} chars)")
 
         # Step 9: Save to conversation
@@ -156,7 +162,7 @@ async def _enrich_chunks_with_metadata(
             continue
 
         # Get document metadata
-        document = await get_document_by_id(db, document_id, user_id)
+        document = await get_document_by_id(db, document_id, user_id)  # type:ignore
         if not document:
             logger.warning(f"Document {document_id} not found for chunk enrichment")
             continue
