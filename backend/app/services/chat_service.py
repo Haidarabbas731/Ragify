@@ -180,7 +180,9 @@ async def _enrich_chunks_with_metadata(
         # Get document metadata
         document = await get_document_by_id(db, document_id)  # type:ignore
         if not document or document.user_id != user_id:  # Verify user ownership
-            logger.warning(f"Document {document_id} not found or access denied for user {user_id}")
+            logger.warning(
+                f"Document {document_id} not found or access denied for user {user_id}"
+            )
             continue
 
         # Add document name to chunk
@@ -206,7 +208,7 @@ async def _generate_no_results_response(user_id: str, db: AsyncSession) -> str:
     """
     # Check if user has any documents
     result = await db.exec(
-        select(func.count(Document.document_id))
+        select(func.count(Document.document_id))  # type: ignore
         .where(Document.user_id == user_id)
         .where(Document.deleted_at.is_(None))  # type: ignore
     )
