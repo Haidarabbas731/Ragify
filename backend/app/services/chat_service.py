@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.config import settings
 from app.models.document import Document
 from app.prompts.chat_prompt import (
     SYSTEM_PROMPT,
@@ -108,9 +109,9 @@ async def execute_rag_query(
         # Step 6: Format context and extract sources
         formatted_context, sources = format_context_with_metadata(enriched_chunks)
 
-        # Step 7: Get conversation history (last 5 messages for context)
+        # Step 7: Get conversation history for context
         conversation_history = await get_last_messages(
-            db, conversation.conversation_id, limit=5
+            db, conversation.conversation_id, limit=settings.CONVERSATION_HISTORY_LIMIT
         )
 
         # Step 8: Build prompts with conversation history
@@ -339,7 +340,7 @@ async def execute_rag_query_stream(
         # Steps 6-7: Format context and get conversation history
         formatted_context, sources = format_context_with_metadata(enriched_chunks)
         conversation_history = await get_last_messages(
-            db, conversation.conversation_id, limit=5
+            db, conversation.conversation_id, limit=settings.CONVERSATION_HISTORY_LIMIT
         )
 
         # Step 8: Build prompt
