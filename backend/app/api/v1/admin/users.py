@@ -10,6 +10,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.api.dependencies import get_current_admin, get_db
 from app.models.user import User
 from app.schemas.admin import (
+    AdminUserListParams,
     SuspendUserRequest,
     SuspendUserResponse,
     SystemStatsResponse,
@@ -32,12 +33,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/users", response_model=UsersListResponse)
 async def list_users(
-    page: int = 1,
-    limit: int = 50,
-    status_filter: str | None = None,
-    role: str | None = None,
-    sort_by: str = "created_at",
-    order: str = "desc",
+    params: AdminUserListParams = Depends(),
     admin_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -45,46 +41,30 @@ async def list_users(
     List all users with pagination and filters (admin only).
 
     Args:
-        page: Page number (1-indexed)
-        limit: Items per page (max 100)
-        status_filter: Filter by status (active, suspended, pending)
-        role: Filter by role (user, admin)
-        sort_by: Sort field (created_at, email, storage_used_bytes, last_login_at)
-        order: Sort order (asc, desc)
+        params: Query parameters (page, limit, status_filter, role, sort_by, order)
         admin_user: Authenticated admin user
         db: Database session
 
     Returns:
         Paginated list of users
-
-    Raises:
-        HTTPException: 400 if invalid parameters
     """
-    if page < 1:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Page must be >= 1")
-
-    if limit < 1 or limit > 100:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit must be between 1 and 100",
-        )
 
     users, total = await list_all_users(
         session=db,
-        page=page,
-        limit=limit,
-        status=status_filter,
-        role=role,
-        sort_by=sort_by,
-        order=order,
+        page=params.page,
+        limit=params.limit,
+        status=params.status_filter,
+        role=params.role,
+        sort_by=params.sort_by,
+        order=params.order,
     )
 
     return {
         "users": [user.model_dump() for user in users],
         "total": total,
-        "page": page,
-        "limit": limit,
-        "pages": (total + limit - 1) // limit,
+        "page": params.page,
+        "limit": params.limit,
+        "pages": (total + params.limit - 1) // params.limit,
     }
 
 

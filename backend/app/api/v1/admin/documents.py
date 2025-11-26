@@ -12,6 +12,7 @@ from app.api.dependencies import get_current_admin, get_db
 from app.models.document import Document
 from app.models.user import User
 from app.schemas.admin import (
+    AdminDocumentListParams,
     AdminDocumentsListResponse,
     CleanupAllResponse,
     CleanupDocumentsResponse,
@@ -26,12 +27,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/documents", response_model=AdminDocumentsListResponse)
 async def list_all_documents(
-    page: int = 1,
-    limit: int = 50,
-    user_id: str | None = None,
-    status_filter: str | None = None,
-    sort_by: str = "uploaded_at",
-    order: str = "desc",
+    params: AdminDocumentListParams = Depends(),
     admin_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -39,64 +35,47 @@ async def list_all_documents(
     List all documents across all users (admin only).
 
     Args:
-        page: Page number (1-indexed)
-        limit: Items per page (max 100)
-        user_id: Optional filter by specific user
-        status_filter: Optional filter by status (processing, active, error, deleted)
-        sort_by: Sort field (uploaded_at, file_size_bytes, filename)
-        order: Sort order (asc, desc)
+        params: Query parameters (page, limit, user_id, status_filter, sort_by, order)
         admin_user: Authenticated admin user
         db: Database session
 
     Returns:
         Paginated list of all documents with user emails
-
-    Raises:
-        HTTPException: 400 if invalid parameters
     """
-    if page < 1:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Page must be >= 1")
-
-    if limit < 1 or limit > 100:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit must be between 1 and 100",
-        )
-
     # Validate user_id if provided
-    if user_id:
-        validate_uuid(user_id, "user_id")
+    if params.user_id:
+        validate_uuid(params.user_id, "user_id")
 
     # Build query - include deleted documents for admin view
     query = select(Document)
 
-    if user_id:
-        query = query.where(Document.user_id == user_id)
+    if params.user_id:
+        query = query.where(Document.user_id == params.user_id)
 
-    if status_filter:
-        query = query.where(Document.status == status_filter)
+    if params.status_filter:
+        query = query.where(Document.status == params.status_filter)
 
     # Count total
     count_query = select(Document.document_id)
 
-    if user_id:
-        count_query = count_query.where(Document.user_id == user_id)
-    if status_filter:
-        count_query = count_query.where(Document.status == status_filter)
+    if params.user_id:
+        count_query = count_query.where(Document.user_id == params.user_id)
+    if params.status_filter:
+        count_query = count_query.where(Document.status == params.status_filter)
 
     total_result = await db.exec(count_query)
     total = len(total_result.all())
 
     # Sort
-    sort_column = getattr(Document, sort_by, Document.uploaded_at)
-    if order == "desc":
+    sort_column = getattr(Document, params.sort_by, Document.uploaded_at)
+    if params.order == "desc":
         query = query.order_by(sort_column.desc())  # type: ignore
     else:
         query = query.order_by(sort_column.asc())  # type: ignore
 
     # Paginate
-    offset = (page - 1) * limit
-    query = query.offset(offset).limit(limit)
+    offset = (params.page - 1) * params.limit
+    query = query.offset(offset).limit(params.limit)
 
     result = await db.exec(query)
     documents = result.all()
@@ -117,9 +96,9 @@ async def list_all_documents(
     return {
         "documents": documents_list,
         "total": total,
-        "page": page,
-        "limit": limit,
-        "pages": (total + limit - 1) // limit,
+        "page": params.page,
+        "limit": params.limit,
+        "pages": (total + params.limit - 1) // params.limit,
     }
 
 
