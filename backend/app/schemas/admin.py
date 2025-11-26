@@ -51,3 +51,9 @@ class SystemStatsResponse(BaseModel):
     total_conversations: int
     total_storage_bytes: int
     total_storage_gb: float
+
+
+class SuspendUserRequest(BaseModel):
+    """Schema for suspending a user."""
+
+    reason: str = Field(..., min_length=1, max_length=500, description="Reason for suspension")
