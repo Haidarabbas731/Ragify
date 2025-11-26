@@ -12,6 +12,7 @@ from app.services.conversation_service import (
     get_conversation_by_id,
     list_user_conversations,
 )
+from app.utils.validators import validate_uuid
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,7 @@ async def get_conversation(
 
     Returns all messages in the conversation.
     """
+    validate_uuid(conversation_id, "conversation_id")
     conversation = await get_conversation_by_id(
         db, conversation_id, current_user.user_id
     )
@@ -99,6 +101,7 @@ async def delete_conversation_endpoint(
 
     This permanently removes the conversation and all its messages.
     """
+    validate_uuid(conversation_id, "conversation_id")
     try:
         deleted = await delete_conversation(db, conversation_id, current_user.user_id)
 

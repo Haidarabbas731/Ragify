@@ -14,6 +14,7 @@ from app.services.collection_service import (
     list_user_collections,
     update_collection,
 )
+from app.utils.validators import validate_uuid
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,7 @@ async def get_collection(
     """
     Get a specific collection by ID.
     """
+    validate_uuid(collection_id, "collection_id")
     collection = await get_collection_by_id(db, collection_id, current_user.user_id)
 
     if not collection:
@@ -91,6 +93,7 @@ async def update_collection_endpoint(
     """
     Update collection name or description.
     """
+    validate_uuid(collection_id, "collection_id")
     try:
         collection = await update_collection(
             db, collection_id, current_user.user_id, collection_data.name, collection_data.description
@@ -128,6 +131,7 @@ async def delete_collection_endpoint(
     Note: This only deletes the collection metadata. Documents in the collection
     will have their collection_id set to NULL but will not be deleted.
     """
+    validate_uuid(collection_id, "collection_id")
     try:
         await delete_collection(db, collection_id, current_user.user_id)
         logger.info(f"Collection {collection_id} deleted by user {current_user.user_id}")

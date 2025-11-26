@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.utils.validators import validate_uuid
 
 
 class ChatQuery(BaseModel):
@@ -11,6 +13,14 @@ class ChatQuery(BaseModel):
     collection_id: str | None = Field(None, description="Optional collection ID to filter search")
     top_k: int = Field(default=5, ge=1, le=20, description="Number of chunks to retrieve")
     stream: bool = Field(default=False, description="Enable streaming response (SSE)")
+
+    @field_validator("conversation_id", "collection_id")
+    @classmethod
+    def validate_uuid_fields(cls, v: str | None) -> str | None:
+        """Validate that conversation_id and collection_id are valid UUIDs if provided."""
+        if v is not None:
+            validate_uuid(v, "UUID field")
+        return v
 
 
 class SourceCitation(BaseModel):

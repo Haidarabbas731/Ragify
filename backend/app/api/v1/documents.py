@@ -23,6 +23,7 @@ from app.schemas.document import (
 )
 from app.services.b2_service import get_b2_service
 from app.tasks.worker import get_arq_redis
+from app.utils.validators import validate_uuid
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -122,6 +123,7 @@ async def upload_document(
     # Validate collection_id if provided
     validated_collection_id = None
     if collection_id:
+        validate_uuid(collection_id, "collection_id")
         # Check if collection exists and belongs to user
         result = await db.exec(
             select(Collection).where(
@@ -254,6 +256,7 @@ async def list_documents(
     )
 
     if collection_id:
+        validate_uuid(collection_id, "collection_id")
         query = query.where(Document.collection_id == collection_id)
 
     if status_filter:
@@ -616,6 +619,7 @@ async def update_document_metadata(
 
     # Update fields
     if collection_id is not None:
+        validate_uuid(collection_id, "collection_id")
         document.collection_id = collection_id if collection_id else None
 
     # Update metadata

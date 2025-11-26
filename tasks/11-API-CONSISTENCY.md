@@ -48,6 +48,39 @@ Example: feat(api): add response models and UUID validation to all endpoints
 
 ---
 
+## 📊 Status Update (Comprehensive Audit - 47 Endpoints Total)
+
+### ✅ What's Already Done:
+
+**Request BODY Schemas (POST/PUT/PATCH):**
+- ✅ All endpoints properly use Pydantic BaseModel schemas
+- ✅ Existing schemas: `UserRegister`, `UserLogin`, `ChatQuery`, `CollectionCreate`, `CollectionUpdate`, `BatchDeleteRequest`, `InviteCodeCreate`, `SuspendUserRequest`, `PasswordResetRequest`, `PasswordResetConfirm`, `LogoutRequest`
+- ✅ **No work needed here - all POST/PUT/PATCH endpoints have request body schemas**
+
+**Response Models:**
+- ✅ **Phase 1 Complete**: 17 admin endpoints + 2 main app endpoints (19/20 done)
+- ✅ All auth, collections, conversations, documents endpoints already had response models
+- ✅ Total: 46/47 endpoints have response_model decorators
+
+### ⚠️ What Needs Work:
+
+**Response Models:**
+- ⚠️ **1 endpoint remaining**: POST /chat (needs response_model for non-streaming mode)
+
+**Query Parameter REQUEST Schemas:**
+- ❌ **6 endpoints** use inline query parameters instead of Pydantic schemas:
+  1. GET /conversations (needs `ConversationListParams`)
+  2. GET /documents (needs `DocumentListParams`)
+  3. GET /admin/users (needs `AdminUserListParams`)
+  4. GET /admin/documents (needs `AdminDocumentListParams`)
+  5. GET /admin/audit-logs (needs `AuditLogListParams`)
+  6. GET /admin/invite-codes (needs `InviteCodeListParams`)
+
+**UUID Validation:**
+- ❌ **26 parameters** need UUID validation (path, query, form, body fields)
+
+---
+
 ## 11.1 Create Common Response Schemas ✅ COMPLETED
 
 ### Common Response Schemas
@@ -161,64 +194,285 @@ Example: feat(api): add response models and UUID validation to all endpoints
 
 ---
 
-## 11.3 Create Query Parameter Request Schemas
+## 11.3 Create Query Parameter Request Schemas (6 Schemas)
 
-### Query Parameter Schemas (REQUEST MODELS)
-**File:** `backend/app/schemas/params.py` (NEW FILE)
+**Purpose:** Replace inline query parameters with Pydantic schemas for better validation, documentation, and consistency.
 
-- [ ] Create file `backend/app/schemas/params.py`
-- [ ] Create base `PaginationParams` - Reusable pagination
-  ```python
-  class PaginationParams(BaseModel):
-      page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
-      limit: int = Field(default=50, ge=1, le=100, description="Items per page")
-  ```
-- [ ] Create base `SortParams` - Reusable sorting
-  ```python
-  class SortParams(BaseModel):
-      sort_by: str = Field(default="created_at", description="Field to sort by")
-      order: str = Field(default="desc", regex="^(asc|desc)$", description="Sort order")
-  ```
-- [ ] Create `DocumentFilterParams` - Document list query params
-  ```python
-  class DocumentFilterParams(PaginationParams):
-      collection_id: str | None = Field(default=None, description="Filter by collection")
-      status_filter: str | None = Field(default=None, description="Filter by status")
-  ```
-- [ ] Create `UserListParams` - Admin user list query params
-  ```python
-  class UserListParams(PaginationParams, SortParams):
-      status_filter: str | None = Field(default=None, description="Filter by status")
-      role: str | None = Field(default=None, description="Filter by role")
-  ```
-- [ ] Create `AdminDocumentListParams` - Admin document list query params
-  ```python
-  class AdminDocumentListParams(PaginationParams, SortParams):
-      user_id: str | None = Field(default=None, description="Filter by user")
-      status_filter: str | None = Field(default=None, description="Filter by status")
-  ```
-- [ ] Create `AuditLogFilterParams` - Audit log query params
-  ```python
-  class AuditLogFilterParams(PaginationParams):
-      admin_user_id: str | None = Field(default=None, description="Filter by admin")
-      action: str | None = Field(default=None, description="Filter by action type")
-      target_type: str | None = Field(default=None, description="Filter by target type")
-      start_date: datetime | None = Field(default=None, description="Filter from date")
-      end_date: datetime | None = Field(default=None, description="Filter to date")
-  ```
-- [ ] Create `InviteCodeFilterParams` - Invite code list query params
-  ```python
-  class InviteCodeFilterParams(BaseModel):
-      status_filter: str | None = Field(default=None, description="Filter by status")
-      limit: int = Field(default=50, ge=1, le=100, description="Items per page")
-      offset: int = Field(default=0, ge=0, description="Offset for pagination")
-  ```
-- [ ] Create `ConversationListParams` - Conversation list query params
+**Approach:** Add schemas directly to their respective schema files (not a separate params.py file).
+
+---
+
+### 11.3.1 ConversationListParams
+
+**File:** `backend/app/schemas/conversation.py` (ADD to existing file)
+**Used by:** `GET /conversations` (conversations.py:21)
+
+- [ ] Add `ConversationListParams` schema to conversation.py:
   ```python
   class ConversationListParams(BaseModel):
-      limit: int = Field(default=50, ge=1, le=100, description="Items per page")
-      offset: int = Field(default=0, ge=0, description="Offset for pagination")
+      """Query parameters for listing conversations."""
+
+      limit: int = Field(
+          default=50,
+          ge=1,
+          le=100,
+          description="Number of conversations to return"
+      )
+      offset: int = Field(
+          default=0,
+          ge=0,
+          description="Number of conversations to skip"
+      )
   ```
+
+**Current Implementation (inline):**
+```python
+async def list_conversations(
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    ...
+)
+```
+
+**Target Implementation (schema):**
+```python
+async def list_conversations(
+    params: ConversationListParams = Depends(),
+    ...
+):
+    # Access as: params.limit, params.offset
+```
+
+---
+
+### 11.3.2 DocumentListParams
+
+**File:** `backend/app/schemas/document.py` (ADD to existing file)
+**Used by:** `GET /documents` (documents.py:213)
+
+- [ ] Add `DocumentListParams` schema to document.py:
+  ```python
+  class DocumentListParams(BaseModel):
+      """Query parameters for listing user documents."""
+
+      page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
+      limit: int = Field(default=50, ge=1, le=100, description="Items per page")
+      collection_id: str | None = Field(
+          default=None,
+          description="Filter by collection UUID"
+      )
+      status_filter: str | None = Field(
+          default=None,
+          description="Filter by status (processing, active, error, deleted)"
+      )
+  ```
+
+**Current Implementation (inline):**
+```python
+async def list_documents(
+    page: int = 1,
+    limit: int = 50,
+    collection_id: str | None = None,
+    status_filter: str | None = None,
+    ...
+)
+```
+
+**Target Implementation (schema):**
+```python
+async def list_documents(
+    params: DocumentListParams = Depends(),
+    ...
+):
+    # Access as: params.page, params.limit, params.collection_id, params.status_filter
+```
+
+---
+
+### 11.3.3 AdminUserListParams
+
+**File:** `backend/app/schemas/admin.py` (ADD to existing file)
+**Used by:** `GET /admin/users` (admin/users.py:32)
+
+- [ ] Add `AdminUserListParams` schema to admin.py:
+  ```python
+  class AdminUserListParams(BaseModel):
+      """Query parameters for admin user list endpoint."""
+
+      page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
+      limit: int = Field(default=50, ge=1, le=100, description="Items per page")
+      status_filter: str | None = Field(
+          default=None,
+          description="Filter by status (active, suspended, pending)"
+      )
+      role: str | None = Field(
+          default=None,
+          description="Filter by role (user, admin)"
+      )
+      sort_by: str = Field(
+          default="created_at",
+          description="Sort field (created_at, email, storage_used_bytes, last_login_at)"
+      )
+      order: str = Field(
+          default="desc",
+          description="Sort order (asc, desc)"
+      )
+  ```
+
+**Current Implementation (inline):**
+```python
+async def list_users(
+    page: int = 1,
+    limit: int = 50,
+    status_filter: str | None = None,
+    role: str | None = None,
+    sort_by: str = "created_at",
+    order: str = "desc",
+    ...
+)
+```
+
+---
+
+### 11.3.4 AdminDocumentListParams
+
+**File:** `backend/app/schemas/admin.py` (ADD to existing file)
+**Used by:** `GET /admin/documents` (admin/documents.py:26)
+
+- [ ] Add `AdminDocumentListParams` schema to admin.py:
+  ```python
+  class AdminDocumentListParams(BaseModel):
+      """Query parameters for admin document list endpoint."""
+
+      page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
+      limit: int = Field(default=50, ge=1, le=100, description="Items per page")
+      user_id: str | None = Field(
+          default=None,
+          description="Filter by specific user UUID"
+      )
+      status_filter: str | None = Field(
+          default=None,
+          description="Filter by status (processing, active, error, deleted)"
+      )
+      sort_by: str = Field(
+          default="uploaded_at",
+          description="Sort field (uploaded_at, file_size_bytes, filename)"
+      )
+      order: str = Field(
+          default="desc",
+          description="Sort order (asc, desc)"
+      )
+  ```
+
+**Current Implementation (inline):**
+```python
+async def list_all_documents(
+    page: int = 1,
+    limit: int = 50,
+    user_id: str | None = None,
+    status_filter: str | None = None,
+    sort_by: str = "uploaded_at",
+    order: str = "desc",
+    ...
+)
+```
+
+---
+
+### 11.3.5 AuditLogListParams
+
+**File:** `backend/app/schemas/admin.py` (ADD to existing file)
+**Used by:** `GET /admin/audit-logs` (admin/audit_logs.py:19)
+
+- [ ] Add `AuditLogListParams` schema to admin.py:
+  ```python
+  class AuditLogListParams(BaseModel):
+      """Query parameters for admin audit log list endpoint."""
+
+      page: int = Field(default=1, ge=1, description="Page number (1-indexed)")
+      limit: int = Field(default=50, ge=1, le=100, description="Items per page")
+      admin_user_id: str | None = Field(
+          default=None,
+          description="Filter by admin user UUID who performed action"
+      )
+      action: str | None = Field(
+          default=None,
+          description="Filter by action type (SUSPEND_USER, ACTIVATE_USER, DELETE_USER, etc.)"
+      )
+      target_type: str | None = Field(
+          default=None,
+          description="Filter by target type (user, document, invite_code)"
+      )
+      start_date: datetime | None = Field(
+          default=None,
+          description="Filter from date (ISO format)"
+      )
+      end_date: datetime | None = Field(
+          default=None,
+          description="Filter to date (ISO format)"
+      )
+  ```
+
+**Current Implementation (inline):**
+```python
+async def get_audit_logs(
+    page: int = 1,
+    limit: int = 50,
+    admin_user_id: str | None = None,
+    action: str | None = None,
+    target_type: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+    ...
+)
+```
+
+---
+
+### 11.3.6 InviteCodeListParams
+
+**File:** `backend/app/schemas/admin.py` (ADD to existing file)
+**Used by:** `GET /admin/invite-codes` (admin/invite_codes.py:41)
+
+- [ ] Add `InviteCodeListParams` schema to admin.py:
+  ```python
+  class InviteCodeListParams(BaseModel):
+      """Query parameters for admin invite code list endpoint."""
+
+      status_filter: str | None = Field(
+          default=None,
+          description="Filter by status (active, expired, revoked)"
+      )
+      limit: int = Field(
+          default=50,
+          ge=1,
+          le=100,
+          description="Maximum number of results"
+      )
+      offset: int = Field(
+          default=0,
+          ge=0,
+          description="Pagination offset"
+      )
+  ```
+
+**Current Implementation (inline):**
+```python
+async def get_invite_codes(
+    status_filter: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    ...
+)
+```
+
+---
+
+**Summary:**
+- 1 schema in `conversation.py`
+- 1 schema in `document.py`
+- 4 schemas in `admin.py`
+- **Total: 6 query parameter schemas**
 
 ---
 
@@ -308,6 +562,31 @@ Example: feat(api): add response models and UUID validation to all endpoints
 - DELETE /collections/{collection_id}
 - DELETE /conversations/{conversation_id}
 - DELETE /documents/{document_id}
+
+---
+
+## 11.5a Fix Chat Endpoint Response Model (1 endpoint remaining)
+
+### Chat Endpoint (Non-Streaming Mode)
+**File:** `backend/app/api/v1/chat.py`
+
+- [ ] Line 21: POST /chat → Add `response_model=ChatResponse` for non-streaming mode
+  - **Current Issue:** Non-streaming mode returns response without explicit response_model
+  - **Schema Exists:** `ChatResponse` already exists in `backend/app/schemas/chat.py` ✓
+  - **Note:** Streaming mode correctly uses `StreamingResponse` (cannot use response_model)
+  - **Implementation:**
+    ```python
+    @router.post("/chat", response_model=ChatResponse)
+    async def chat_with_knowledge_base(...):
+        if stream:
+            return StreamingResponse(...)  # No response_model (correct)
+        else:
+            return ChatResponse(...)  # Use response_model (to be fixed)
+    ```
+  - **Why Important:**
+    - Provides proper OpenAPI documentation in Swagger UI
+    - Automatic response validation via FastAPI
+    - Consistent with all other POST endpoints
 
 ---
 
@@ -418,10 +697,37 @@ Example: feat(api): add response models and UUID validation to all endpoints
 
 ---
 
-## 11.7 Phase 3 - Refactor Query Parameters to Use Request Schemas
+## 11.7 Phase 3 - Refactor Query Parameters to Use Request Schemas (6 Endpoints)
 
-### Documents API (1 endpoint)
+### 1. Conversations API
+**File:** `backend/app/api/v1/conversations.py` Line 21
+**Schema:** `ConversationListParams` (from conversation.py)
+
+- [ ] Replace function signature:
+  ```python
+  # Before:
+  async def list_conversations(
+      limit: int = Query(50, ge=1, le=100),
+      offset: int = Query(0, ge=0),
+      current_user: User = Depends(get_current_user),
+      db: AsyncSession = Depends(get_session),
+  ):
+
+  # After:
+  async def list_conversations(
+      params: ConversationListParams = Depends(),
+      current_user: User = Depends(get_current_user),
+      db: AsyncSession = Depends(get_session),
+  ):
+  ```
+- [ ] Update variable usage: `limit` → `params.limit`, `offset` → `params.offset`
+- [ ] Add import: `from app.schemas.conversation import ConversationListParams`
+
+---
+
+### 2. Documents API
 **File:** `backend/app/api/v1/documents.py` Line 213
+**Schema:** `DocumentListParams` (from document.py)
 
 - [ ] Replace function signature:
   ```python
@@ -437,50 +743,145 @@ Example: feat(api): add response models and UUID validation to all endpoints
 
   # After:
   async def list_documents(
-      params: DocumentFilterParams = Depends(),
+      params: DocumentListParams = Depends(),
       current_user: User = Depends(get_current_user),
       db: AsyncSession = Depends(get_db),
   ):
   ```
-- [ ] Remove manual validation lines 241-248 (if page < 1, if limit...)
-- [ ] Update variable usage: `page` → `params.page`, `limit` → `params.limit`, etc.
+- [ ] Update variable usage: `page` → `params.page`, `limit` → `params.limit`, `collection_id` → `params.collection_id`, `status_filter` → `params.status_filter`
+- [ ] Add import: `from app.schemas.document import DocumentListParams`
 
-### Admin Users API (1 endpoint)
-**File:** `backend/app/api/v1/admin/users.py` Line 25
+---
 
-- [ ] Replace 6 individual params with: `params: UserListParams = Depends()`
-- [ ] Remove manual validation lines 55-62
+### 3. Admin Users API
+**File:** `backend/app/api/v1/admin/users.py` Line 32
+**Schema:** `AdminUserListParams` (from admin.py)
+
+- [ ] Replace function signature:
+  ```python
+  # Before:
+  async def list_users(
+      page: int = 1,
+      limit: int = 50,
+      status_filter: str | None = None,
+      role: str | None = None,
+      sort_by: str = "created_at",
+      order: str = "desc",
+      admin_user: User = Depends(get_current_admin),
+      db: AsyncSession = Depends(get_db),
+  ):
+
+  # After:
+  async def list_users(
+      params: AdminUserListParams = Depends(),
+      admin_user: User = Depends(get_current_admin),
+      db: AsyncSession = Depends(get_db),
+  ):
+  ```
+- [ ] Remove manual validation lines 62-69 (if page < 1, if limit...)
 - [ ] Update service call to use: `params.page`, `params.limit`, `params.status_filter`, `params.role`, `params.sort_by`, `params.order`
+- [ ] Add import: `from app.schemas.admin import AdminUserListParams`
 
-### Admin Documents API (1 endpoint)
-**File:** `backend/app/api/v1/admin/documents.py` Line 20
+---
 
-- [ ] Replace 6 individual params with: `params: AdminDocumentListParams = Depends()`
-- [ ] Remove manual validation lines 50-57
-- [ ] Update variable usage to use params object
+### 4. Admin Documents API
+**File:** `backend/app/api/v1/admin/documents.py` Line 26
+**Schema:** `AdminDocumentListParams` (from admin.py)
 
-### Admin Audit Logs API (1 endpoint)
-**File:** `backend/app/api/v1/admin/audit_logs.py` Line 18
+- [ ] Replace function signature:
+  ```python
+  # Before:
+  async def list_all_documents(
+      page: int = 1,
+      limit: int = 50,
+      user_id: str | None = None,
+      status_filter: str | None = None,
+      sort_by: str = "uploaded_at",
+      order: str = "desc",
+      admin_user: User = Depends(get_current_admin),
+      db: AsyncSession = Depends(get_db),
+  ):
 
-- [ ] Replace 7 individual params with: `params: AuditLogFilterParams = Depends()`
-- [ ] Remove manual validation lines 64-71
-- [ ] Update service call to use params object
+  # After:
+  async def list_all_documents(
+      params: AdminDocumentListParams = Depends(),
+      admin_user: User = Depends(get_current_admin),
+      db: AsyncSession = Depends(get_db),
+  ):
+  ```
+- [ ] Remove manual validation lines 50-57 (if page < 1, if limit...)
+- [ ] Update variable usage to use params object throughout function body
+- [ ] Add import: `from app.schemas.admin import AdminDocumentListParams`
 
-### Admin Invite Codes API (1 endpoint)
-**File:** `backend/app/api/v1/admin/invite_codes.py` Line 40
+---
 
-- [ ] Replace 3 individual params with: `params: InviteCodeFilterParams = Depends()`
-- [ ] Update variable usage
+### 5. Admin Audit Logs API
+**File:** `backend/app/api/v1/admin/audit_logs.py` Line 19
+**Schema:** `AuditLogListParams` (from admin.py)
 
-### Conversations API (1 endpoint)
-**File:** `backend/app/api/v1/conversations.py` Line 21
+- [ ] Replace function signature:
+  ```python
+  # Before:
+  async def get_audit_logs(
+      page: int = 1,
+      limit: int = 50,
+      admin_user_id: str | None = None,
+      action: str | None = None,
+      target_type: str | None = None,
+      start_date: datetime | None = None,
+      end_date: datetime | None = None,
+      admin_user: User = Depends(get_current_admin),
+      db: AsyncSession = Depends(get_db),
+  ):
 
-- [ ] Replace Query() params with: `params: ConversationListParams = Depends()`
-- [ ] Update to use `params.limit`, `params.offset`
+  # After:
+  async def get_audit_logs(
+      params: AuditLogListParams = Depends(),
+      admin_user: User = Depends(get_current_admin),
+      db: AsyncSession = Depends(get_db),
+  ):
+  ```
+- [ ] Remove manual validation lines 64-71 (if page < 1, if limit...)
+- [ ] Update service call: `list_audit_logs(session=db, page=params.page, limit=params.limit, ...)`
+- [ ] Add import: `from app.schemas.admin import AuditLogListParams`
+
+---
+
+### 6. Admin Invite Codes API
+**File:** `backend/app/api/v1/admin/invite_codes.py` Line 41
+**Schema:** `InviteCodeListParams` (from admin.py)
+
+- [ ] Replace function signature:
+  ```python
+  # Before:
+  async def get_invite_codes(
+      status_filter: str | None = None,
+      limit: int = 50,
+      offset: int = 0,
+      session: AsyncSession = Depends(get_db),
+      current_admin: User = Depends(get_current_admin),
+  ):
+
+  # After:
+  async def get_invite_codes(
+      params: InviteCodeListParams = Depends(),
+      session: AsyncSession = Depends(get_db),
+      current_admin: User = Depends(get_current_admin),
+  ):
+  ```
+- [ ] Update service call: `list_invite_codes(session=session, status=params.status_filter, limit=params.limit, offset=params.offset)`
+- [ ] Add import: `from app.schemas.admin import InviteCodeListParams`
+
+---
 
 **✅ Total: 6 endpoints refactored to use query param request schemas**
 
-**Benefit:** Eliminates ~80 lines of duplicated validation code!
+**Benefits:**
+- Eliminates ~60-80 lines of duplicated validation code
+- Automatic Pydantic validation (type checking, range validation)
+- Better OpenAPI/Swagger documentation
+- Consistent patterns across all endpoints
+- Easier to maintain and extend
 
 ---
 
@@ -568,7 +969,68 @@ Example: feat(api): add response models and UUID validation to all endpoints
 
 ---
 
-## 11.10 Documentation Updates
+## 11.10 Final Comprehensive API Verification
+
+**Purpose:** After completing all phases, run a final audit to ensure NO endpoints are missing request or response schemas.
+
+### Final Audit Checklist
+
+- [ ] **Audit ALL 47 API endpoints** one more time:
+  - Auth endpoints (6)
+  - Chat endpoints (1)
+  - Collections endpoints (5)
+  - Conversations endpoints (3)
+  - Documents endpoints (8)
+  - Admin users endpoints (7)
+  - Admin documents endpoints (4)
+  - Admin audit logs endpoints (1)
+  - Admin invite codes endpoints (3)
+  - Main app endpoints (2)
+
+### What to Check:
+
+**For Each POST/PUT/PATCH Endpoint:**
+- [ ] Has request body schema (Pydantic BaseModel)?
+  - If NO: Document it and add to task file
+  - If using Form(): Acceptable for file uploads
+- [ ] Has response_model decorator?
+  - If NO: Add to task file
+
+**For Each GET Endpoint with Query Parameters:**
+- [ ] Has query parameter schema using Depends()?
+  - If NO: Document inline parameters and add schema task
+- [ ] Has response_model decorator?
+  - If NO: Add to task file
+
+**For Each DELETE Endpoint:**
+- [ ] Returns 204 No Content OR has response_model?
+  - 204 is acceptable (no response_model needed)
+  - If returns data: Must have response_model
+
+### Document Findings:
+
+If any issues found during final audit:
+- [ ] Add new section to this task file listing missing schemas
+- [ ] Create checkboxes for each missing item
+- [ ] Update statistics in Overview section
+- [ ] Create plan to fix remaining gaps
+
+### Final Sign-Off:
+
+- [ ] All POST/PUT/PATCH endpoints have request body schemas ✓
+- [ ] All endpoints have response_model (except 204 responses) ✓
+- [ ] All GET endpoints with query params use Pydantic schemas ✓
+- [ ] UUID validation in place for all UUID parameters ✓
+- [ ] Swagger documentation complete for all endpoints ✓
+- [ ] No inline query parameters remaining ✓
+- [ ] No manual validation code duplication ✓
+
+**If all checks pass:** Phase 11 is COMPLETE
+**If any checks fail:** Document and fix before marking complete
+
+---
+
+## 11.11 Documentation Updates
 
 ### Update Task File
 - [ ] Mark all completed checkboxes as [x]
