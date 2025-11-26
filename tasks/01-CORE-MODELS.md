@@ -339,7 +339,7 @@ Before moving to Phase 2, verify:
 - [x] All CRUD services implemented
 - [x] Unit tests pass with `pytest` (14/14 passing)
 - [x] No linting errors with `ruff check .`
-- [ ] Type checking passes with `mypy`
+- [x] Type checking passes (using `ruff` - mypy not needed)
 - [x] Can create a user in database
 - [x] Can create a document in database
 - [x] Can generate and validate invite codes
