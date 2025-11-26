@@ -48,18 +48,18 @@ Example: feat(api): add response models and UUID validation to all endpoints
 
 ---
 
-## 11.1 Create Common Response Schemas
+## 11.1 Create Common Response Schemas ✅ COMPLETED
 
 ### Common Response Schemas
 **File:** `backend/app/schemas/common.py` (NEW FILE)
 
-- [ ] Create file `backend/app/schemas/common.py`
-- [ ] Implement `MessageResponse` schema
+- [x] Create file `backend/app/schemas/common.py`
+- [x] Implement `MessageResponse` schema
   ```python
   class MessageResponse(BaseModel):
       message: str
   ```
-- [ ] Implement `HealthCheckResponse` schema
+- [x] Implement `HealthCheckResponse` schema
   ```python
   class HealthCheckResponse(BaseModel):
       status: str
@@ -67,23 +67,23 @@ Example: feat(api): add response models and UUID validation to all endpoints
       app_info: dict[str, str]
       arq_worker: dict[str, Any]
   ```
-- [ ] Implement `RootResponse` schema
+- [x] Implement `RootResponse` schema
   ```python
   class RootResponse(BaseModel):
       message: str
       docs: str
       health: str
   ```
-- [ ] Add proper docstrings and Field descriptions
+- [x] Add proper docstrings and Field descriptions
 
 ---
 
-## 11.2 Create Admin Response Schemas
+## 11.2 Create Admin Response Schemas ✅ COMPLETED
 
 ### Admin Response Schemas
 **File:** `backend/app/schemas/admin.py` (UPDATE - add to existing file)
 
-- [ ] Implement `UsersListResponse` - Admin user list with pagination
+- [x] Implement `UsersListResponse` - Admin user list with pagination
   ```python
   class UsersListResponse(BaseModel):
       users: list[User]
@@ -92,7 +92,7 @@ Example: feat(api): add response models and UUID validation to all endpoints
       limit: int
       pages: int
   ```
-- [ ] Implement `UserDetailsResponse` - Detailed user info with stats
+- [x] Implement `UserDetailsResponse` - Detailed user info with stats
   ```python
   class UserDetailsResponse(BaseModel):
       user_id: str
@@ -107,13 +107,13 @@ Example: feat(api): add response models and UUID validation to all endpoints
       created_at: datetime
       last_login_at: datetime | None
   ```
-- [ ] Implement `SuspendUserResponse`
+- [x] Implement `SuspendUserResponse`
   ```python
   class SuspendUserResponse(BaseModel):
       message: str
       reason: str
   ```
-- [ ] Implement `AdminDocumentsListResponse`
+- [x] Implement `AdminDocumentsListResponse`
   ```python
   class AdminDocumentsListResponse(BaseModel):
       documents: list[dict]  # Each dict has document + user_email
@@ -122,7 +122,7 @@ Example: feat(api): add response models and UUID validation to all endpoints
       limit: int
       pages: int
   ```
-- [ ] Implement `DeleteDocumentResponse`
+- [x] Implement `DeleteDocumentResponse`
   ```python
   class DeleteDocumentResponse(BaseModel):
       status: str
@@ -130,7 +130,7 @@ Example: feat(api): add response models and UUID validation to all endpoints
       document_id: str
       errors: list[str] | None
   ```
-- [ ] Implement `CleanupDocumentsResponse`
+- [x] Implement `CleanupDocumentsResponse`
   ```python
   class CleanupDocumentsResponse(BaseModel):
       status: str
@@ -139,7 +139,7 @@ Example: feat(api): add response models and UUID validation to all endpoints
       total_documents: int
       errors: list[str] | None
   ```
-- [ ] Implement `CleanupAllResponse`
+- [x] Implement `CleanupAllResponse`
   ```python
   class CleanupAllResponse(BaseModel):
       status: str
@@ -149,7 +149,7 @@ Example: feat(api): add response models and UUID validation to all endpoints
       b2_files_deleted: int
       errors: list[str] | None
   ```
-- [ ] Implement `AuditLogsListResponse`
+- [x] Implement `AuditLogsListResponse`
   ```python
   class AuditLogsListResponse(BaseModel):
       logs: list[AuditLogResponse]
@@ -264,43 +264,43 @@ Example: feat(api): add response models and UUID validation to all endpoints
 ### Main App Endpoints (2)
 **File:** `backend/main.py`
 
-- [ ] Line 98: GET /api/v1/health → Add `response_model=HealthCheckResponse`
-- [ ] Line 201: GET / → Add `response_model=RootResponse`
+- [x] Line 98: GET /api/v1/health → Add `response_model=HealthCheckResponse`
+- [x] Line 201: GET / → Add `response_model=RootResponse`
 
 ### Auth Endpoints (3)
 **File:** `backend/app/api/v1/auth.py`
 
-- [ ] Line 123: POST /auth/logout → Add `response_model=MessageResponse`
-- [ ] Line 184: POST /auth/password-reset/request → Add `response_model=MessageResponse`
-- [ ] Line 228: POST /auth/password-reset/confirm → Add `response_model=MessageResponse`
+- [x] Line 123: POST /auth/logout → Add `response_model=MessageResponse`
+- [x] Line 184: POST /auth/password-reset/request → Add `response_model=MessageResponse`
+- [x] Line 228: POST /auth/password-reset/confirm → Add `response_model=MessageResponse`
 
 ### Admin Users Endpoints (6)
 **File:** `backend/app/api/v1/admin/users.py`
 
-- [ ] Line 25: GET /admin/users → Add `response_model=UsersListResponse`
-- [ ] Line 83: GET /admin/users/{user_id} → Add `response_model=UserDetailsResponse`
-- [ ] Line 113: POST /admin/users/{user_id}/suspend → Add `response_model=SuspendUserResponse`
-- [ ] Line 160: POST /admin/users/{user_id}/activate → Add `response_model=MessageResponse`
-- [ ] Line 197: DELETE /admin/users/{user_id} → Add `response_model=MessageResponse`
-- [ ] Line 244: GET /admin/stats → Add `response_model=SystemStatsResponse` (already exists in schemas/admin.py!)
+- [x] Line 25: GET /admin/users → Add `response_model=UsersListResponse`
+- [x] Line 83: GET /admin/users/{user_id} → Add `response_model=UserDetailsResponse`
+- [x] Line 113: POST /admin/users/{user_id}/suspend → Add `response_model=SuspendUserResponse`
+- [x] Line 160: POST /admin/users/{user_id}/activate → Add `response_model=MessageResponse`
+- [x] Line 197: DELETE /admin/users/{user_id} → Add `response_model=MessageResponse`
+- [x] Line 244: GET /admin/stats → Add `response_model=SystemStatsResponse` (already exists in schemas/admin.py!)
 
 ### Admin Documents Endpoints (4)
 **File:** `backend/app/api/v1/admin/documents.py`
 
-- [ ] Line 20: GET /admin/documents → Add `response_model=AdminDocumentsListResponse`
-- [ ] Line 115: DELETE /admin/documents/{document_id} → Add `response_model=DeleteDocumentResponse`
-- [ ] Line 185: DELETE /admin/users/{user_id}/documents → Add `response_model=CleanupDocumentsResponse`
-- [ ] Line 270: DELETE /admin/documents/cleanup-all → Add `response_model=CleanupAllResponse`
+- [x] Line 20: GET /admin/documents → Add `response_model=AdminDocumentsListResponse`
+- [x] Line 115: DELETE /admin/documents/{document_id} → Add `response_model=DeleteDocumentResponse`
+- [x] Line 185: DELETE /admin/users/{user_id}/documents → Add `response_model=CleanupDocumentsResponse`
+- [x] Line 270: DELETE /admin/documents/cleanup-all → Add `response_model=CleanupAllResponse`
 
 ### Admin Audit Logs Endpoints (1)
 **File:** `backend/app/api/v1/admin/audit_logs.py`
 
-- [ ] Line 18: GET /admin/audit-logs → Add `response_model=AuditLogsListResponse`
+- [x] Line 18: GET /admin/audit-logs → Add `response_model=AuditLogsListResponse`
 
 ### Admin Invite Codes Endpoints (1)
 **File:** `backend/app/api/v1/admin/invite_codes.py`
 
-- [ ] Line 62: DELETE /admin/invite-codes/{code} → Add `response_model=MessageResponse`
+- [x] Line 62: DELETE /admin/invite-codes/{code} → Add `response_model=MessageResponse`
 
 **✅ Total: 17 endpoints updated with response_model**
 

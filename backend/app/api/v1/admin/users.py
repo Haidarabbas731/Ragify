@@ -9,7 +9,14 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_admin, get_db
 from app.models.user import User
-from app.schemas.admin import SuspendUserRequest
+from app.schemas.admin import (
+    SuspendUserRequest,
+    SuspendUserResponse,
+    SystemStatsResponse,
+    UserDetailsResponse,
+    UsersListResponse,
+)
+from app.schemas.common import MessageResponse
 from app.services.admin_service import (
     activate_user,
     delete_user,
@@ -22,7 +29,7 @@ from app.services.admin_service import (
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-@router.get("/users")
+@router.get("/users", response_model=UsersListResponse)
 async def list_users(
     page: int = 1,
     limit: int = 50,
@@ -80,7 +87,7 @@ async def list_users(
     }
 
 
-@router.get("/users/{user_id}")
+@router.get("/users/{user_id}", response_model=UserDetailsResponse)
 async def get_user(
     user_id: str,
     admin_user: User = Depends(get_current_admin),
@@ -110,7 +117,7 @@ async def get_user(
     return user_details
 
 
-@router.post("/users/{user_id}/suspend")
+@router.post("/users/{user_id}/suspend", response_model=SuspendUserResponse)
 async def suspend_user_endpoint(
     user_id: str,
     suspend_data: SuspendUserRequest,
@@ -157,7 +164,7 @@ async def suspend_user_endpoint(
     return {"message": f"User {user_id} suspended successfully", "reason": suspend_data.reason}
 
 
-@router.post("/users/{user_id}/activate")
+@router.post("/users/{user_id}/activate", response_model=MessageResponse)
 async def activate_user_endpoint(
     user_id: str,
     request: Request,
@@ -194,7 +201,7 @@ async def activate_user_endpoint(
     return {"message": f"User {user_id} activated successfully"}
 
 
-@router.delete("/users/{user_id}")
+@router.delete("/users/{user_id}", response_model=MessageResponse)
 async def delete_user_endpoint(
     user_id: str,
     request: Request,
@@ -241,7 +248,7 @@ async def delete_user_endpoint(
     return {"message": f"User {user_id} deleted successfully"}
 
 
-@router.get("/stats")
+@router.get("/stats", response_model=SystemStatsResponse)
 async def get_stats(
     admin_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
