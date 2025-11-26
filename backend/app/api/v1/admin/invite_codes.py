@@ -3,7 +3,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_admin, get_db
 from app.models.user import User
-from app.schemas.admin import InviteCodeCreate, InviteCodeResponse
+from app.schemas.admin import InviteCodeCreate, InviteCodeListParams, InviteCodeResponse
 from app.schemas.common import MessageResponse
 from app.services.invite_service import (
     generate_invite_code,
@@ -40,21 +40,20 @@ async def create_invite_code(
 
 @router.get("", response_model=list[InviteCodeResponse])
 async def get_invite_codes(
-    status_filter: str | None = None,
-    limit: int = 50,
-    offset: int = 0,
+    params: InviteCodeListParams = Depends(),
     session: AsyncSession = Depends(get_db),  # noqa: B008
     current_admin: User = Depends(get_current_admin),  # noqa: B008
 ):
     """
     List all invite codes (Admin only).
 
-    - **status**: Optional filter by status (active, expired, revoked)
-    - **limit**: Maximum number of results (default: 50)
-    - **offset**: Pagination offset (default: 0)
+    Args:
+        params: Query parameters (status_filter, limit, offset)
+        session: Database session
+        current_admin: Authenticated admin user
     """
     codes = await list_invite_codes(
-        session=session, status=status_filter, limit=limit, offset=offset
+        session=session, status=params.status_filter, limit=params.limit, offset=params.offset
     )
 
     return [InviteCodeResponse.model_validate(code) for code in codes]

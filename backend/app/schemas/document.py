@@ -79,3 +79,12 @@ class BatchDeleteResponse(BaseModel):
     deleted_count: int
     failed_count: int
     errors: list[dict] | None = None
+
+
+class DocumentListParams(BaseModel):
+    """Query parameters for listing documents."""
+
+    page: int = Field(1, ge=1, description="Page number (1-indexed)")
+    limit: int = Field(50, ge=1, le=100, description="Items per page")
+    collection_id: str | None = Field(None, description="Filter by collection ID")
+    status_filter: str | None = Field(None, description="Filter by status (processing, active, error)")

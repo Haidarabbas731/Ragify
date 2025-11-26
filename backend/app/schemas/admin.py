@@ -143,3 +143,47 @@ class AuditLogsListResponse(BaseModel):
     page: int = Field(..., description="Current page number")
     limit: int = Field(..., description="Items per page")
     pages: int = Field(..., description="Total number of pages")
+
+
+# Query Parameter Schemas for Admin Endpoints
+
+class AdminUserListParams(BaseModel):
+    """Query parameters for admin users list endpoint."""
+
+    page: int = Field(1, ge=1, description="Page number (1-indexed)")
+    limit: int = Field(50, ge=1, le=100, description="Items per page")
+    status_filter: str | None = Field(None, description="Filter by status (active, suspended)")
+    role: str | None = Field(None, description="Filter by role (user, admin)")
+    sort_by: str = Field("created_at", description="Sort field (created_at, email, storage_used_bytes)")
+    order: str = Field("desc", description="Sort order (asc, desc)")
+
+
+class AdminDocumentListParams(BaseModel):
+    """Query parameters for admin documents list endpoint."""
+
+    page: int = Field(1, ge=1, description="Page number (1-indexed)")
+    limit: int = Field(50, ge=1, le=100, description="Items per page")
+    user_id: str | None = Field(None, description="Filter by user ID")
+    status_filter: str | None = Field(None, description="Filter by status (processing, active, error, deleted)")
+    sort_by: str = Field("uploaded_at", description="Sort field (uploaded_at, size_bytes, filename)")
+    order: str = Field("desc", description="Sort order (asc, desc)")
+
+
+class AuditLogListParams(BaseModel):
+    """Query parameters for audit logs list endpoint."""
+
+    page: int = Field(1, ge=1, description="Page number (1-indexed)")
+    limit: int = Field(50, ge=1, le=100, description="Items per page")
+    admin_user_id: str | None = Field(None, description="Filter by admin user who performed action")
+    action: str | None = Field(None, description="Filter by action type")
+    target_type: str | None = Field(None, description="Filter by target type (user, document, invite_code)")
+    start_date: datetime | None = Field(None, description="Filter by start date")
+    end_date: datetime | None = Field(None, description="Filter by end date")
+
+
+class InviteCodeListParams(BaseModel):
+    """Query parameters for invite codes list endpoint."""
+
+    status_filter: str | None = Field(None, description="Filter by status (active, expired, revoked)")
+    limit: int = Field(50, ge=1, le=100, description="Number of invite codes to return")
+    offset: int = Field(0, ge=0, description="Number of invite codes to skip")
