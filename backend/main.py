@@ -16,6 +16,7 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.size_limit import RequestSizeLimitMiddleware
 from app.services.b2_service import B2Service
+from app.services.email_service import check_email_service_health
 
 configure_logging(log_level=settings.LOG_LEVEL)
 
@@ -102,6 +103,7 @@ async def health_check():
         "redis": "down",
         "b2_storage": "down",
         "milvus": "down",
+        "email": "down",
     }
 
     arq_stats = {
@@ -162,6 +164,13 @@ async def health_check():
             connections.disconnect(alias="health_check")
         except Exception:
             pass
+
+    # Check Email Service (Resend)
+    try:
+        email_health = await check_email_service_health()
+        services["email"] = email_health["status"]
+    except Exception:
+        pass
 
     overall_status = "healthy" if all(s == "up" for s in services.values()) else "degraded"
 
