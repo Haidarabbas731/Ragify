@@ -8,7 +8,8 @@ from sqlalchemy import text
 
 from app.api.exceptions import register_exception_handlers
 from app.api.v1 import auth, chat, collections, conversations, documents
-from app.api.v1.admin import invite_codes, system_cleanup
+from app.api.v1.admin import audit_logs, invite_codes, users
+from app.api.v1.admin import documents as admin_documents
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.db.database import async_engine, init_db
@@ -189,7 +190,11 @@ app.include_router(chat.router, prefix="/api/v1")
 app.include_router(collections.router, prefix="/api/v1")
 app.include_router(conversations.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
-app.include_router(system_cleanup.router, prefix="/api/v1")
+
+# Admin routes
+app.include_router(admin_documents.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(audit_logs.router, prefix="/api/v1")
 app.include_router(invite_codes.router, prefix="/api/v1/admin")
 
 
