@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.config import settings
 from app.models.user import User
 
 
@@ -35,6 +36,7 @@ async def create_user(
         email=email,
         password_hash=password_hash,
         invited_by_code=invite_code,
+        storage_limit_bytes=settings.STORAGE_QUOTA_DEFAULT,
     )
     session.add(user)
     await session.commit()
