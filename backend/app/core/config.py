@@ -47,7 +47,6 @@ class Settings(BaseSettings):
     # File Upload
     MAX_FILE_SIZE_MB: int = 50
     ALLOWED_FILE_TYPES: str = "pdf,docx,txt,md"
-    MAX_UPLOAD_BATCH: int = 10
 
     @property
     def allowed_file_types_list(self) -> list[str]:
@@ -69,7 +68,6 @@ class Settings(BaseSettings):
 
     # Invite-Only Registration
     INVITE_ONLY: bool = True
-    ADMIN_EMAIL: str | None = None
 
     # CORS
     FRONTEND_URL: str = "http://localhost:5173"
