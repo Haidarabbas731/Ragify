@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.utils.validators import validate_uuid
 
 
 class DocumentUpload(BaseModel):
@@ -61,6 +63,14 @@ class BatchDeleteRequest(BaseModel):
     """Schema for batch document deletion request."""
 
     document_ids: list[str] = Field(..., min_length=1, description="List of document IDs to delete")
+
+    @field_validator("document_ids")
+    @classmethod
+    def validate_document_ids(cls, v: list[str]) -> list[str]:
+        """Validate that all document_ids are valid UUIDs."""
+        for doc_id in v:
+            validate_uuid(doc_id, "document_id")
+        return v
 
 
 class BatchDeleteResponse(BaseModel):

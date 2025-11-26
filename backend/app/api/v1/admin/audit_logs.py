@@ -12,6 +12,7 @@ from app.api.dependencies import get_current_admin, get_db
 from app.models.user import User
 from app.schemas.admin import AuditLogsListResponse
 from app.services.admin_service import list_audit_logs
+from app.utils.validators import validate_uuid
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -70,6 +71,10 @@ async def get_audit_logs(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Limit must be between 1 and 100",
         )
+
+    # Validate admin_user_id if provided
+    if admin_user_id:
+        validate_uuid(admin_user_id, "admin_user_id")
 
     logs, total = await list_audit_logs(
         session=db,

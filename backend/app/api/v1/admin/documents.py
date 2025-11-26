@@ -19,6 +19,7 @@ from app.schemas.admin import (
 )
 from app.services.b2_service import get_b2_service
 from app.services.milvus_service import get_milvus_service
+from app.utils.validators import validate_uuid
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -61,6 +62,10 @@ async def list_all_documents(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Limit must be between 1 and 100",
         )
+
+    # Validate user_id if provided
+    if user_id:
+        validate_uuid(user_id, "user_id")
 
     # Build query - include deleted documents for admin view
     query = select(Document)
@@ -210,6 +215,8 @@ async def cleanup_user_documents(
     Raises:
         HTTPException: 404 if user not found
     """
+    validate_uuid(user_id, "user_id")
+
     # Verify user exists
     result = await db.exec(select(User).where(User.user_id == user_id))
     user = result.one_or_none()
