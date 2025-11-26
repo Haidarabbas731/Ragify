@@ -16,6 +16,7 @@ from app.db.database import async_engine, init_db
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.size_limit import RequestSizeLimitMiddleware
+from app.schemas.common import HealthCheckResponse, RootResponse
 from app.services.b2_service import B2Service
 from app.services.email_service import check_email_service_health
 
@@ -95,7 +96,7 @@ app.add_middleware(
 )
 
 
-@app.get("/api/v1/health")
+@app.get("/api/v1/health", response_model=HealthCheckResponse)
 async def health_check():
     """Health check endpoint to verify API and all services are running."""
     services = {
@@ -198,7 +199,7 @@ app.include_router(audit_logs.router, prefix="/api/v1")
 app.include_router(invite_codes.router, prefix="/api/v1/admin")
 
 
-@app.get("/")
+@app.get("/", response_model=RootResponse)
 async def root():
     """Root endpoint."""
     return {
