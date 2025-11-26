@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_user
+from app.core.config import settings
 from app.db.database import get_session
 from app.models.user import User
 from app.schemas.chat import ChatQuery
@@ -27,11 +28,11 @@ async def chat_query(
     Execute RAG chat query (with optional streaming).
 
     This endpoint:
-    1. Validates rate limits (100 queries/hour per user)
+    1. Validates rate limits (configurable per minute)
     2. Executes RAG flow (embed → search → format → LLM → save)
     3. Returns AI response with source citations (JSON or SSE stream)
 
-    **Rate Limit:** 100 requests per hour per user
+    **Rate Limit:** Configurable requests per minute (default: 100/minute)
 
     **Request Body:**
     - query: User's question (1-2000 chars)
@@ -52,15 +53,19 @@ async def chat_query(
     - 504: LLM timeout
     """
     try:
-        # Check rate limit: 100 requests per hour
+        # Check rate limit (configurable per minute)
         rate_limit_key = f"chat:{current_user.user_id}"
-        is_allowed = await check_rate_limit(rate_limit_key, max_requests=100, window_seconds=3600)
+        is_allowed = await check_rate_limit(
+            rate_limit_key,
+            max_requests=settings.RATE_LIMIT_PER_MINUTE,
+            window_seconds=60
+        )
 
         if not is_allowed:
             logger.warning(f"Rate limit exceeded for user {current_user.user_id}")
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Rate limit exceeded. You can make 100 chat queries per hour.",
+                detail=f"Rate limit exceeded. Maximum {settings.RATE_LIMIT_PER_MINUTE} requests per minute.",
             )
 
         # Handle streaming vs non-streaming
