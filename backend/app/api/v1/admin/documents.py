@@ -11,13 +11,19 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.api.dependencies import get_current_admin, get_db
 from app.models.document import Document
 from app.models.user import User
+from app.schemas.admin import (
+    AdminDocumentsListResponse,
+    CleanupAllResponse,
+    CleanupDocumentsResponse,
+    DeleteDocumentResponse,
+)
 from app.services.b2_service import get_b2_service
 from app.services.milvus_service import get_milvus_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-@router.get("/documents")
+@router.get("/documents", response_model=AdminDocumentsListResponse)
 async def list_all_documents(
     page: int = 1,
     limit: int = 50,
@@ -112,7 +118,7 @@ async def list_all_documents(
     }
 
 
-@router.delete("/documents/{document_id}", status_code=status.HTTP_200_OK)
+@router.delete("/documents/{document_id}", status_code=status.HTTP_200_OK, response_model=DeleteDocumentResponse)
 async def delete_document(
     document_id: str,
     admin_user: User = Depends(get_current_admin),
@@ -182,7 +188,7 @@ async def delete_document(
     }
 
 
-@router.delete("/users/{user_id}/documents", status_code=status.HTTP_200_OK)
+@router.delete("/users/{user_id}/documents", status_code=status.HTTP_200_OK, response_model=CleanupDocumentsResponse)
 async def cleanup_user_documents(
     user_id: str,
     admin_user: User = Depends(get_current_admin),
@@ -267,7 +273,7 @@ async def cleanup_user_documents(
     }
 
 
-@router.delete("/documents/cleanup-all", status_code=status.HTTP_200_OK)
+@router.delete("/documents/cleanup-all", status_code=status.HTTP_200_OK, response_model=CleanupAllResponse)
 async def cleanup_all_documents(
     admin_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),

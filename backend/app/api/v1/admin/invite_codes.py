@@ -4,6 +4,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.api.dependencies import get_current_admin, get_db
 from app.models.user import User
 from app.schemas.admin import InviteCodeCreate, InviteCodeResponse
+from app.schemas.common import MessageResponse
 from app.services.invite_service import (
     generate_invite_code,
     list_invite_codes,
@@ -59,7 +60,7 @@ async def get_invite_codes(
     return [InviteCodeResponse.model_validate(code) for code in codes]
 
 
-@router.delete("/{code}", status_code=status.HTTP_200_OK)
+@router.delete("/{code}", status_code=status.HTTP_200_OK, response_model=MessageResponse)
 async def revoke_code(
     code: str,
     session: AsyncSession = Depends(get_db),  # noqa: B008
