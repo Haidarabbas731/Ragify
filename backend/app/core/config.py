@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     CHUNK_SIZE: int = 1000
     CHUNK_OVERLAP: int = 200
 
+    # RAG Chat
+    CONVERSATION_HISTORY_LIMIT: int = 5  # Number of previous messages to include for context
+
     # Storage Quotas
     STORAGE_QUOTA_DEFAULT: int = 1073741824  # 1GB in bytes
 
