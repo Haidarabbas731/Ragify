@@ -13,6 +13,7 @@ from app.api.dependencies import (
 )
 from app.core.config import settings
 from app.core.security import decode_token, hash_password, validate_password_strength
+from app.schemas.common import MessageResponse
 from app.schemas.user import (
     LogoutRequest,
     PasswordResetConfirm,
@@ -120,7 +121,7 @@ async def refresh_token(
     )
 
 
-@router.post("/logout", status_code=status.HTTP_200_OK)
+@router.post("/logout", status_code=status.HTTP_200_OK, response_model=MessageResponse)
 async def logout(
     token_details: dict = Depends(AccessTokenBearer()),  # noqa: B008
     logout_data: LogoutRequest | None = None,
@@ -181,7 +182,7 @@ async def logout(
     )
 
 
-@router.post("/password-reset/request")
+@router.post("/password-reset/request", response_model=MessageResponse)
 async def request_password_reset(
     data: PasswordResetRequest,
     session: AsyncSession = Depends(get_db),  # noqa: B008
@@ -225,7 +226,7 @@ async def request_password_reset(
     )
 
 
-@router.post("/password-reset/confirm")
+@router.post("/password-reset/confirm", response_model=MessageResponse)
 async def confirm_password_reset(
     data: PasswordResetConfirm,
     session: AsyncSession = Depends(get_db),  # noqa: B008

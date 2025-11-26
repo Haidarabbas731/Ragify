@@ -10,12 +10,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_admin, get_db
 from app.models.user import User
+from app.schemas.admin import AuditLogsListResponse
 from app.services.admin_service import list_audit_logs
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-@router.get("/audit-logs")
+@router.get("/audit-logs", response_model=AuditLogsListResponse)
 async def get_audit_logs(
     page: int = 1,
     limit: int = 50,
