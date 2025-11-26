@@ -36,3 +36,10 @@ class ConversationListItem(BaseModel):
     created_at: datetime
     updated_at: datetime
     last_message: str | None = None
+
+
+class ConversationListParams(BaseModel):
+    """Query parameters for listing conversations."""
+
+    limit: int = Field(50, ge=1, le=100, description="Number of conversations to return")
+    offset: int = Field(0, ge=0, description="Number of conversations to skip")

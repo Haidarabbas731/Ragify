@@ -1,12 +1,16 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_user
 from app.db.database import get_session
 from app.models.user import User
-from app.schemas.conversation import ConversationListItem, ConversationResponse
+from app.schemas.conversation import (
+    ConversationListItem,
+    ConversationListParams,
+    ConversationResponse,
+)
 from app.services.conversation_service import (
     delete_conversation,
     get_conversation_by_id,
@@ -21,10 +25,7 @@ router = APIRouter(tags=["conversations"])
 
 @router.get("/conversations", response_model=list[ConversationListItem])
 async def list_conversations(
-    limit: int = Query(
-        50, ge=1, le=100, description="Number of conversations to return"
-    ),
-    offset: int = Query(0, ge=0, description="Number of conversations to skip"),
+    params: ConversationListParams = Depends(),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
 ):
@@ -34,7 +35,7 @@ async def list_conversations(
     Returns conversations ordered by most recently updated first.
     """
     conversations = await list_user_conversations(
-        db, current_user.user_id, limit, offset
+        db, current_user.user_id, params.limit, params.offset
     )
 
     # Convert to response schema

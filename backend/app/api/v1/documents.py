@@ -18,6 +18,7 @@ from app.models.user import User
 from app.schemas.document import (
     BatchDeleteRequest,
     BatchDeleteResponse,
+    DocumentListParams,
     DocumentResponse,
     DocumentsListResponse,
 )
@@ -214,10 +215,7 @@ async def get_document(
 
 @router.get("", response_model=DocumentsListResponse)
 async def list_documents(
-    page: int = 1,
-    limit: int = 50,
-    collection_id: str | None = None,
-    status_filter: str | None = None,
+    params: DocumentListParams = Depends(),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -227,40 +225,25 @@ async def list_documents(
     Users can only see their own documents.
 
     Args:
-        page: Page number (1-indexed)
-        limit: Items per page (max 100)
-        collection_id: Optional filter by collection
-        status_filter: Optional filter by status (processing, active, error)
+        params: Query parameters (page, limit, collection_id, status_filter)
         current_user: Authenticated user
         db: Database session
 
     Returns:
         Paginated list of user's documents
-
-    Raises:
-        HTTPException: 400 if invalid parameters
     """
-    if page < 1:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Page must be >= 1")
-
-    if limit < 1 or limit > 100:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit must be between 1 and 100",
-        )
-
     # Build query - exclude deleted documents, filter by current user
     query = select(Document).where(
         Document.status != DocumentStatus.DELETED.value,
         Document.user_id == current_user.user_id,
     )
 
-    if collection_id:
-        validate_uuid(collection_id, "collection_id")
-        query = query.where(Document.collection_id == collection_id)
+    if params.collection_id:
+        validate_uuid(params.collection_id, "collection_id")
+        query = query.where(Document.collection_id == params.collection_id)
 
-    if status_filter:
-        query = query.where(Document.status == status_filter)
+    if params.status_filter:
+        query = query.where(Document.status == params.status_filter)
 
     # Count total
     count_query = select(Document.document_id).where(
@@ -268,18 +251,18 @@ async def list_documents(
         Document.user_id == current_user.user_id,
     )
 
-    if collection_id:
-        count_query = count_query.where(Document.collection_id == collection_id)
-    if status_filter:
-        count_query = count_query.where(Document.status == status_filter)
+    if params.collection_id:
+        count_query = count_query.where(Document.collection_id == params.collection_id)
+    if params.status_filter:
+        count_query = count_query.where(Document.status == params.status_filter)
 
     total_result = await db.exec(count_query)
     total = len(total_result.all())
 
     # Paginate
-    offset = (page - 1) * limit
+    offset = (params.page - 1) * params.limit
     query = (
-        query.offset(offset).limit(limit).order_by(Document.uploaded_at.desc())  # type:ignore
+        query.offset(offset).limit(params.limit).order_by(Document.uploaded_at.desc())  # type:ignore
     )  # type:ignore
 
     result = await db.exec(query)
@@ -288,9 +271,9 @@ async def list_documents(
     return {
         "documents": list(documents),
         "total": total,
-        "page": page,
-        "limit": limit,
-        "pages": (total + limit - 1) // limit,
+        "page": params.page,
+        "limit": params.limit,
+        "pages": (total + params.limit - 1) // params.limit,
     }
 
 
