@@ -27,7 +27,7 @@ from app.services.auth_service import (
     refresh_access_token_from_details,
     register_user,
 )
-from app.services.email_service import send_password_reset_email
+from app.services.email_service import send_password_reset_email, send_welcome_email
 from app.services.redis_service import (
     add_jti_to_blocklist,
     check_email_rate_limit,
@@ -63,6 +63,12 @@ async def register(
 
     if not success:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
+
+    # Send welcome email (non-blocking, failures are logged but don't affect registration)
+    try:
+        await send_welcome_email(data.email, data.email)
+    except Exception as e:
+        logger.error(f"Failed to send welcome email to {data.email}: {str(e)}")
 
     return UserResponse(**user_data)  # type: ignore
 
