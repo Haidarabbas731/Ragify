@@ -1,6 +1,7 @@
-"""Admin-only API endpoints.
+"""Admin-only document management API endpoints.
 
-Handles administrative tasks like bulk document cleanup.
+Handles document administration including listing all users' documents,
+deleting individual documents, and bulk cleanup operations.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -14,6 +15,171 @@ from app.services.b2_service import get_b2_service
 from app.services.milvus_service import get_milvus_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.get("/documents")
+async def list_all_documents(
+    page: int = 1,
+    limit: int = 50,
+    user_id: str | None = None,
+    status_filter: str | None = None,
+    sort_by: str = "uploaded_at",
+    order: str = "desc",
+    admin_user: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    List all documents across all users (admin only).
+
+    Args:
+        page: Page number (1-indexed)
+        limit: Items per page (max 100)
+        user_id: Optional filter by specific user
+        status_filter: Optional filter by status (processing, active, error, deleted)
+        sort_by: Sort field (uploaded_at, file_size_bytes, filename)
+        order: Sort order (asc, desc)
+        admin_user: Authenticated admin user
+        db: Database session
+
+    Returns:
+        Paginated list of all documents with user emails
+
+    Raises:
+        HTTPException: 400 if invalid parameters
+    """
+    if page < 1:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Page must be >= 1")
+
+    if limit < 1 or limit > 100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Limit must be between 1 and 100",
+        )
+
+    # Build query - include deleted documents for admin view
+    query = select(Document)
+
+    if user_id:
+        query = query.where(Document.user_id == user_id)
+
+    if status_filter:
+        query = query.where(Document.status == status_filter)
+
+    # Count total
+    count_query = select(Document.document_id)
+
+    if user_id:
+        count_query = count_query.where(Document.user_id == user_id)
+    if status_filter:
+        count_query = count_query.where(Document.status == status_filter)
+
+    total_result = await db.exec(count_query)
+    total = len(total_result.all())
+
+    # Sort
+    sort_column = getattr(Document, sort_by, Document.uploaded_at)
+    if order == "desc":
+        query = query.order_by(sort_column.desc())  # type: ignore
+    else:
+        query = query.order_by(sort_column.asc())  # type: ignore
+
+    # Paginate
+    offset = (page - 1) * limit
+    query = query.offset(offset).limit(limit)
+
+    result = await db.exec(query)
+    documents = result.all()
+
+    # Enrich with user emails
+    user_ids = {doc.user_id for doc in documents}
+    user_result = await db.exec(
+        select(User.user_id, User.email).where(User.user_id.in_(user_ids))  # type: ignore
+    )
+    user_map = dict(user_result.all())
+
+    documents_list = []
+    for doc in documents:
+        doc_dict = doc.model_dump()
+        doc_dict["user_email"] = user_map.get(doc.user_id, "Unknown")
+        documents_list.append(doc_dict)
+
+    return {
+        "documents": documents_list,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit,
+    }
+
+
+@router.delete("/documents/{document_id}", status_code=status.HTTP_200_OK)
+async def delete_document(
+    document_id: str,
+    admin_user: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Delete a specific document (hard delete, admin only).
+
+    Immediately deletes from database, B2, and Milvus.
+
+    Args:
+        document_id: Document ID to delete
+        admin_user: Authenticated admin user
+        db: Database session
+
+    Returns:
+        Deletion result
+
+    Raises:
+        HTTPException: 404 if document not found
+    """
+    # Get document
+    result = await db.exec(select(Document).where(Document.document_id == document_id))
+    document = result.one_or_none()
+
+    if not document:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    # Get user for storage quota update
+    user_result = await db.exec(select(User).where(User.user_id == document.user_id))
+    user = user_result.one_or_none()
+
+    errors = []
+
+    # Initialize services
+    b2_service = await get_b2_service()
+    milvus_service = await get_milvus_service()
+    await milvus_service.connect()
+
+    # Delete from B2
+    try:
+        await b2_service.delete_file(document.storage_key)
+    except Exception as e:
+        if "not found" not in str(e).lower():
+            errors.append(f"B2 deletion failed: {e}")
+
+    # Delete from Milvus
+    try:
+        await milvus_service.delete_document_chunks(document_id)
+    except Exception as e:
+        errors.append(f"Milvus deletion failed: {e}")
+
+    # Update user storage quota
+    if user and document.file_size_bytes:
+        user.storage_used_bytes = max(0, user.storage_used_bytes - document.file_size_bytes)
+        db.add(user)
+
+    # Delete from database
+    await db.delete(document)
+    await db.commit()
+
+    return {
+        "status": "success" if not errors else "partial_success",
+        "message": f"Document {document_id} deleted",
+        "document_id": document_id,
+        "errors": errors if errors else None,
+    }
 
 
 @router.delete("/users/{user_id}/documents", status_code=status.HTTP_200_OK)
