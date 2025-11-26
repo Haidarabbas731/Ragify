@@ -65,19 +65,22 @@ Example: feat(api): add response models and UUID validation to all endpoints
 ### ⚠️ What Needs Work:
 
 **Response Models:**
-- ⚠️ **1 endpoint remaining**: POST /chat (needs response_model for non-streaming mode)
+- ✅ **ALL COMPLETE**: All 47 endpoints have response_model decorators (Phase 4 complete)
 
 **Query Parameter REQUEST Schemas:**
-- ❌ **6 endpoints** use inline query parameters instead of Pydantic schemas:
-  1. GET /conversations (needs `ConversationListParams`)
-  2. GET /documents (needs `DocumentListParams`)
-  3. GET /admin/users (needs `AdminUserListParams`)
-  4. GET /admin/documents (needs `AdminDocumentListParams`)
-  5. GET /admin/audit-logs (needs `AuditLogListParams`)
-  6. GET /admin/invite-codes (needs `InviteCodeListParams`)
+- ✅ **ALL COMPLETE**: All 6 endpoints refactored to use Pydantic schemas (Phase 3 complete)
+  1. ✅ GET /conversations (uses `ConversationListParams`)
+  2. ✅ GET /documents (uses `DocumentListParams`)
+  3. ✅ GET /admin/users (uses `AdminUserListParams`)
+  4. ✅ GET /admin/documents (uses `AdminDocumentListParams`)
+  5. ✅ GET /admin/audit-logs (uses `AuditLogListParams`)
+  6. ✅ GET /admin/invite-codes (uses `InviteCodeListParams`)
 
 **UUID Validation:**
-- ❌ **26 parameters** need UUID validation (path, query, form, body fields)
+- ✅ **ALL COMPLETE**: UUID validation added to 20+ parameters (Phase 2 complete)
+  - ✅ Reusable `validate_uuid()` utility created
+  - ✅ Applied to path, query, form, and body fields across all endpoints
+  - ⚠️ **Note:** `document_id` intentionally excluded (8-char format for Milvus compatibility)
 
 ---
 
@@ -565,19 +568,19 @@ async def get_invite_codes(
 
 ---
 
-## 11.5a Fix Chat Endpoint Response Model (1 endpoint remaining)
+## 11.5a Fix Chat Endpoint Response Model ✅ COMPLETED
 
 ### Chat Endpoint (Non-Streaming Mode)
 **File:** `backend/app/api/v1/chat.py`
 
-- [ ] Line 21: POST /chat → Add `response_model=ChatResponse` for non-streaming mode
-  - **Current Issue:** Non-streaming mode returns response without explicit response_model
-  - **Schema Exists:** `ChatResponse` already exists in `backend/app/schemas/chat.py` ✓
-  - **Note:** Streaming mode correctly uses `StreamingResponse` (cannot use response_model)
+- [x] Line 21: POST /chat → Add `response_model=ChatResponse` for non-streaming mode
+  - **✅ FIXED:** Added `response_model=ChatResponse` to decorator
+  - **Schema Used:** `ChatResponse` from `backend/app/schemas/chat.py` ✓
+  - **Note:** FastAPI automatically ignores response_model for StreamingResponse returns
   - **Implementation:**
     ```python
     @router.post("/chat", response_model=ChatResponse)
-    async def chat_with_knowledge_base(...):
+    async def chat_query(...):
         if stream:
             return StreamingResponse(...)  # No response_model (correct)
         else:
@@ -648,13 +651,13 @@ async def get_invite_codes(
 
 ---
 
-## 11.7 Phase 3 - Refactor Query Parameters to Use Request Schemas (6 Endpoints)
+## 11.7 Phase 3 - Refactor Query Parameters to Use Request Schemas ✅ COMPLETED
 
-### 1. Conversations API
+### 1. Conversations API ✅
 **File:** `backend/app/api/v1/conversations.py` Line 21
 **Schema:** `ConversationListParams` (from conversation.py)
 
-- [ ] Replace function signature:
+- [x] Replace function signature:
   ```python
   # Before:
   async def list_conversations(
@@ -671,16 +674,16 @@ async def get_invite_codes(
       db: AsyncSession = Depends(get_session),
   ):
   ```
-- [ ] Update variable usage: `limit` → `params.limit`, `offset` → `params.offset`
-- [ ] Add import: `from app.schemas.conversation import ConversationListParams`
+- [x] Update variable usage: `limit` → `params.limit`, `offset` → `params.offset`
+- [x] Add import: `from app.schemas.conversation import ConversationListParams`
 
 ---
 
-### 2. Documents API
+### 2. Documents API ✅
 **File:** `backend/app/api/v1/documents.py` Line 213
 **Schema:** `DocumentListParams` (from document.py)
 
-- [ ] Replace function signature:
+- [x] Replace function signature:
   ```python
   # Before:
   async def list_documents(
@@ -699,16 +702,16 @@ async def get_invite_codes(
       db: AsyncSession = Depends(get_db),
   ):
   ```
-- [ ] Update variable usage: `page` → `params.page`, `limit` → `params.limit`, `collection_id` → `params.collection_id`, `status_filter` → `params.status_filter`
-- [ ] Add import: `from app.schemas.document import DocumentListParams`
+- [x] Update variable usage: `page` → `params.page`, `limit` → `params.limit`, `collection_id` → `params.collection_id`, `status_filter` → `params.status_filter`
+- [x] Add import: `from app.schemas.document import DocumentListParams`
 
 ---
 
-### 3. Admin Users API
+### 3. Admin Users API ✅
 **File:** `backend/app/api/v1/admin/users.py` Line 32
 **Schema:** `AdminUserListParams` (from admin.py)
 
-- [ ] Replace function signature:
+- [x] Replace function signature:
   ```python
   # Before:
   async def list_users(
@@ -729,17 +732,17 @@ async def get_invite_codes(
       db: AsyncSession = Depends(get_db),
   ):
   ```
-- [ ] Remove manual validation lines 62-69 (if page < 1, if limit...)
-- [ ] Update service call to use: `params.page`, `params.limit`, `params.status_filter`, `params.role`, `params.sort_by`, `params.order`
-- [ ] Add import: `from app.schemas.admin import AdminUserListParams`
+- [x] Remove manual validation lines 62-69 (if page < 1, if limit...)
+- [x] Update service call to use: `params.page`, `params.limit`, `params.status_filter`, `params.role`, `params.sort_by`, `params.order`
+- [x] Add import: `from app.schemas.admin import AdminUserListParams`
 
 ---
 
-### 4. Admin Documents API
+### 4. Admin Documents API ✅
 **File:** `backend/app/api/v1/admin/documents.py` Line 26
 **Schema:** `AdminDocumentListParams` (from admin.py)
 
-- [ ] Replace function signature:
+- [x] Replace function signature:
   ```python
   # Before:
   async def list_all_documents(
@@ -760,17 +763,17 @@ async def get_invite_codes(
       db: AsyncSession = Depends(get_db),
   ):
   ```
-- [ ] Remove manual validation lines 50-57 (if page < 1, if limit...)
-- [ ] Update variable usage to use params object throughout function body
-- [ ] Add import: `from app.schemas.admin import AdminDocumentListParams`
+- [x] Remove manual validation lines 50-57 (if page < 1, if limit...)
+- [x] Update variable usage to use params object throughout function body
+- [x] Add import: `from app.schemas.admin import AdminDocumentListParams`
 
 ---
 
-### 5. Admin Audit Logs API
+### 5. Admin Audit Logs API ✅
 **File:** `backend/app/api/v1/admin/audit_logs.py` Line 19
 **Schema:** `AuditLogListParams` (from admin.py)
 
-- [ ] Replace function signature:
+- [x] Replace function signature:
   ```python
   # Before:
   async def get_audit_logs(
@@ -792,17 +795,17 @@ async def get_invite_codes(
       db: AsyncSession = Depends(get_db),
   ):
   ```
-- [ ] Remove manual validation lines 64-71 (if page < 1, if limit...)
-- [ ] Update service call: `list_audit_logs(session=db, page=params.page, limit=params.limit, ...)`
-- [ ] Add import: `from app.schemas.admin import AuditLogListParams`
+- [x] Remove manual validation lines 64-71 (if page < 1, if limit...)
+- [x] Update service call: `list_audit_logs(session=db, page=params.page, limit=params.limit, ...)`
+- [x] Add import: `from app.schemas.admin import AuditLogListParams`
 
 ---
 
-### 6. Admin Invite Codes API
+### 6. Admin Invite Codes API ✅
 **File:** `backend/app/api/v1/admin/invite_codes.py` Line 41
 **Schema:** `InviteCodeListParams` (from admin.py)
 
-- [ ] Replace function signature:
+- [x] Replace function signature:
   ```python
   # Before:
   async def get_invite_codes(
@@ -820,8 +823,8 @@ async def get_invite_codes(
       current_admin: User = Depends(get_current_admin),
   ):
   ```
-- [ ] Update service call: `list_invite_codes(session=session, status=params.status_filter, limit=params.limit, offset=params.offset)`
-- [ ] Add import: `from app.schemas.admin import InviteCodeListParams`
+- [x] Update service call: `list_invite_codes(session=session, status=params.status_filter, limit=params.limit, offset=params.offset)`
+- [x] Add import: `from app.schemas.admin import InviteCodeListParams`
 
 ---
 
@@ -859,7 +862,7 @@ async def get_invite_codes(
   )
   ```
 - [ ] Add new admin response schemas to exports
-- [ ] Update __all__ list with new schema names
+- [x] Update __all__ list with new schema names
 
 ---
 
@@ -963,7 +966,7 @@ async def get_invite_codes(
 If any issues found during final audit:
 - [ ] Add new section to this task file listing missing schemas
 - [ ] Create checkboxes for each missing item
-- [ ] Update statistics in Overview section
+- [x] Update statistics in Overview section
 - [ ] Create plan to fix remaining gaps
 
 ### Final Sign-Off:
@@ -988,7 +991,7 @@ If any issues found during final audit:
 - [ ] Document any deviations from original plan
 - [ ] Add notes about implementation decisions
 - [ ] Add "UPDATE:" or "NOTE:" sections for changes
-- [ ] Update completion checklist at bottom
+- [x] Update completion checklist at bottom
 
 ---
 

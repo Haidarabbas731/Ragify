@@ -9,7 +9,7 @@ from app.api.dependencies import get_current_user
 from app.core.config import settings
 from app.db.database import get_session
 from app.models.user import User
-from app.schemas.chat import ChatQuery
+from app.schemas.chat import ChatQuery, ChatResponse
 from app.services.chat_service import execute_rag_query, execute_rag_query_stream
 from app.services.redis_service import check_rate_limit
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["chat"])
 
 
-@router.post("/chat")
+@router.post("/chat", response_model=ChatResponse)
 async def chat_query(
     request: ChatQuery,
     current_user: User = Depends(get_current_user),
