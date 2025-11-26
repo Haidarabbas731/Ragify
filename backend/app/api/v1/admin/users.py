@@ -25,6 +25,7 @@ from app.services.admin_service import (
     list_all_users,
     suspend_user,
 )
+from app.utils.validators import validate_uuid
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -109,6 +110,7 @@ async def get_user(
     Raises:
         HTTPException: 404 if user not found
     """
+    validate_uuid(user_id, "user_id")
     user_details = await get_user_details(db, user_id)
 
     if not user_details:
@@ -142,6 +144,7 @@ async def suspend_user_endpoint(
         HTTPException: 404 if user not found
         HTTPException: 400 if trying to suspend self
     """
+    validate_uuid(user_id, "user_id")
     if user_id == admin_user.user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -186,6 +189,7 @@ async def activate_user_endpoint(
     Raises:
         HTTPException: 404 if user not found
     """
+    validate_uuid(user_id, "user_id")
     ip_address = request.client.host if request.client else None
 
     success = await activate_user(
@@ -227,6 +231,7 @@ async def delete_user_endpoint(
         HTTPException: 404 if user not found
         HTTPException: 400 if trying to delete self
     """
+    validate_uuid(user_id, "user_id")
     if user_id == admin_user.user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
