@@ -89,6 +89,7 @@ async def auth_token():
 
 
 @pytest.mark.asyncio
+@pytest.mark.e2e
 async def test_phase5_complete_workflow(auth_token):
     """Test complete Phase 5 RAG workflow."""
 
