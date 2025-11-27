@@ -3,10 +3,12 @@ import asyncio
 import time
 
 import httpx
+import pytest
 
 BASE_URL = "http://127.0.0.1:8000"
 
 
+@pytest.mark.e2e
 async def test_auth_flow():
     """Test complete authentication flow."""
     print("=" * 60)
