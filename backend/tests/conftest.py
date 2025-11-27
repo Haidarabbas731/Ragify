@@ -17,12 +17,17 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.models.user import User
 from main import app
 
-# Set environment variable to disable Redis rate limiting in tests
+# Set environment variables for testing
 os.environ["TESTING"] = "true"
 
 # Fix Windows async event loop issues - must be set before any async operations
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# Monkey-patch settings to disable INVITE_ONLY mode for tests
+# Must be done after imports because settings is instantiated at module load
+
+settings.INVITE_ONLY = False
 
 
 def pytest_configure(config):
@@ -52,34 +57,44 @@ async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
     await engine.dispose()
 
 
-@pytest.fixture(scope="function", autouse=False)  # Disabled autouse to prevent cleanup issues
+@pytest.fixture(scope="function", autouse=True)  # Auto-cleanup between tests
 async def cleanup_test_data(test_engine: AsyncEngine):
     """Clean up test data before and after each test - only removes test emails."""
     test_emails = [
         "test@example.com",
         "duplicate@example.com",
         "weak@example.com",
+        "weakpass@example.com",
         "create@example.com",
         "newuser@example.com",
+        "logintest@example.com",
+        "wrongpass@example.com",
+        "refreshtest@example.com",
+        "logouttest@example.com",
+        "resetpass@example.com",
         "user@example.com",
         "admin@example.com",
     ]
 
     async with test_engine.begin() as conn:
+        # Delete in correct order to respect foreign key constraints
+        await conn.execute(text("DELETE FROM conversations WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
+        await conn.execute(text("DELETE FROM documents WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
+        await conn.execute(text("DELETE FROM collections WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
         for email in test_emails:
             await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
         await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
-        await conn.execute(text("DELETE FROM documents"))
-        await conn.execute(text("DELETE FROM collections"))
 
     yield
 
     async with test_engine.begin() as conn:
+        # Delete in correct order to respect foreign key constraints
+        await conn.execute(text("DELETE FROM conversations WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
+        await conn.execute(text("DELETE FROM documents WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
+        await conn.execute(text("DELETE FROM collections WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
         for email in test_emails:
             await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
         await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
-        await conn.execute(text("DELETE FROM documents"))
-        await conn.execute(text("DELETE FROM collections"))
 
 
 @pytest.fixture
@@ -101,15 +116,53 @@ async def session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None
 
 @pytest.fixture
 async def sample_user(session: AsyncSession) -> User:
+    """Create a sample user with properly hashed password."""
+    from app.core.security import hash_password
+
     user = User(
         email="test@example.com",
-        password_hash="hashed_password",
+        password_hash=hash_password("TestPassword123!"),
         role="user",
     )
     session.add(user)
     await session.flush()
     await session.refresh(user)
     return user
+
+
+@pytest.fixture
+async def sample_admin(session: AsyncSession) -> User:
+    """Create a sample admin user with properly hashed password."""
+    from app.core.security import hash_password
+
+    admin = User(
+        email="admin@example.com",
+        password_hash=hash_password("AdminPassword123!"),
+        role="admin",
+    )
+    session.add(admin)
+    await session.flush()
+    await session.refresh(admin)
+    return admin
+
+
+@pytest.fixture
+async def test_invite_code(session: AsyncSession):
+    """Create a test invite code for registration tests."""
+    from app.models.invite_code import InviteCode
+
+    invite = InviteCode(
+        code="KB-TEST-1234-5678",
+        created_by=None,
+        max_uses=100,
+        current_uses=0,
+        status="active",
+        description="Test invite code",
+    )
+    session.add(invite)
+    await session.flush()
+    await session.refresh(invite)
+    return invite
 
 
 @pytest.fixture
