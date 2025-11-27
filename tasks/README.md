@@ -34,6 +34,8 @@ Examples:
 
 ## 📋 Development Phases Overview
 
+### MVP Phases (Critical for Launch)
+
 | Phase | Name | Status | Est. Time | Priority | Dependencies |
 |-------|------|--------|-----------|----------|--------------|
 | 0 | [Setup & Infrastructure](00-SETUP.md) | ⬜ Not Started | 1-2 days | Critical | None |
@@ -45,10 +47,27 @@ Examples:
 | 6 | [Email Service](06-EMAIL-SERVICE.md) | ⬜ Not Started | 1 day | High | Phase 2 |
 | 7 | [Admin Features](07-ADMIN-FEATURES.md) | ⬜ Not Started | 2-3 days | High | Phase 2 |
 | 8 | [Testing & QA](08-TESTING.md) | ⬜ Not Started | 2-3 days | High | Phase 1-7 |
-| 9 | [Deployment & Docker](09-DEPLOYMENT.md) | ⬜ Not Started | 2 days | Medium | Phase 8 |
-| 10 | [Documentation](10-DOCUMENTATION.md) | ⬜ Not Started | 1-2 days | Medium | All |
+| 11 | [Database Migrations](11-DATABASE-MIGRATIONS.md) | ⬜ Not Started | 1-2 days | High | Phase 1 |
+| 12 | [Frontend Development](12-FRONTEND.md) | ⬜ Not Started | 5-6 days | Critical | Phase 2,4,5 |
 
-**Total Estimated Time:** 22-31 days (4-6 weeks)
+### Production Phases (Pre-Launch)
+
+| Phase | Name | Status | Est. Time | Priority | Dependencies |
+|-------|------|--------|-----------|----------|--------------|
+| 9 | [Deployment & Production](09-DEPLOYMENT.md) | ⬜ Not Started | 2 days | High | Phase 8 |
+| 10 | [Documentation](10-DOCUMENTATION.md) | ⬜ Not Started | 1-2 days | High | All |
+| 14 | [Monitoring & Observability](14-MONITORING-OBSERVABILITY.md) | ⬜ Not Started | 2-3 days | High | Phase 9 |
+| 15 | [Rate Limiting & Security](15-RATE-LIMITING-SECURITY.md) | ⬜ Not Started | 2-3 days | High | Phase 2,9 |
+
+### Post-MVP Phases (Future Enhancements)
+
+| Phase | Name | Status | Est. Time | Priority | Dependencies |
+|-------|------|--------|-----------|----------|--------------|
+| 13 | [Model Migration & Re-Indexing](13-MIGRATION-REINDEXING.md) | ⬜ Not Started | 2-3 days | Low | Phase 4,9 |
+
+**MVP Estimated Time:** 26-35 days (5-7 weeks)
+**Production Ready:** 32-43 days (6-8 weeks)
+**Total with Post-MVP:** 34-46 days (7-9 weeks)
 
 ---
 
@@ -208,6 +227,7 @@ pytest -v
 
 Update this section as you complete phases:
 
+### MVP Phases
 - [ ] Phase 0: Setup & Infrastructure
 - [ ] Phase 1: Core Models & Database
 - [ ] Phase 2: Authentication System
@@ -217,10 +237,21 @@ Update this section as you complete phases:
 - [ ] Phase 6: Email Service
 - [ ] Phase 7: Admin Features
 - [ ] Phase 8: Testing & QA
-- [ ] Phase 9: Deployment & Docker
-- [ ] Phase 10: Documentation
+- [ ] Phase 11: Database Migrations
+- [ ] Phase 12: Frontend Development
 
-**Progress:** 0/10 phases completed (0%)
+### Production Phases
+- [ ] Phase 9: Deployment & Production Infrastructure
+- [ ] Phase 10: Documentation & Developer Guides
+- [ ] Phase 14: Monitoring & Observability
+- [ ] Phase 15: Rate Limiting & Security Hardening
+
+### Post-MVP Phases
+- [ ] Phase 13: Model Migration & Re-Indexing
+
+**MVP Progress:** 0/11 phases completed (0%)
+**Production Ready:** 0/15 phases completed (0%)
+**Total Progress:** 0/16 phases completed (0%)
 
 ---
 
