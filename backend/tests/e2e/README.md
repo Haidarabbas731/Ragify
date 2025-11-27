@@ -2,6 +2,16 @@
 
 These tests require a live running server and all external services configured.
 
+## ⚠️ Important: Tests Are Excluded from Auto-Runs
+
+These E2E tests are **automatically excluded** from:
+- Pre-commit hooks (`git commit` won't run them)
+- Standard `pytest` runs
+- Coverage reports
+- CI/CD pipelines (unless explicitly included)
+
+They are marked with `@pytest.mark.e2e` and configured in `pytest.ini` with `--ignore=tests/e2e`.
+
 ## Prerequisites
 
 1. **Start the development server:**
