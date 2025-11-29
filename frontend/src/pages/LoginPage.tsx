@@ -112,6 +112,7 @@ export function LoginPage() {
                 {...register("email")}
                 id="email"
                 type="email"
+                autoComplete="email"
                 placeholder="you@example.com"
                 className="h-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 transition-all duration-300 font-['DM_Sans']"
                 disabled={isSubmitting}
@@ -136,6 +137,7 @@ export function LoginPage() {
                   {...register("password")}
                   id="password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   className="h-12 pr-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 transition-all duration-300 font-['DM_Sans']"
                   disabled={isSubmitting}
