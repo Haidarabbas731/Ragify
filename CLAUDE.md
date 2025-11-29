@@ -103,6 +103,20 @@ VITE_APP_NAME=AI Knowledge Base
 - Error handling: toast notifications, loading states, error boundaries
 - Routes: `/login`, `/register`, `/dashboard`, `/chat`, `/profile`, `/admin`
 
+### CRITICAL: Use Frontend Skill
+**⚠️ MANDATORY:** When implementing ANY frontend code (components, pages, UI, styling):
+- ✅ **ALWAYS** use the `frontend-design` skill
+- ✅ Run `/skill frontend-design` BEFORE writing frontend code
+- ✅ This ensures production-grade, polished UI with proper design patterns
+- ❌ DO NOT write raw frontend code without using the skill
+- ❌ DO NOT skip this step even for small components
+
+**Examples:**
+- Creating login page → Use skill
+- Adding button component → Use skill
+- Styling chat interface → Use skill
+- Building forms → Use skill
+
 ### Project Structure
 ```
 src/
