@@ -2,6 +2,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { MessageCircle, Sparkles, Upload } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useDarkMode } from "../../hooks/useDarkMode";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -33,6 +34,7 @@ export function HowItWorksSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const stepsRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef<SVGSVGElement>(null);
+  const { darkMode } = useDarkMode();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -85,15 +87,18 @@ export function HowItWorksSection() {
     <section
       ref={sectionRef}
       id="how-it-works"
-      className="relative py-32 px-6 z-10"
+      className="relative py-20 px-6 z-10"
     >
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-20">
           <h2
+            key={darkMode ? "dark" : "light"}
             className="text-5xl md:text-6xl font-bold mb-6"
             style={{
               fontFamily: "'Playfair Display', serif",
-              background: "linear-gradient(135deg, #fff 0%, #a78bfa 100%)",
+              background: darkMode
+                ? "linear-gradient(135deg, #fff 0%, #a78bfa 100%)"
+                : "linear-gradient(135deg, #1e293b 0%, #8b5cf6 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -101,7 +106,7 @@ export function HowItWorksSection() {
           >
             How It Works
           </h2>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+          <p className="text-xl text-slate-700 dark:text-slate-300 max-w-2xl mx-auto">
             Three simple steps to transform your documents into an AI-powered
             knowledge base
           </p>
@@ -113,6 +118,8 @@ export function HowItWorksSection() {
             ref={linesRef}
             className="absolute top-0 left-0 w-full h-full hidden md:block pointer-events-none"
             style={{ zIndex: 0 }}
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
             aria-hidden="true"
           >
             <defs>
@@ -138,16 +145,18 @@ export function HowItWorksSection() {
               </linearGradient>
             </defs>
             <path
-              d="M 33% 20% Q 50% 10%, 66% 20%"
+              d="M 33 20 Q 50 10 66 20"
               fill="none"
               stroke="url(#lineGradient1)"
-              strokeWidth="2"
+              strokeWidth="0.3"
+              vectorEffect="non-scaling-stroke"
             />
             <path
-              d="M 66% 20% Q 83% 30%, 100% 20%"
+              d="M 66 20 Q 83 30 100 20"
               fill="none"
               stroke="url(#lineGradient2)"
-              strokeWidth="2"
+              strokeWidth="0.3"
+              vectorEffect="non-scaling-stroke"
             />
           </svg>
 
@@ -161,33 +170,33 @@ export function HowItWorksSection() {
                 <div key={step.title} className="relative">
                   <div className="text-center">
                     {/* Step number */}
-                    <div className="text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-cyan-400/20 to-blue-600/20 mb-6">
+                    <div className="text-8xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-cyan-500/40 to-blue-700/40 dark:from-cyan-400/40 dark:to-blue-600/40 mb-6">
                       {step.number}
                     </div>
 
                     {/* Icon */}
-                    <div className="inline-flex p-6 rounded-3xl bg-gradient-to-br from-cyan-500/10 to-blue-600/10 border-2 border-cyan-400/30 backdrop-blur-sm mb-6 hover:scale-110 transition-transform duration-300">
-                      <Icon className="w-12 h-12 text-cyan-400" />
+                    <div className="inline-flex p-6 rounded-3xl bg-gradient-to-br from-cyan-500/10 to-blue-600/10 border-2 border-cyan-500/30 dark:border-cyan-400/30 backdrop-blur-sm mb-6 hover:scale-110 transition-transform duration-300">
+                      <Icon className="w-12 h-12 text-cyan-600 dark:text-cyan-400" />
                     </div>
 
                     {/* Content */}
-                    <h3 className="text-2xl font-bold mb-4 text-white">
+                    <h3 className="text-2xl font-bold mb-4 text-slate-900 dark:text-white">
                       {step.title}
                     </h3>
-                    <p className="text-slate-400 leading-relaxed">
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
                       {step.description}
                     </p>
                   </div>
 
                   {/* Decorative dots */}
                   <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    <div className="w-2 h-2 rounded-full bg-cyan-400/30" />
+                    <div className="w-2 h-2 rounded-full bg-cyan-500/30 dark:bg-cyan-400/30" />
                     <div
-                      className="w-2 h-2 rounded-full bg-cyan-400/30"
+                      className="w-2 h-2 rounded-full bg-cyan-500/30 dark:bg-cyan-400/30"
                       style={{ animationDelay: "0.2s" }}
                     />
                     <div
-                      className="w-2 h-2 rounded-full bg-cyan-400/30"
+                      className="w-2 h-2 rounded-full bg-cyan-500/30 dark:bg-cyan-400/30"
                       style={{ animationDelay: "0.4s" }}
                     />
                   </div>

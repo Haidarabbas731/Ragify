@@ -112,6 +112,10 @@ VITE_APP_NAME=AI Knowledge Base
 - API: Axios with JWT interceptors
 - Error handling: toast notifications, loading states, error boundaries
 - Routes: `/login`, `/register`, `/dashboard`, `/chat`, `/profile`, `/admin`
+- **Dark/Light Mode:** ALL UI must support BOTH dark and light modes with proper contrast
+  - Use Tailwind's `dark:` prefix for theme-specific colors
+  - Test readability in both modes before committing
+  - Follow the same CSS pattern as landing page components
 
 ### CRITICAL: Use Frontend Skill
 **⚠️ MANDATORY:** When implementing ANY frontend code (components, pages, UI, styling):
