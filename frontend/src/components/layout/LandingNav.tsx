@@ -28,7 +28,7 @@ export function LandingNav() {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/50 shadow-lg"
+          ? "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-700/50 shadow-lg"
           : "bg-transparent"
       }`}
     >
@@ -43,7 +43,7 @@ export function LandingNav() {
               <Database className="w-6 h-6 text-white" />
             </div>
             <span
-              className="text-xl font-bold text-white hidden sm:block"
+              className="text-xl font-bold text-slate-900 dark:text-white hidden sm:block"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
               AI Knowledge Base
@@ -55,14 +55,14 @@ export function LandingNav() {
             <button
               type="button"
               onClick={() => scrollToSection("features")}
-              className="text-slate-300 hover:text-cyan-400 transition-colors font-medium"
+              className="text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium"
             >
               Features
             </button>
             <button
               type="button"
               onClick={() => scrollToSection("how-it-works")}
-              className="text-slate-300 hover:text-cyan-400 transition-colors font-medium"
+              className="text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium"
             >
               How It Works
             </button>
@@ -71,20 +71,20 @@ export function LandingNav() {
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
-                <Sun className="w-5 h-5 text-slate-400" />
+                <Sun className="w-5 h-5 text-slate-600 dark:text-slate-400" />
               ) : (
-                <Moon className="w-5 h-5 text-slate-400" />
+                <Moon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
               )}
             </button>
 
             <Link to="/login">
               <Button
                 variant="ghost"
-                className="text-slate-300 hover:text-white hover:bg-slate-800"
+                className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 Login
               </Button>
@@ -101,41 +101,41 @@ export function LandingNav() {
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-slate-800 transition-colors"
+            className="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             {isMobileMenuOpen ? (
-              <X className="w-6 h-6 text-white" />
+              <X className="w-6 h-6 text-slate-900 dark:text-white" />
             ) : (
-              <Menu className="w-6 h-6 text-white" />
+              <Menu className="w-6 h-6 text-slate-900 dark:text-white" />
             )}
           </button>
         </div>
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden mt-4 p-4 rounded-xl bg-slate-800/90 backdrop-blur-xl border border-slate-700/50">
+          <div className="md:hidden mt-4 p-4 rounded-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
             <div className="flex flex-col gap-4">
               <button
                 type="button"
                 onClick={() => scrollToSection("features")}
-                className="text-left text-slate-300 hover:text-cyan-400 transition-colors font-medium py-2"
+                className="text-left text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium py-2"
               >
                 Features
               </button>
               <button
                 type="button"
                 onClick={() => scrollToSection("how-it-works")}
-                className="text-left text-slate-300 hover:text-cyan-400 transition-colors font-medium py-2"
+                className="text-left text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium py-2"
               >
                 How It Works
               </button>
 
-              <div className="border-t border-slate-700 my-2" />
+              <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
 
               <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button
                   variant="ghost"
-                  className="w-full text-slate-300 hover:text-white hover:bg-slate-700"
+                  className="w-full text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
                   Login
                 </Button>
