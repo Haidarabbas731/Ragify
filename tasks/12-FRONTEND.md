@@ -554,6 +554,12 @@ frontend/
 - ✅ Dynamic password strength indicator with 5 levels (Weak→Strong)
 - ✅ Color-coded progress bar (red→orange→yellow→lime→green gradients)
 - ✅ Auto-formatting invite codes with dashes (KB-XXXX-XXXX-XXXX)
+- ✅ **IMPROVEMENT (2025-11-29):** Enhanced invite code paste handling
+  - Auto-converts pasted text to uppercase
+  - Auto-inserts hyphens in KB-XXXX-XXXX-XXXX format
+  - Trims input to exactly 14 alphanumeric chars (17 with hyphens)
+  - Handles both typing and paste events seamlessly
+  - Example: Pasting 'fasdfafsdffsdextra' → 'FA-SDAF-SDFF-SDEX'
 - ✅ Comprehensive Zod validation schema
 - ✅ Password requirements enforced: 8+ chars, uppercase, lowercase, number, special
 - ✅ Invite code validation with regex pattern
@@ -583,6 +589,7 @@ frontend/
 
 **COMMITS:**
 - `b111b64` - feat(frontend): implement register page with password strength indicator
+- `aca08d0` - feat(frontend): improve invite code paste handling with auto-format and trim
 
 ### Password Reset Flow (2-Step Process)
 **Files:** `frontend/src/pages/ForgotPassword.tsx`, `ResetPassword.tsx`
