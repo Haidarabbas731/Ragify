@@ -1,12 +1,113 @@
 # Frontend Implementation Plan
 
-**Duration:** 22 days
+**Duration:** 24 days (updated)
 **Approach:** Vertical slices (complete each feature end-to-end)
-**Checkpoints:** Day 9 (MVP), Day 15 (UX), Day 22 (Production)
+**Checkpoints:** Day 1.5 (Landing Page), Day 10 (MVP), Day 16 (UX), Day 24 (Production)
 
 ---
 
-## Phase 1: MVP (Days 1-9)
+## Phase 0: Landing Page (Day 1.5)
+
+### Day 1.5: Landing Page with GSAP & Three.js
+
+**Goal:** Create stunning landing page showcasing the AI Knowledge Base
+
+**Features to Highlight (Backend-Available Only):**
+- ✅ RAG-powered AI chat with your documents
+- ✅ Multi-format document support (PDF, DOCX, TXT, MD)
+- ✅ Intelligent document organization with collections
+- ✅ Secure authentication with invite-only access
+- ✅ Real-time streaming responses
+- ✅ Source citations for transparency
+- ✅ Storage quota management (1GB default)
+
+**Tasks:**
+
+1. Install animation libraries
+   ```bash
+   cd frontend
+   bun add gsap @gsap/react three @react-three/fiber @react-three/drei
+   bun add -D @types/three
+   ```
+
+2. Create landing page route structure
+   - `/` - Landing page (public)
+   - `/login` - Login (public)
+   - `/register` - Register (public)
+   - `/dashboard` - App entry (protected)
+
+3. Use frontend-design skill for landing page
+   **Skill Prompt:**
+   ```
+   Create a modern, stunning landing page for an AI Knowledge Base application.
+
+   Features to showcase:
+   - RAG-powered chat with uploaded documents
+   - Multi-format support (PDF, DOCX, TXT, MD)
+   - Collections for organization
+   - Streaming AI responses with source citations
+   - Secure invite-only access
+
+   Design requirements:
+   - Hero section with 3D background (Three.js)
+   - Animated feature cards (GSAP ScrollTrigger)
+   - Smooth scroll animations
+   - CTA buttons (Get Started, View Demo)
+   - Feature highlights with icons
+   - Footer with links
+   - Dark mode support
+   - Mobile responsive
+
+   Tech: React, TypeScript, Tailwind, shadcn/ui, GSAP, Three.js
+   Style: Modern, clean, professional (think Vercel/Linear aesthetic)
+   ```
+
+4. Implement Three.js 3D background
+   - Animated geometric shapes or particles
+   - Responds to mouse movement
+   - Subtle and non-distracting
+   - Performance optimized
+
+5. Implement GSAP animations
+   - Hero text fade-in with stagger
+   - Feature cards scroll-triggered animations
+   - Smooth parallax effects
+   - CTA button hover effects
+
+6. Create landing page sections
+   - **Hero:** Main headline, subheadline, CTA buttons
+   - **Features:** 3-4 key features with icons and descriptions
+   - **How It Works:** 3-step process (Upload → Chat → Get Answers)
+   - **CTA Section:** Invite code signup encouragement
+   - **Footer:** Links, copyright
+
+7. Navigation header
+   - Logo + App name
+   - Login / Register buttons
+   - Smooth scroll to sections
+   - Sticky header on scroll
+
+**Checklist:**
+- [ ] GSAP and Three.js installed
+- [ ] Landing page route created
+- [ ] Used frontend-design skill
+- [ ] 3D background implemented
+- [ ] GSAP scroll animations working
+- [ ] Hero section complete
+- [ ] Features section complete
+- [ ] How It Works section complete
+- [ ] CTA section complete
+- [ ] Footer complete
+- [ ] Mobile responsive
+- [ ] Dark mode compatible
+- [ ] Performance optimized (60fps)
+- [ ] `bun run build` succeeds
+
+**Frontend-Design Skill:** MANDATORY
+
+---
+
+## Phase 1: MVP (Days 2-10)
 
 ### Day 1: Project Setup & Foundation
 
@@ -1944,20 +2045,21 @@
 
 ## Summary
 
-**Total Duration:** 22 days
-**Phases:** 3 (MVP → UX → Polish)
-**Checkpoints:** Days 9, 15, 22
+**Total Duration:** 24 days
+**Phases:** 4 (Landing Page → MVP → UX → Polish)
+**Checkpoints:** Day 1.5 (Landing), Day 10 (MVP), Day 16 (UX), Day 24 (Production)
 
 **Key Features Delivered:**
-1. ✅ Authentication system (login, register, password reset, JWT)
-2. ✅ Document management (upload, CRUD, collections, batch operations)
-3. ✅ AI chat (SSE streaming, markdown, code highlighting, auto-scroll)
-4. ✅ UX features (typing indicators, message actions, stop generation, timestamps)
-5. ✅ Dark mode
-6. ✅ Search & prompt templates
-7. ✅ Responsive design
-8. ✅ Accessibility
-9. ✅ Error handling & loading states
-10. ✅ Testing
+1. ✅ Stunning landing page (GSAP, Three.js animations)
+2. ✅ Authentication system (login, register, password reset, JWT)
+3. ✅ Document management (upload, CRUD, collections, batch operations)
+4. ✅ AI chat (SSE streaming, markdown, code highlighting, auto-scroll)
+5. ✅ UX features (typing indicators, message actions, stop generation, timestamps)
+6. ✅ Dark mode
+7. ✅ Search & prompt templates
+8. ✅ Responsive design
+9. ✅ Accessibility
+10. ✅ Error handling & loading states
+11. ✅ Testing
 
-**Production Ready:** Day 22 🎉
+**Production Ready:** Day 24 🎉

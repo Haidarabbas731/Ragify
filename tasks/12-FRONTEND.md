@@ -40,6 +40,199 @@ Example: feat(auth): implement login page
 
 ---
 
+## 12.0 Landing Page (MANDATORY FIRST)
+
+**Priority:** CRITICAL - Must be completed before authentication
+**Estimated Time:** 1 day
+**Frontend-Design Skill:** **MANDATORY** - Use `/skill frontend-design` for ALL UI work
+
+### Purpose
+Create a stunning landing page to showcase the AI Knowledge Base application with modern animations and 3D effects.
+
+### Features to Highlight (Backend-Available Only)
+- ✅ RAG-powered AI chat with your documents
+- ✅ Multi-format document support (PDF, DOCX, TXT, MD - 50MB max)
+- ✅ Intelligent document organization with collections
+- ✅ Secure invite-only authentication
+- ✅ Real-time streaming responses (SSE)
+- ✅ Source citations for transparency
+- ✅ Storage quota management (1GB default per user)
+- ✅ Document processing with chunking (1000 chars, 200 overlap)
+
+### Install Animation Libraries
+```bash
+cd frontend
+bun add gsap @gsap/react three @react-three/fiber @react-three/drei
+bun add -D @types/three
+```
+
+### Landing Page Structure
+
+**Route:** `/` (public)
+
+- [ ] Install GSAP, Three.js, React Three Fiber
+- [ ] Use frontend-design skill with this prompt:
+
+```
+Create a modern, stunning landing page for an AI Knowledge Base application.
+
+Features to showcase (backend-available only):
+- RAG-powered chat with uploaded documents
+- Multi-format support (PDF, DOCX, TXT, MD up to 50MB)
+- Collections for document organization
+- Streaming AI responses with source citations
+- Secure invite-only access (KB-XXXX-XXXX-XXXX format)
+- 1GB storage quota per user
+
+Design requirements:
+- Hero section with 3D background (Three.js - animated particles or geometric shapes)
+- Animated feature cards (GSAP ScrollTrigger)
+- Smooth scroll animations throughout
+- CTA buttons (Get Started → /register, Login → /login)
+- Feature highlights section (4 cards with icons)
+- "How It Works" section (3 steps: Upload → Chat → Get Answers)
+- CTA section encouraging invite code signup
+- Footer with copyright and links
+- Sticky navigation header (logo, Login, Register buttons)
+- Dark mode support (respects system preference + manual toggle)
+- Fully mobile responsive
+
+Tech stack: React 18, TypeScript, Tailwind CSS, shadcn/ui, GSAP, Three.js
+Design aesthetic: Modern, clean, professional (Vercel/Linear style)
+Performance: 60fps animations, optimized bundle size
+```
+
+### Sections Breakdown
+
+#### 1. Navigation Header
+**File:** `frontend/src/components/layout/LandingNav.tsx`
+
+- [ ] Sticky header with blur background on scroll
+- [ ] Logo + "AI Knowledge Base" text
+- [ ] Right side: Login, Get Started buttons
+- [ ] Smooth scroll to sections (Features, How It Works)
+- [ ] Dark mode toggle
+- [ ] Mobile hamburger menu
+
+#### 2. Hero Section
+**File:** `frontend/src/pages/LandingPage.tsx`
+
+- [ ] Three.js 3D animated background (particles or geometric shapes)
+- [ ] Mouse-interactive background (responds to cursor movement)
+- [ ] Main headline: "Your Documents, Supercharged with AI"
+- [ ] Subheadline: "Upload PDFs, Word docs, and text files. Chat with your knowledge base using cutting-edge RAG technology."
+- [ ] CTA buttons: "Get Started" (primary), "View Demo" (secondary - scroll to How It Works)
+- [ ] GSAP fade-in animation with stagger effect
+
+#### 3. Features Section
+**File:** `frontend/src/components/landing/FeaturesSection.tsx`
+
+- [ ] 4 feature cards with icons (use lucide-react)
+- [ ] GSAP ScrollTrigger animations (fade + slide on scroll)
+- [ ] Feature 1: RAG-Powered Chat (MessageSquare icon)
+- [ ] Feature 2: Multi-Format Support (FileText icon)
+- [ ] Feature 3: Smart Organization (Folder icon)
+- [ ] Feature 4: Source Citations (Link icon)
+- [ ] Hover effects (subtle scale + shadow)
+
+#### 4. How It Works Section
+**File:** `frontend/src/components/landing/HowItWorksSection.tsx`
+
+- [ ] 3-step process with visual flow
+- [ ] Step 1: Upload Documents (Upload icon)
+- [ ] Step 2: Ask Questions (MessageCircle icon)
+- [ ] Step 3: Get Intelligent Answers (Sparkles icon)
+- [ ] Connecting lines between steps (animated with GSAP DrawSVG)
+- [ ] GSAP timeline animation on scroll
+
+#### 5. CTA Section
+**File:** `frontend/src/components/landing/CTASection.tsx`
+
+- [ ] Headline: "Ready to Transform Your Knowledge?"
+- [ ] Subtext: "Join with an invite code and start chatting with your documents today."
+- [ ] "Get Started" button → /register
+- [ ] Subtle gradient background
+- [ ] GSAP parallax effect
+
+#### 6. Footer
+**File:** `frontend/src/components/layout/LandingFooter.tsx`
+
+- [ ] Copyright text
+- [ ] Links: Privacy Policy, Terms of Service, Contact
+- [ ] Social media icons (optional, if applicable)
+- [ ] Dark mode compatible
+
+### Three.js 3D Background
+**File:** `frontend/src/components/landing/ThreeBackground.tsx`
+
+- [ ] Canvas component from @react-three/fiber
+- [ ] Animated particles OR floating geometric shapes
+- [ ] Mouse interaction (OrbitControls or custom mouse tracking)
+- [ ] Performance optimized (LOD, instancing if many objects)
+- [ ] Responsive to window resize
+- [ ] Subtle, non-distracting (low opacity, slow movement)
+
+### GSAP Animations
+**File:** `frontend/src/hooks/useGSAPAnimations.ts`
+
+- [ ] Hero text fade-in with stagger (0.1s delay per line)
+- [ ] Feature cards ScrollTrigger (trigger when 80% in viewport)
+- [ ] "How It Works" timeline (sequential step reveals)
+- [ ] CTA section parallax scroll
+- [ ] Smooth scroll behavior for anchor links
+
+### Performance Checklist
+- [ ] Three.js scene optimized (low polygon count, simple materials)
+- [ ] GSAP animations use transforms (not position/top/left)
+- [ ] Images optimized and lazy loaded
+- [ ] Code splitting for Three.js (dynamic import)
+- [ ] Lighthouse score: Performance >90, Accessibility >90
+- [ ] No layout shift (CLS < 0.1)
+- [ ] 60fps animations on desktop, 30fps acceptable on mobile
+
+### Dark Mode Implementation
+- [ ] Detect system preference on load
+- [ ] Manual toggle in navigation
+- [ ] Persist preference to localStorage
+- [ ] All sections support dark mode (text, backgrounds, borders)
+- [ ] Three.js background adjusts color scheme
+
+### Routing
+**File:** `frontend/src/App.tsx`
+
+- [ ] `/` - LandingPage (public)
+- [ ] `/login` - LoginPage (placeholder for now)
+- [ ] `/register` - RegisterPage (placeholder for now)
+- [ ] `/dashboard` - Protected route (placeholder for now)
+
+### Testing Checklist
+- [ ] Landing page loads without errors
+- [ ] 3D background renders and animates smoothly
+- [ ] GSAP scroll animations trigger correctly
+- [ ] All CTAs link to correct routes
+- [ ] Mobile responsive (test 375px, 768px, 1440px widths)
+- [ ] Dark mode toggle works
+- [ ] Navigation smooth scrolls to sections
+- [ ] Build succeeds: `bun run build`
+- [ ] No console errors or warnings
+- [ ] Accessible (keyboard navigation, ARIA labels)
+
+### Commit After Completion
+```bash
+git add .
+git commit -m "feat(frontend): add landing page with GSAP and Three.js animations
+
+- Stunning hero with 3D particle background
+- Animated feature cards with ScrollTrigger
+- How It Works 3-step section
+- Mobile responsive and dark mode compatible
+- Performance optimized (60fps)"
+```
+
+**CRITICAL:** Update this task file with `**UPDATE:**` prefix after implementing to document any changes or improvements made.
+
+---
+
 ## 12.1 Frontend Project Setup
 
 **PRD Reference:** Section 16 (Week 5-6: Frontend)
