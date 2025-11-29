@@ -219,7 +219,7 @@ export function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 placeholder="you@example.com"
-                className="h-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['DM_Sans']"
+                className="h-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['DM_Sans']"
                 disabled={isSubmitting}
               />
               {errors.email && (
@@ -244,7 +244,7 @@ export function RegisterPage() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   placeholder="••••••••"
-                  className="h-12 pr-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['DM_Sans']"
+                  className="h-12 pr-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['DM_Sans']"
                   disabled={isSubmitting}
                 />
                 <button
@@ -316,7 +316,7 @@ export function RegisterPage() {
                 type="text"
                 placeholder="KB-XXXX-XXXX-XXXX"
                 maxLength={17}
-                className="h-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['DM_Sans'] tracking-wider uppercase text-center font-semibold"
+                className="h-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['DM_Sans'] tracking-wider uppercase text-center font-semibold"
                 disabled={isSubmitting}
               />
               {errors.inviteCode && (
