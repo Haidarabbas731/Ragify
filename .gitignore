@@ -82,3 +82,38 @@ tmp/
 
 .cursorrules
 MISSING_TASKS_ANALYSIS.md
+
+# Frontend (Node/Bun)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.env
+frontend/.env.local
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/lerna-debug.log*
+
+# Backend (Python/UV)
+backend/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/*.so
+backend/.Python
+backend/.venv/
+backend/venv/
+backend/ENV/
+backend/.uv/
+backend/.env
+backend/.env.local
+backend/*.db
+backend/*.sqlite
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/coverage.xml
+backend/alembic/versions/*.pyc
+backend/*.tmp
+backend/temp/
