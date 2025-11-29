@@ -506,6 +506,16 @@ frontend/
 - ✅ Auto-redirect if already authenticated
 - ✅ Error display via toast notifications
 
+**IMPROVEMENT: 2025-11-29 - Dev Login Button**
+- ✅ Added development-only "Dev Login" button for easy manual testing
+- ✅ Button sets fake authentication in localStorage (dev@example.com)
+- ✅ Auto-redirects to dashboard after setting fake auth
+- ✅ Only visible when `import.meta.env.DEV === true`
+- ✅ Styled with warning colors (orange/red gradient) to indicate dev-only
+- ✅ Includes Zap icon and warning message "⚠️ Development mode only"
+- ✅ Makes testing instant without using browser console
+- ✅ Separated from main form with border-top divider
+
 **UI Mockup (PRD Section 8.2):**
 ```
 ┌────────────────────────────────┐
@@ -806,32 +816,63 @@ frontend/
 **PRD Reference:** Section 8.2 (Knowledge Base Management Frontend)
 
 ### Dashboard Layout
-**File:** `frontend/src/pages/Dashboard.tsx`
+**File:** `frontend/src/pages/Dashboard.tsx` → **RENAMED TO:** `frontend/src/pages/DashboardPage.tsx`
 
-- [ ] Create dashboard layout
-- [ ] Add sidebar navigation
-- [ ] Add top stats bar (total documents, chunks, storage)
-- [ ] Add collections sidebar
-- [ ] Add document list view
-- [ ] Add search and filter bar
-- [ ] Make responsive for mobile
+- [x] Create dashboard layout
+- [x] Add sidebar navigation
+- [x] Add top stats bar (total documents, chunks, storage)
+- [x] Add collections sidebar
+- [x] Add document list view (empty state)
+- [x] Add search bar in top navigation
+- [x] Make responsive for mobile
 
-**Stats Component:**
-**File:** `frontend/src/components/documents/StatsBar.tsx`
+**IMPLEMENTATION SUMMARY - 2025-11-29**
+- ✅ **Used frontend-design skill** for production-grade UI
+- ✅ **"Data Observatory"** aesthetic - Industrial-futuristic control room
+- ✅ Created with inspiration from NASA mission control + modern data visualization
+- ✅ Information-dense layout with breathing room for readability
 
-- [ ] Fetch user stats from API (user data includes storage info)
-- [ ] Display total documents
-- [ ] Display total chunks
-- [ ] Display storage used/limit as progress bar
-- [ ] Show warning when >90% quota used (red/yellow indicator)
-- [ ] Format storage as MB/GB (e.g., "523 MB / 1 GB")
-- [ ] Block upload when quota exceeded
+**Key Features Implemented:**
+
+**1. Top Navigation Bar** (`DashboardPage.tsx` lines 51-111):
+- ✅ Sticky glass-morphism navbar with backdrop blur
+- ✅ Logo with gradient (blue to purple)
+- ✅ Search bar (264px wide, hidden on mobile)
+- ✅ Dark mode toggle with Sun/Moon icons
+- ✅ User menu showing email (dev@example.com)
+- ✅ Logout button with icon
+
+**2. Sidebar Navigation** (`DashboardPage.tsx` lines 116-162):
+- ✅ Hidden on mobile (<lg), shown on desktop
+- ✅ Active state styling (blue background for Documents)
+- ✅ Navigation links: Documents, Chat, Profile
+- ✅ Collections section with document count (42)
+- ✅ Hover states with smooth transitions
+
+**3. Stats Bar** (Inline component, lines 167-254):
+- [x] Display total documents (42)
+- [x] Display total chunks (1,247 with comma formatting)
+- [x] Display storage used/limit as progress bar (523 MB / 1024 MB)
+- [x] Show warning when >90% quota used (red/yellow indicator)
+- [x] Format storage as MB (e.g., "523 MB / 1024 MB")
+- [ ] Block upload when quota exceeded (future API integration)
+- [ ] Fetch user stats from API (currently mock data)
+
+**Stats Cards Design:**
+- ✅ Grid layout: 1 column (mobile) → 2 columns (sm) → 4 columns (lg)
+- ✅ Card 1: Documents (blue icon, monospace font for number)
+- ✅ Card 2: Chunks (purple icon, formatted with commas)
+- ✅ Card 3-4: Storage (emerald icon, spans 2 columns on sm, progress bar)
+- ✅ Color-coded progress bar:
+  - Green (emerald to cyan): <70% used
+  - Yellow (yellow to orange): 70-89% used
+  - Red (red to orange): ≥90% used with "⚠️ Nearly full" warning
 
 ### Document Upload Interface
-**File:** `frontend/src/components/documents/UploadZone.tsx`
-**PRD Reference:** Section 8.2 (Document Upload Interface)
+**File:** `frontend/src/components/documents/UploadZone.tsx` → **INLINE IN:** `frontend/src/pages/DashboardPage.tsx`
 
-- [ ] Create drag-and-drop zone (react-dropzone)
+- [x] Create upload zone UI (lines 257-278)
+- [ ] Add drag-and-drop functionality (react-dropzone)
 - [ ] Add file type validation (PDF, DOCX, TXT, MD)
 - [ ] Add file size validation (50MB max)
 - [ ] Show file preview before upload
@@ -841,6 +882,16 @@ frontend/
 - [ ] Handle upload errors (file too large, invalid format)
 - [ ] Show success message with chunk count
 
+**Upload Zone Design** (`DashboardPage.tsx` lines 257-278):
+- ✅ Gradient background (blue-50 to purple-50, darker in dark mode)
+- ✅ Dashed border (2px, blue-300 in light mode)
+- ✅ Upload icon (8x8, blue-600)
+- ✅ Heading: "Upload Documents"
+- ✅ Instructions: "Drag & drop files here or click to browse"
+- ✅ File format hint: "Supports PDF, DOCX, TXT, MD • Max 50MB per file"
+- ✅ "Select Files" button with upload icon
+- ❌ Functional upload logic (future implementation)
+
 **Upload Flow UI (PRD Section 8.2 lines 690-753):**
 1. Drag & drop zone
 2. File preview with metadata
@@ -848,8 +899,9 @@ frontend/
 4. Success confirmation
 
 ### Document List Component
-**File:** `frontend/src/components/documents/DocumentList.tsx`
+**File:** `frontend/src/components/documents/DocumentList.tsx` → **INLINE IN:** `frontend/src/pages/DashboardPage.tsx`
 
+- [x] Add empty state UI (no documents yet) - lines 292-311
 - [ ] Fetch documents from API (GET /api/v1/documents)
 - [ ] Display documents in list/grid view
 - [ ] Show document metadata (name, size, chunks, date)
@@ -858,8 +910,16 @@ frontend/
 - [ ] Error: Show error icon and "Retry" button
 - [ ] Add pagination (50 per page)
 - [ ] Add loading skeleton
-- [ ] Add empty state (no documents yet)
 - [ ] Add click handler to view document details
+
+**Empty State Design** (`DashboardPage.tsx` lines 292-311):
+- ✅ White card with border (slate-200 in light mode)
+- ✅ Centered layout with max-width 320px
+- ✅ Large file icon (10x10, slate-400) in circular background
+- ✅ Heading: "No documents yet"
+- ✅ Description: "Upload your first document to get started with your AI knowledge base"
+- ✅ "Upload Document" button with upload icon
+- ✅ Full dark mode support
 
 **Document Status:**
 ```typescript
