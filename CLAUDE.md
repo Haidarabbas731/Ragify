@@ -8,6 +8,16 @@ AI Knowledge Base Chat System - RAG app with FastAPI + React.
 
 ## 🚨 MANDATORY WORKFLOW
 
+**⚠️ CRITICAL TASK FILE UPDATE RULE:**
+
+- ✅ **ALWAYS** update the relevant task file (`tasks/*.md`) when making ANY code changes
+- ✅ **ALWAYS** document new features, improvements, or security updates in the task file
+- ✅ **ALWAYS** add notes about implementation details that differ from original plan
+- ✅ **ALWAYS** mark updates with `**UPDATE:**` or `**IMPROVEMENT:**` or `**SECURITY UPDATE:**` prefixes
+- ❌ **NEVER** make code changes without documenting them in the task file
+- ✅ If you add something new that's not mentioned in tasks, ADD IT to the task file immediately
+- ✅ This ensures future AI sessions and developers know about all changes made
+
 ### Git Rules
 - ✅ Work on `dev` branch only
 - ✅ Run linting before commit (backend: `ruff`, frontend: `biome`)
@@ -129,6 +139,13 @@ src/
 ├── store/               # Zustand stores
 └── types/               # TS types
 ```
+
+### Implementation Guide
+**⚠️ IMPORTANT:** For detailed frontend implementation plan:
+- **22-day plan:** `docs/FRONTEND_IMPLEMENTATION_PLAN.md`
+- **Task checklist:** `tasks/12-FRONTEND.md`
+- Follow the plan day-by-day for structured development
+- Plan includes: MVP (Days 1-9) → UX (Days 10-15) → Polish (Days 16-22)
 
 ---
 
