@@ -4,7 +4,7 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Brain, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Brain, Eye, EyeOff, Loader2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -56,6 +56,35 @@ export function LoginPage() {
       // Error is handled by the store (toast notification)
       console.error("Login error:", error);
     }
+  };
+
+  // Dev login helper (development only)
+  const handleDevLogin = () => {
+    // Set fake authentication in localStorage
+    const fakeAuthData = {
+      user: {
+        user_id: "dev-user-123",
+        email: "dev@example.com",
+        role: "user",
+        created_at: new Date().toISOString(),
+      },
+      token: "dev-fake-token-12345",
+    };
+
+    localStorage.setItem(
+      "auth-storage",
+      JSON.stringify({
+        state: {
+          user: fakeAuthData.user,
+          token: fakeAuthData.token,
+          isAuthenticated: true,
+        },
+        version: 0,
+      }),
+    );
+
+    // Reload to trigger auth initialization
+    window.location.href = "/dashboard";
   };
 
   // Show loading state during auth initialization
@@ -205,6 +234,24 @@ export function LoginPage() {
               </Link>
             </p>
           </div>
+
+          {/* Dev Login Button (Development Only) */}
+          {import.meta.env.DEV && (
+            <div className="mt-6 pt-6 border-t border-slate-300 dark:border-slate-700">
+              <Button
+                type="button"
+                onClick={handleDevLogin}
+                variant="outline"
+                className="w-full h-10 bg-gradient-to-r from-orange-500/10 to-red-500/10 dark:from-orange-500/20 dark:to-red-500/20 border-2 border-orange-400 dark:border-orange-600 hover:bg-orange-500/20 dark:hover:bg-orange-500/30 text-orange-700 dark:text-orange-400 font-semibold rounded-lg transition-all duration-300 font-['DM_Sans'] text-sm"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Dev Login (Skip Authentication)
+              </Button>
+              <p className="text-xs text-center text-orange-600 dark:text-orange-400 mt-2 font-['DM_Sans']">
+                ⚠️ Development mode only - Sets fake auth for testing
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Decorative floating elements */}
