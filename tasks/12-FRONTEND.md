@@ -646,10 +646,15 @@ frontend/
 1. Added `autoComplete="email"` to email input
 2. Added `autoComplete="current-password"` to password input
 3. Eliminated browser console warnings
+4. **IMPROVEMENT (2025-11-29):** Initialize `useDarkMode` hook to persist dark mode across pages
+5. **IMPROVEMENT (2025-11-29):** Added explicit placeholder text colors for visibility in both modes
+   - Light mode: `placeholder:text-slate-400`
+   - Dark mode: `dark:placeholder:text-slate-500`
 
 **COMMITS:**
 - `afe0d21` - feat(frontend): implement login page and authentication infrastructure
 - `20be385` - fix(frontend): add autocomplete attributes to login form inputs
+- `ea470f6` - fix(frontend): add dark mode persistence and improve placeholder visibility
 
 **TESTING STATUS:**
 - ✅ Chrome DevTools verification completed
@@ -657,6 +662,8 @@ frontend/
 - ✅ Performance: Excellent Core Web Vitals (LCP 622ms, INP 8ms, CLS 0.00)
 - ✅ Accessibility: Proper semantics and autocomplete attributes
 - ✅ Dark/Light mode: Both modes rendering correctly
+- ✅ **Dark mode persistence verified:** Stays dark after reload ✅
+- ✅ **Placeholder visibility verified:** Text visible in both light and dark modes ✅
 - ✅ Linting passed (`bun run lint:fix`)
 - ✅ Build successful (`bun run build`)
 - ⬜ Manual testing pending (requires backend running)
