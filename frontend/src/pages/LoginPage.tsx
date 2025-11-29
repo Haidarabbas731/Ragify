@@ -169,7 +169,7 @@ export function LoginPage() {
             {/* Forgot Password Link */}
             <div className="flex justify-end">
               <Link
-                to="#"
+                to="/forgot-password"
                 className="text-sm text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 font-medium transition-colors font-['DM_Sans']"
               >
                 Forgot password?

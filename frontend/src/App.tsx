@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { useAuthStore } from "./store/authStore";
 
 // Placeholder pages (to be implemented later)
@@ -65,6 +67,26 @@ function App() {
               <Navigate to="/dashboard" replace />
             ) : (
               <RegisterPage />
+            )
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <ForgotPasswordPage />
+            )
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <ResetPasswordPage />
             )
           }
         />
