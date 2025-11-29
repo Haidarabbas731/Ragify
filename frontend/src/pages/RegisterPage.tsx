@@ -116,23 +116,34 @@ export function RegisterPage() {
     }
   }, [password]);
 
-  // Auto-format invite code
+  // Auto-format invite code (handles paste, typing, uppercase, and trimming)
   const inviteCode = watch("inviteCode");
   useEffect(() => {
     if (inviteCode) {
+      // Remove all non-alphanumeric characters and convert to uppercase
       const cleaned = inviteCode.replace(/[^A-Z0-9]/gi, "").toUpperCase();
-      if (cleaned.length <= 12) {
-        const formatted =
-          cleaned.slice(0, 2) +
-          (cleaned.length > 2 ? "-" : "") +
-          cleaned.slice(2, 6) +
-          (cleaned.length > 6 ? "-" : "") +
-          cleaned.slice(6, 10) +
-          (cleaned.length > 10 ? "-" : "") +
-          cleaned.slice(10, 14);
-        if (formatted !== inviteCode) {
-          setValue("inviteCode", formatted, { shouldValidate: true });
+
+      // Trim to max 14 characters (will become 17 with hyphens: KB-XXXX-XXXX-XXXX)
+      const trimmed = cleaned.slice(0, 14);
+
+      // Format with hyphens: KB-XXXX-XXXX-XXXX
+      let formatted = "";
+      if (trimmed.length > 0) {
+        formatted = trimmed.slice(0, 2);
+        if (trimmed.length > 2) {
+          formatted += `-${trimmed.slice(2, 6)}`;
         }
+        if (trimmed.length > 6) {
+          formatted += `-${trimmed.slice(6, 10)}`;
+        }
+        if (trimmed.length > 10) {
+          formatted += `-${trimmed.slice(10, 14)}`;
+        }
+      }
+
+      // Only update if the formatted value is different
+      if (formatted !== inviteCode) {
+        setValue("inviteCode", formatted, { shouldValidate: true });
       }
     }
   }, [inviteCode, setValue]);
