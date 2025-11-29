@@ -439,20 +439,35 @@ frontend/
 ### API Client Setup
 **File:** `frontend/src/lib/api.ts`
 
-- [ ] Create Axios instance with base URL
-- [ ] Add request interceptor (inject JWT token)
-- [ ] Add response interceptor (handle 401, refresh token)
-- [ ] Export API methods (login, register, refresh, etc.)
+- [x] Create Axios instance with base URL
+- [x] Add request interceptor (inject JWT token)
+- [x] Add response interceptor (handle 401, refresh token)
+- [x] Export API methods (login, register, refresh, etc.)
+
+**UPDATE: 2025-11-29**
+- ✅ Implemented Axios client with 30s timeout
+- ✅ Request interceptor injects Bearer token from localStorage
+- ✅ Response interceptor handles 401 with automatic token refresh
+- ✅ Request queuing prevents multiple simultaneous refresh attempts
+- ✅ Separate axios instance for refresh to avoid interceptor loop
 
 ### Auth Store (Zustand)
 **File:** `frontend/src/store/authStore.ts`
 
-- [ ] Create auth store (user, accessToken, refreshToken, isAuthenticated)
-- [ ] Add login action (store both access + refresh tokens)
-- [ ] Add logout action (revoke tokens via API, clear localStorage)
-- [ ] Add token refresh logic (auto-refresh on 401 errors)
-- [ ] Persist auth state to localStorage
-- [ ] Track token expiry (expires_in from login response)
+- [x] Create auth store (user, accessToken, refreshToken, isAuthenticated)
+- [x] Add login action (store both access + refresh tokens)
+- [x] Add logout action (revoke tokens via API, clear localStorage)
+- [x] Add token refresh logic (auto-refresh on 401 errors)
+- [x] Persist auth state to localStorage
+- [x] Track token expiry (expires_in from login response)
+
+**UPDATE: 2025-11-29**
+- ✅ Zustand store with persist middleware
+- ✅ JWT decoding to extract user info (user_id, email, role, exp)
+- ✅ Token expiry checking with automatic refresh
+- ✅ initializeAuth() restores session on app load
+- ✅ Toast notifications for user feedback (Sonner)
+- ✅ Logout revokes tokens via backend API
 
 **Token Response Format:**
 ```typescript
@@ -465,17 +480,31 @@ frontend/
 ```
 
 ### Login Page
-**File:** `frontend/src/pages/Login.tsx`
+**File:** `frontend/src/pages/LoginPage.tsx`
 **PRD Reference:** Section 9.6 (POST /api/v1/auth/login)
 
-- [ ] Create login form (email, password)
-- [ ] Add form validation (Zod or React Hook Form)
-- [ ] Add submit handler (call login API)
-- [ ] Show loading state during submission
-- [ ] Handle errors (invalid credentials, network error)
-- [ ] Redirect to dashboard on success
-- [ ] Add "Forgot Password?" link
-- [ ] Add "Register" link
+- [x] Create login form (email, password)
+- [x] Add form validation (Zod or React Hook Form)
+- [x] Add submit handler (call login API)
+- [x] Show loading state during submission
+- [x] Handle errors (invalid credentials, network error)
+- [x] Redirect to dashboard on success
+- [x] Add "Forgot Password?" link
+- [x] Add "Register" link
+
+**UPDATE: 2025-11-29**
+- ✅ **Used frontend-design skill** for production-grade UI
+- ✅ **"Portal to Knowledge"** aesthetic with glass morphism
+- ✅ React Hook Form + Zod validation
+- ✅ Password visibility toggle (Eye/EyeOff icons)
+- ✅ Gradient background matching landing page (cyan/blue)
+- ✅ Playfair Display + DM Sans fonts for brand consistency
+- ✅ Animated background orbs with pulse effects
+- ✅ Floating decorative elements around card
+- ✅ Full dark/light mode support
+- ✅ Loading spinner during auth initialization
+- ✅ Auto-redirect if already authenticated
+- ✅ Error display via toast notifications
 
 **UI Mockup (PRD Section 8.2):**
 ```
@@ -531,12 +560,59 @@ frontend/
 - [ ] Handle expired token error (15-minute expiry)
 
 ### Protected Route Component
-**File:** `frontend/src/components/ProtectedRoute.tsx`
+**File:** `frontend/src/components/auth/ProtectedRoute.tsx`
 
-- [ ] Create ProtectedRoute component
-- [ ] Check authentication state
-- [ ] Redirect to login if not authenticated
-- [ ] Wrap protected pages with this component
+- [x] Create ProtectedRoute component
+- [x] Check authentication state
+- [x] Redirect to login if not authenticated
+- [x] Wrap protected pages with this component
+
+**UPDATE: 2025-11-29**
+- ✅ Loading spinner while auth initializes
+- ✅ Redirects to /login with location state (for post-login redirect)
+- ✅ Optional `requireAdmin` prop for admin-only routes
+- ✅ Uses `Navigate` with `replace` to prevent back-button issues
+
+### **IMPLEMENTATION SUMMARY - 2025-11-29**
+
+**PHASE COMPLETED:** Login Page & Auth Infrastructure ✅
+
+**FILES CREATED:**
+1. `frontend/src/types/auth.ts` - Authentication TypeScript types
+2. `frontend/src/types/api.ts` - API TypeScript types
+3. `frontend/src/lib/api.ts` - Axios client with JWT interceptors
+4. `frontend/src/store/authStore.ts` - Zustand auth store
+5. `frontend/src/pages/LoginPage.tsx` - Login page component
+6. `frontend/src/components/auth/ProtectedRoute.tsx` - Route guard
+
+**FILES MODIFIED:**
+1. `frontend/src/main.tsx` - Added Sonner Toaster component
+2. `frontend/src/App.tsx` - Auth initialization, protected routes, redirect logic
+
+**KEY FEATURES:**
+- ✅ Full authentication flow (login, logout, token refresh)
+- ✅ **Frontend-design skill used** for production-grade Login UI
+- ✅ Glass morphism "Portal to Knowledge" aesthetic
+- ✅ Automatic token refresh on 401 with request queuing
+- ✅ Session persistence via localStorage
+- ✅ JWT decoding to extract user info
+- ✅ Dark/light mode support
+- ✅ Protected route wrapper with admin role check
+- ✅ Toast notifications for user feedback
+- ✅ Loading states during auth initialization
+- ✅ Auto-redirect when already authenticated
+- ✅ Form validation with React Hook Form + Zod
+- ✅ Password visibility toggle
+
+**TESTING STATUS:**
+- ✅ Linting passed (`bun run lint:fix`)
+- ✅ Build successful (`bun run build`)
+- ⬜ Manual testing pending (requires backend running)
+
+**NEXT STEPS:**
+- Implement Register page with invite code validation
+- Implement Password Reset flow (2-step process)
+- Add Remember Me checkbox (optional)
 
 ---
 
@@ -1544,16 +1620,27 @@ function PromptTemplates({ onSelectPrompt }: { onSelectPrompt: (prompt: string) 
 
 ## 12.10 TypeScript Types
 
-**File:** `frontend/src/types/index.ts`
+**Files:** `frontend/src/types/auth.ts`, `frontend/src/types/api.ts`
 
 ### Define Type Interfaces
-- [ ] User type
+- [x] User type
 - [ ] Document type
 - [ ] Collection type
 - [ ] Conversation type
 - [ ] Message type
-- [ ] API response types
-- [ ] Error response type
+- [x] API response types
+- [x] Error response type
+
+**UPDATE: 2025-11-29**
+- ✅ Created `frontend/src/types/auth.ts` with:
+  - User interface (user_id, email, role, exp)
+  - LoginRequest interface
+  - TokenResponse interface
+  - AuthState interface (Zustand store state)
+  - AuthActions interface (Zustand store actions)
+- ✅ Created `frontend/src/types/api.ts` with:
+  - ApiError interface (backend error response format)
+  - ApiResponse<T> generic interface
 
 **Example Types:**
 ```typescript
