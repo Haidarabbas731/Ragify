@@ -3,6 +3,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ArrowRight, Key } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useDarkMode } from "../../hooks/useDarkMode";
 import { Button } from "../ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -10,6 +11,7 @@ gsap.registerPlugin(ScrollTrigger);
 export function CTASection() {
   const sectionRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const { darkMode } = useDarkMode();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -51,25 +53,28 @@ export function CTASection() {
         >
           {/* Gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-blue-600/20 to-purple-600/20 backdrop-blur-xl" />
-          <div className="absolute inset-0 bg-gradient-to-tr from-slate-900/50 via-transparent to-slate-900/50" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/50 dark:from-slate-900/50 via-transparent to-white/50 dark:to-slate-900/50" />
 
           {/* Animated border */}
-          <div className="absolute inset-0 rounded-3xl border-2 border-cyan-400/30" />
+          <div className="absolute inset-0 rounded-3xl border-2 border-cyan-500/30 dark:border-cyan-400/30" />
 
           {/* Content */}
           <div className="relative z-10 text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 backdrop-blur-sm mb-8">
-              <Key className="w-4 h-4 text-cyan-400" />
-              <span className="text-sm font-medium text-cyan-300">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-500/30 dark:border-cyan-400/30 bg-cyan-500/10 dark:bg-cyan-400/10 backdrop-blur-sm mb-8">
+              <Key className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <span className="text-sm font-medium text-cyan-700 dark:text-cyan-300">
                 Invite-Only Access
               </span>
             </div>
 
             <h2
+              key={darkMode ? "dark" : "light"}
               className="text-4xl md:text-6xl font-bold mb-6"
               style={{
                 fontFamily: "'Playfair Display', serif",
-                background: "linear-gradient(135deg, #fff 0%, #22d3ee 100%)",
+                background: darkMode
+                  ? "linear-gradient(135deg, #fff 0%, #22d3ee 100%)"
+                  : "linear-gradient(135deg, #1e293b 0%, #0ea5e9 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -80,7 +85,7 @@ export function CTASection() {
               Your Knowledge?
             </h2>
 
-            <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-xl text-slate-700 dark:text-slate-200 mb-10 max-w-2xl mx-auto leading-relaxed">
               Join with an invite code and start chatting with your documents
               today. Experience the future of knowledge management.
             </p>
@@ -97,11 +102,11 @@ export function CTASection() {
               </Link>
             </div>
 
-            <p className="text-sm text-slate-400 mt-6">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-6">
               Need an invite code?{" "}
               <a
                 href="mailto:support@example.com"
-                className="text-cyan-400 hover:text-cyan-300 transition-colors underline"
+                className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 dark:hover:text-cyan-300 transition-colors underline"
               >
                 Contact us
               </a>
