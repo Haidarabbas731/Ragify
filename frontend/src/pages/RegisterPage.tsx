@@ -195,10 +195,10 @@ export function RegisterPage() {
 
           {/* Heading */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 dark:from-cyan-400 dark:via-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-['Playfair_Display']">
+            <h1 className="text-4xl md:text-5xl font-black mb-3 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 dark:from-cyan-400 dark:via-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-['Playfair_Display'] tracking-tight leading-tight drop-shadow-sm">
               Join the Knowledge
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 font-['DM_Sans']">
+            <p className="text-base text-slate-600 dark:text-slate-400 font-['DM_Sans'] font-medium tracking-wide">
               Create your account to get started
             </p>
           </div>
@@ -209,7 +209,7 @@ export function RegisterPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="email"
-                className="text-slate-700 dark:text-slate-300 font-medium font-['DM_Sans']"
+                className="text-sm text-slate-700 dark:text-slate-300 font-semibold font-['DM_Sans'] tracking-wide uppercase"
               >
                 Email Address
               </Label>
@@ -233,7 +233,7 @@ export function RegisterPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="password"
-                className="text-slate-700 dark:text-slate-300 font-medium font-['DM_Sans']"
+                className="text-sm text-slate-700 dark:text-slate-300 font-semibold font-['DM_Sans'] tracking-wide uppercase"
               >
                 Password
               </Label>
@@ -305,7 +305,7 @@ export function RegisterPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="inviteCode"
-                className="text-slate-700 dark:text-slate-300 font-medium font-['DM_Sans'] flex items-center gap-2"
+                className="text-sm text-slate-700 dark:text-slate-300 font-semibold font-['DM_Sans'] tracking-wide uppercase flex items-center gap-2"
               >
                 <KeyRound className="h-4 w-4 text-cyan-500" />
                 Invite Code
