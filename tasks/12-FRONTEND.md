@@ -592,23 +592,98 @@ frontend/
 - `aca08d0` - feat(frontend): improve invite code paste handling with auto-format and trim
 
 ### Password Reset Flow (2-Step Process)
-**Files:** `frontend/src/pages/ForgotPassword.tsx`, `ResetPassword.tsx`
+**Files:** `frontend/src/pages/ForgotPasswordPage.tsx`, `ResetPasswordPage.tsx`
 **PRD Reference:** Section 9.7 (Password Reset)
 
 **Step 1: Request Reset**
-- [ ] Create forgot password page (email input)
-- [ ] Submit email to POST /api/v1/auth/password-reset/request
-- [ ] Show success message (always, even if email doesn't exist - prevents enumeration)
-- [ ] Rate limit: 3 requests/hour per email
-- [ ] Inform user to check email
+- [x] Create forgot password page (email input)
+- [x] Submit email to POST /api/v1/auth/password-reset/request
+- [x] Show success message (always, even if email doesn't exist - prevents enumeration)
+- [x] Rate limit: 3 requests/hour per email
+- [x] Inform user to check email
 
 **Step 2: Confirm Reset**
-- [ ] Create reset password page (token from URL query param, new password input)
-- [ ] Validate password strength (min 8, 1 upper, 1 number, 1 special)
-- [ ] Submit POST /api/v1/auth/password-reset/confirm
-- [ ] Show success message
-- [ ] Redirect to login on success
-- [ ] Handle expired token error (15-minute expiry)
+- [x] Create reset password page (token from URL query param, new password input)
+- [x] Validate password strength (min 8, 1 upper, 1 number, 1 special)
+- [x] Submit POST /api/v1/auth/password-reset/confirm
+- [x] Show success message
+- [x] Redirect to login on success
+- [x] Handle expired token error (15-minute expiry)
+
+**IMPLEMENTATION SUMMARY - 2025-11-29**
+
+**FILES CREATED:**
+1. `frontend/src/pages/ForgotPasswordPage.tsx` - Step 1: Request password reset
+2. `frontend/src/pages/ResetPasswordPage.tsx` - Step 2: Confirm new password
+
+**FILES MODIFIED:**
+1. `frontend/src/App.tsx` - Added /forgot-password and /reset-password routes
+2. `frontend/src/pages/LoginPage.tsx` - Updated "Forgot password?" link to /forgot-password
+
+**DESIGN CONCEPT: "Recovery & Renewal"**
+- **ForgotPassword Page:** Warm amber/orange/pink gradient (reassuring, hopeful aesthetic)
+- **ResetPassword Page:** Cool emerald/teal/cyan gradient (empowering, fresh start aesthetic)
+- Different from login/register cyan/blue theme to create distinct emotional states
+
+**KEY FEATURES:**
+
+**ForgotPassword Page:**
+- ✅ **Frontend-design skill used** for distinctive warm gradient aesthetic
+- ✅ Glass morphism with animated background orbs
+- ✅ Email validation with React Hook Form + Zod
+- ✅ Success state with email confirmation display
+- ✅ Security: Always shows success message (prevents email enumeration)
+- ✅ Clear next steps with Sparkles icon and numbered instructions
+- ✅ 15-minute token expiry notice
+- ✅ "Back to Login" button
+- ✅ "Try again" resend option
+- ✅ Dark/light mode support
+
+**ResetPassword Page:**
+- ✅ **Frontend-design skill used** for empowering emerald/teal aesthetic
+- ✅ Dual password fields with visibility toggles
+- ✅ Real-time password strength indicator (5 levels: Weak→Strong)
+- ✅ Color-coded progress bar (red→orange→yellow→lime→green)
+- ✅ Interactive requirements checklist with checkmarks
+  - At least 8 characters
+  - One uppercase letter
+  - One lowercase letter
+  - One number
+  - One special character
+- ✅ Token validation from URL query params (?token=xxx)
+- ✅ Auto-redirect to /forgot-password if no token
+- ✅ Password match validation
+- ✅ Success toast + redirect to /login
+- ✅ Error handling for expired tokens
+- ✅ Dark/light mode support
+
+**CHROME DEVTOOLS VERIFICATION:**
+- ✅ Console: No errors or warnings
+- ✅ ForgotPassword: Warm gradient rendering perfectly in dark mode
+- ✅ ResetPassword: Cool gradient rendering perfectly in dark mode
+- ✅ Password strength indicator: Dynamic color changes working (red→green)
+- ✅ Requirements checklist: Interactive checkmarks functioning correctly
+- ✅ Form validation: Zod schemas working for all fields
+- ✅ Token validation: URL param parsing working
+- ✅ Dark mode persistence: Restored from localStorage
+
+**UNIQUE DESIGN ELEMENTS:**
+- Playfair Display heading font ("Reset Password", "Create New Password")
+- DM Sans body font for consistency across auth pages
+- Mail icon for ForgotPassword, ShieldCheck icon for ResetPassword
+- Warm vs cool color palettes to differentiate emotional states
+- Numbered instruction list with Sparkles icon
+- Circular checkmarks with green highlight on completion
+
+**SECURITY BEST PRACTICES:**
+- Always show success on email submission (anti-enumeration)
+- Token-based reset with URL query params
+- 15-minute token expiry communicated to user
+- Strong password requirements enforced
+- Error messages don't reveal whether email exists
+
+**COMMITS:**
+- `9917eea` - feat(frontend): implement password reset flow with distinctive aesthetics
 
 ### Protected Route Component
 **File:** `frontend/src/components/auth/ProtectedRoute.tsx`
