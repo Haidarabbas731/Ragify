@@ -36,10 +36,11 @@ AI Knowledge Base Chat System - RAG app with FastAPI + React.
 ### Task Completion Workflow
 1. Update checkboxes in `tasks/*.md` (only completed tasks)
 2. Run linting + tests
-3. Test endpoints/components manually
-4. Commit code changes
-5. **STOP - Wait for user approval before next phase**
-6. Update TodoWrite tool
+3. **For Frontend:** Verify with Chrome DevTools MCP (console, network, performance)
+4. Test endpoints/components manually
+5. Commit code changes
+6. **STOP - Wait for user approval before next phase**
+7. Update TodoWrite tool
 
 **CRITICAL:**
 - ✅ Update task files when making ANY code changes
@@ -130,6 +131,34 @@ VITE_APP_NAME=AI Knowledge Base
 - Adding button component → Use skill
 - Styling chat interface → Use skill
 - Building forms → Use skill
+
+### CRITICAL: Frontend Verification with Chrome DevTools MCP
+**⚠️ MANDATORY:** After implementing ANY frontend feature or page:
+- ✅ **ALWAYS** verify implementation using Chrome DevTools MCP
+- ✅ Check for console errors, warnings, and network issues
+- ✅ Verify page performance and load times
+- ✅ Test responsive design and accessibility
+- ✅ Ensure proper rendering in both dark and light modes
+- ✅ Validate form functionality and error states
+- ❌ DO NOT consider a feature "complete" without DevTools verification
+
+**MCP Tools to Use:**
+- `mcp__chrome-devtools__navigate_page` - Load the page
+- `mcp__chrome-devtools__take_screenshot` - Visual verification
+- `mcp__chrome-devtools__take_snapshot` - DOM structure check
+- `mcp__chrome-devtools__list_console_messages` - Error detection
+- `mcp__chrome-devtools__list_network_requests` - API call verification
+- `mcp__chrome-devtools__performance_start_trace` - Performance analysis
+
+**What to Check:**
+- No console errors or warnings
+- All API requests succeed (200/201 status)
+- Images and assets load correctly
+- Animations and transitions work smoothly
+- Forms validate and submit properly
+- Dark/light mode switching works
+- Responsive layout on different screen sizes
+- Accessibility tree is properly structured
 
 ### Project Structure
 ```
