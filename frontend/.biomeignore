@@ -2,3 +2,5 @@
 *.svg
 src/index.css
 src/App.css
+dist
+node_modules
