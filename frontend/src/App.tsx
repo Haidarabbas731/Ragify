@@ -3,20 +3,10 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { useAuthStore } from "./store/authStore";
 
 // Placeholder pages (to be implemented later)
-
-function RegisterPage() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Register Page</h1>
-        <p className="text-slate-400">Coming soon...</p>
-      </div>
-    </div>
-  );
-}
 
 function DashboardPage() {
   const { user, logout } = useAuthStore();
@@ -68,7 +58,16 @@ function App() {
             )
           }
         />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/register"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <RegisterPage />
+            )
+          }
+        />
         <Route
           path="/dashboard"
           element={
