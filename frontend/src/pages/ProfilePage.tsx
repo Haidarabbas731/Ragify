@@ -215,7 +215,7 @@ export function ProfilePage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="mt-3 font-['Inter']"
+                        className="mt-3 font-['Inter'] border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                       >
                         <Camera className="w-4 h-4 mr-2" />
                         Change Avatar
@@ -226,7 +226,7 @@ export function ProfilePage() {
                   {/* Profile Form */}
                   <div className="space-y-4">
                     <div>
-                      <Label className="font-['Inter'] font-medium">
+                      <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
                         Display Name
                       </Label>
                       <Input
@@ -235,11 +235,11 @@ export function ProfilePage() {
                       />
                     </div>
                     <div>
-                      <Label className="font-['Inter'] font-medium">
+                      <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
                         Email Address
                       </Label>
                       <div className="relative mt-1">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                         <Input
                           defaultValue={userData.email}
                           className="pl-10 font-['Inter']"
@@ -250,7 +250,7 @@ export function ProfilePage() {
                         Email cannot be changed
                       </p>
                     </div>
-                    <Button className="gap-2 font-['Inter'] font-medium">
+                    <Button className="gap-2 font-['Inter'] font-medium bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 border-0">
                       <Save className="w-4 h-4" />
                       Save Changes
                     </Button>
@@ -268,7 +268,7 @@ export function ProfilePage() {
                   </h2>
                   <div className="space-y-4">
                     <div>
-                      <Label className="font-['Inter'] font-medium">
+                      <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
                         Current Password
                       </Label>
                       <Input
@@ -278,7 +278,7 @@ export function ProfilePage() {
                       />
                     </div>
                     <div>
-                      <Label className="font-['Inter'] font-medium">
+                      <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
                         New Password
                       </Label>
                       <Input
@@ -288,7 +288,7 @@ export function ProfilePage() {
                       />
                     </div>
                     <div>
-                      <Label className="font-['Inter'] font-medium">
+                      <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
                         Confirm New Password
                       </Label>
                       <Input
@@ -297,7 +297,7 @@ export function ProfilePage() {
                         placeholder="••••••••"
                       />
                     </div>
-                    <Button className="gap-2 font-['Inter'] font-medium">
+                    <Button className="gap-2 font-['Inter'] font-medium bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 border-0">
                       <Lock className="w-4 h-4" />
                       Update Password
                     </Button>
@@ -311,7 +311,7 @@ export function ProfilePage() {
                   </h2>
                   <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center justify-between mb-2">
-                      <Label className="font-['Inter'] font-medium">
+                      <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
                         API Key
                       </Label>
                       <Button
