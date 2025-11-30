@@ -14,6 +14,7 @@ import {
   FileText,
   Loader2,
   MoreVertical,
+  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
@@ -35,6 +36,7 @@ interface Document {
 interface DocumentListProps {
   onDocumentClick?: (documentId: string) => void;
   onDeleteDocument?: (documentId: string) => void;
+  onRetryDocument?: (documentId: string) => void;
 }
 
 // Mock data for demonstration
@@ -105,6 +107,7 @@ const MOCK_DOCUMENTS: Document[] = [
 export function DocumentList({
   onDocumentClick,
   onDeleteDocument,
+  onRetryDocument,
 }: DocumentListProps) {
   const [documents] = useState<Document[]>(MOCK_DOCUMENTS);
   const [currentPage, setCurrentPage] = useState(1);
@@ -253,19 +256,36 @@ export function DocumentList({
               </div>
 
               {/* Size & Chunks */}
-              <div className="col-span-2 flex flex-col justify-center">
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Fira_Code']">
-                  {formatFileSize(doc.size_bytes)}
-                </p>
-                {doc.status === "active" && doc.chunks_count > 0 && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
-                    {doc.chunks_count} chunks
+              <div className="col-span-2 flex flex-col justify-center gap-2">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Fira_Code']">
+                    {formatFileSize(doc.size_bytes)}
                   </p>
-                )}
-                {doc.status === "error" && doc.error_message && (
-                  <p className="text-xs text-red-600 dark:text-red-400 font-['Inter'] truncate">
-                    {doc.error_message}
-                  </p>
+                  {doc.status === "active" && doc.chunks_count > 0 && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
+                      {doc.chunks_count} chunks
+                    </p>
+                  )}
+                  {doc.status === "error" && doc.error_message && (
+                    <p className="text-xs text-red-600 dark:text-red-400 font-['Inter'] truncate">
+                      {doc.error_message}
+                    </p>
+                  )}
+                </div>
+                {doc.status === "error" && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRetryDocument?.(doc.document_id);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors w-fit"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <span className="text-xs font-medium text-blue-700 dark:text-blue-300 font-['Inter']">
+                      Retry
+                    </span>
+                  </button>
                 )}
               </div>
 

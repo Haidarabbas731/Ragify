@@ -400,6 +400,7 @@ export function DashboardPage() {
             <DocumentList
               onDocumentClick={(id) => console.log("Clicked document:", id)}
               onDeleteDocument={(id) => console.log("Delete document:", id)}
+              onRetryDocument={(id) => console.log("Retry document:", id)}
             />
           </div>
         </main>
