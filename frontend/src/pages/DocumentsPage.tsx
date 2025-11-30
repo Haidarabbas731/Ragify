@@ -385,7 +385,7 @@ export function DocumentsPage() {
             }}
             selectedDocuments={selectedDocuments}
             onSelectionChange={handleSelectionChange}
-            selectionMode={true}
+            selectionMode={selectedDocuments.size > 0}
           />
         </main>
       </div>
