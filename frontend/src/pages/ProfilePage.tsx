@@ -102,7 +102,7 @@ export function ProfilePage() {
               onClick={handleLogout}
               variant="outline"
               size="sm"
-              className="gap-2 border-slate-300 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-['Inter'] font-medium"
+              className="gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-['Inter'] font-medium"
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Logout</span>
