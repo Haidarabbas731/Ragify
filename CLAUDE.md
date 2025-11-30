@@ -98,6 +98,9 @@ bun run dev
 bun run build
 bun test
 bun run biome check --write .
+"lint": "biome check src",
+"lint:fix": "biome check --write src",
+"format": "biome format --write src",
 ```
 
 ### Environment

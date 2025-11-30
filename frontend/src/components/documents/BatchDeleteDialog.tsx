@@ -10,6 +10,7 @@ import { useState } from "react";
 interface BatchDeleteDialogProps {
   isOpen: boolean;
   selectedCount: number;
+  totalCount: number;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -17,11 +18,14 @@ interface BatchDeleteDialogProps {
 export function BatchDeleteDialog({
   isOpen,
   selectedCount,
+  totalCount,
   onConfirm,
   onCancel,
 }: BatchDeleteDialogProps) {
   const [confirmText, setConfirmText] = useState("");
-  const isConfirmed = confirmText === "DELETE";
+  const isAllSelected = selectedCount === totalCount && totalCount > 0;
+  const requiredText = isAllSelected ? "DELETE ALL" : "DELETE";
+  const isConfirmed = confirmText === requiredText;
 
   const handleConfirm = () => {
     if (isConfirmed) {
@@ -55,9 +59,21 @@ export function BatchDeleteDialog({
 
       {/* Dialog */}
       <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-900 dark:to-amber-950 border-4 border-amber-500 dark:border-amber-600 rounded-lg shadow-2xl max-w-md w-full animate-slide-up">
+        <div
+          className={`bg-gradient-to-br rounded-lg shadow-2xl max-w-md w-full animate-slide-up border-4 ${
+            isAllSelected
+              ? "from-red-50 to-orange-50 dark:from-slate-900 dark:to-red-950 border-red-600 dark:border-red-700"
+              : "from-amber-50 to-orange-50 dark:from-slate-900 dark:to-amber-950 border-amber-500 dark:border-amber-600"
+          }`}
+        >
           {/* Header */}
-          <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-4 flex items-center justify-between rounded-t">
+          <div
+            className={`bg-gradient-to-r p-4 flex items-center justify-between rounded-t ${
+              isAllSelected
+                ? "from-red-600 to-red-700"
+                : "from-amber-600 to-orange-600"
+            }`}
+          >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/20 rounded">
                 <AlertTriangle
@@ -69,7 +85,9 @@ export function BatchDeleteDialog({
                 className="text-xl font-bold text-white tracking-tight"
                 style={{ fontFamily: "Rajdhani, sans-serif" }}
               >
-                AUTHORIZATION REQUIRED
+                {isAllSelected
+                  ? "⚠️ CRITICAL WARNING ⚠️"
+                  : "AUTHORIZATION REQUIRED"}
               </h2>
             </div>
             <button
@@ -84,21 +102,41 @@ export function BatchDeleteDialog({
           {/* Content */}
           <div className="p-6 space-y-4">
             {/* Warning Message */}
-            <div className="bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-400 dark:border-amber-700 rounded p-4">
+            <div
+              className={`border-2 rounded p-4 ${
+                isAllSelected
+                  ? "bg-red-100 dark:bg-red-900/30 border-red-500 dark:border-red-700"
+                  : "bg-amber-100 dark:bg-amber-900/30 border-amber-400 dark:border-amber-700"
+              }`}
+            >
               <p
-                className="text-amber-900 dark:text-amber-200 font-semibold text-center"
+                className={`font-semibold text-center ${
+                  isAllSelected
+                    ? "text-red-900 dark:text-red-200"
+                    : "text-amber-900 dark:text-amber-200"
+                }`}
                 style={{ fontFamily: "Rajdhani, sans-serif" }}
               >
-                YOU ARE ABOUT TO DELETE
+                {isAllSelected
+                  ? "DELETE ALL YOUR DOCUMENTS"
+                  : "YOU ARE ABOUT TO DELETE"}
               </p>
               <p
-                className="text-4xl font-bold text-amber-700 dark:text-amber-400 text-center my-2"
+                className={`text-4xl font-bold text-center my-2 ${
+                  isAllSelected
+                    ? "text-red-700 dark:text-red-400"
+                    : "text-amber-700 dark:text-amber-400"
+                }`}
                 style={{ fontFamily: "Rajdhani, sans-serif" }}
               >
                 {selectedCount}
               </p>
               <p
-                className="text-amber-900 dark:text-amber-200 font-semibold text-center"
+                className={`font-semibold text-center ${
+                  isAllSelected
+                    ? "text-red-900 dark:text-red-200"
+                    : "text-amber-900 dark:text-amber-200"
+                }`}
                 style={{ fontFamily: "Rajdhani, sans-serif" }}
               >
                 DOCUMENT{selectedCount > 1 ? "S" : ""}
@@ -112,8 +150,14 @@ export function BatchDeleteDialog({
                 style={{ fontFamily: "JetBrains Mono, monospace" }}
               >
                 This action cannot be undone. Type{" "}
-                <span className="font-bold text-amber-700 dark:text-amber-400">
-                  DELETE
+                <span
+                  className={`font-bold ${
+                    isAllSelected
+                      ? "text-red-700 dark:text-red-400"
+                      : "text-amber-700 dark:text-amber-400"
+                  }`}
+                >
+                  {requiredText}
                 </span>{" "}
                 to confirm:
               </p>
@@ -121,8 +165,12 @@ export function BatchDeleteDialog({
                 type="text"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
-                placeholder="Type DELETE"
-                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 border-amber-400 dark:border-amber-600 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 font-mono text-center text-lg font-bold rounded focus:outline-none focus:border-amber-600 dark:focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20 transition-all uppercase"
+                placeholder={`Type ${requiredText}`}
+                className={`w-full px-4 py-3 bg-white dark:bg-slate-800 border-2 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 font-mono text-center text-lg font-bold rounded focus:outline-none focus:ring-4 transition-all uppercase ${
+                  isAllSelected
+                    ? "border-red-500 dark:border-red-600 focus:border-red-700 dark:focus:border-red-500 focus:ring-red-500/20"
+                    : "border-amber-400 dark:border-amber-600 focus:border-amber-600 dark:focus:border-amber-500 focus:ring-amber-500/20"
+                }`}
                 style={{ fontFamily: "JetBrains Mono, monospace" }}
               />
             </div>
@@ -141,10 +189,14 @@ export function BatchDeleteDialog({
                 type="button"
                 onClick={handleConfirm}
                 disabled={!isConfirmed}
-                className="flex-1 px-4 py-3 bg-gradient-to-br from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:from-slate-400 disabled:to-slate-500 text-white font-bold rounded transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed border-2 border-amber-700 dark:border-amber-500"
+                className={`flex-1 px-4 py-3 bg-gradient-to-br text-white font-bold rounded transition-all shadow-lg hover:shadow-xl disabled:cursor-not-allowed border-2 disabled:from-slate-400 disabled:to-slate-500 ${
+                  isAllSelected
+                    ? "from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 border-red-800 dark:border-red-600"
+                    : "from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 border-amber-700 dark:border-amber-500"
+                }`}
                 style={{ fontFamily: "Rajdhani, sans-serif" }}
               >
-                CONFIRM DELETE
+                {isAllSelected ? "EXECUTE DELETION" : "CONFIRM DELETE"}
               </button>
             </div>
           </div>
