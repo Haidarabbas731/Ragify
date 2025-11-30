@@ -231,7 +231,7 @@ export function ProfilePage() {
                       </Label>
                       <Input
                         defaultValue={userData.name}
-                        className="mt-1 font-['Inter']"
+                        className="mt-1 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                       />
                     </div>
                     <div>
@@ -242,7 +242,7 @@ export function ProfilePage() {
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                         <Input
                           defaultValue={userData.email}
-                          className="pl-10 font-['Inter']"
+                          className="pl-10 font-['Inter'] bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
                           disabled
                         />
                       </div>
@@ -273,7 +273,7 @@ export function ProfilePage() {
                       </Label>
                       <Input
                         type="password"
-                        className="mt-1 font-['Inter']"
+                        className="mt-1 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         placeholder="••••••••"
                       />
                     </div>
@@ -283,7 +283,7 @@ export function ProfilePage() {
                       </Label>
                       <Input
                         type="password"
-                        className="mt-1 font-['Inter']"
+                        className="mt-1 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         placeholder="••••••••"
                       />
                     </div>
@@ -293,7 +293,7 @@ export function ProfilePage() {
                       </Label>
                       <Input
                         type="password"
-                        className="mt-1 font-['Inter']"
+                        className="mt-1 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                         placeholder="••••••••"
                       />
                     </div>
