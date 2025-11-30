@@ -966,6 +966,23 @@ frontend/
 - ✅ useEffect monitors document status changes to clear retry state
 - ✅ Prevents user from spamming retry button
 
+**RESPONSIVE DESIGN UPDATE (2025-11-30):**
+- ✅ **CRITICAL FIX:** Dual layout system - mobile card layout + desktop grid layout
+- ✅ Table header hidden on mobile: `hidden md:block`
+- ✅ **Mobile Layout** (`flex md:hidden`):
+  - Card-based design with `flex-col gap-3`
+  - File icon + filename at top with proper text wrapping (`break-words`)
+  - 2-column metadata grid: Status, Size, Uploaded
+  - Field labels: `text-[10px]` uppercase for clarity
+  - Reduced padding: `px-4 md:px-6 py-3 md:py-4`
+  - Checkbox integration in card header when selection mode active
+- ✅ **Desktop Layout** (`hidden md:flex`):
+  - Original 12/13 column grid preserved
+  - All columns properly hidden on mobile
+  - Desktop-only sections: Status, Size, Uploaded, Actions
+- ✅ Font size adjustments for mobile readability
+- ✅ Proper spacing and gap management across breakpoints
+
 **Empty State Design** (`DashboardPage.tsx` lines 292-311):
 - ✅ White card with border (slate-200 in light mode)
 - ✅ Centered layout with max-width 320px
@@ -1027,19 +1044,27 @@ status: 'processing' | 'active' | 'error' | 'deleted'
 
 ### Phase 1: "View All Documents" Page ⭐ HIGHEST PRIORITY
 
-**File:** `frontend/src/pages/DocumentsPage.tsx` → **COMPLETED 2025-11-30**
+**File:** `frontend/src/pages/DocumentsPage.tsx` → **COMPLETED 2025-11-30** → **RESPONSIVE FIX 2025-11-30**
 
 **Why First:** Fixes broken "View All" button on dashboard
 
 **Features:**
 - [x] Create DocumentsPage component with full layout **UPDATE:** Implemented with "Archive Command Center" terminal aesthetic
 - [x] Add sticky navigation header (same as CollectionsPage) **UPDATE:** Emerald green theme, "ARCHIVE//SYS" branding
-- [x] Add sidebar navigation (Desktop + Mobile) **UPDATE:** Full navigation with highlighted "All Documents"
-- [x] Reuse existing DocumentList component **UPDATE:** Integrated seamlessly
+- [x] Add sidebar navigation (Desktop + Mobile) **UPDATE:** Full navigation with highlighted "All Documents", **RESPONSIVE FIX:** Sidebar now properly sticky
+- [x] Reuse existing DocumentList component **UPDATE:** Integrated seamlessly, **RESPONSIVE FIX:** Mobile card layout added
 - [ ] Add pagination controls (navigate between pages) **NOTE:** Ready for API integration
 - [ ] Show document count and page info **NOTE:** Ready for API integration
 - [x] "Back to Dashboard" button **UPDATE:** Implemented with ArrowLeft icon
 - [x] Full dark mode support **UPDATE:** Terminal aesthetic works in both light/dark modes
+
+**RESPONSIVE DESIGN FIX (2025-11-30):**
+- ✅ **CRITICAL:** Removed `overflow-hidden` from root container (line 135)
+  - This CSS property was breaking `position: sticky` on the sidebar
+  - Sidebar now properly stays fixed at `top-[73px]` while page content scrolls
+  - Previously, sidebar would scroll with the page content (incorrect behavior)
+- ✅ Sidebar already had correct sticky classes: `sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto`
+- ✅ Fix verified: Sidebar stays in place when scrolling long document lists
 
 **IMPLEMENTATION SUMMARY - 2025-11-30**
 
@@ -1236,23 +1261,31 @@ export interface FilterState {
 
 ---
 
-### Phase 3: Batch Operations Component
+### Phase 3: Batch Operations Component → **COMPLETED 2025-11-30**
 
 **File:** `frontend/src/components/documents/BatchActions.tsx`
 
 **Why Third:** Power user feature, less critical than viewing
 
 **Features:**
-- [ ] Checkbox column in DocumentList
-- [ ] "Select All" / "Deselect All" controls
-- [ ] Selected count indicator (e.g., "3 documents selected")
-- [ ] Action buttons:
-  - **Delete Selected** - POST /api/v1/documents/batch-delete
+- [x] Checkbox column in DocumentList **UPDATE:** Implemented with emerald theme, hidden on mobile
+- [x] "Select All" / "Deselect All" controls **UPDATE:** Implemented with responsive button (full-width on mobile)
+- [x] Selected count indicator (e.g., "3 documents selected") **UPDATE:** Implemented as "X TARGETS LOCKED" with tactical reticle icon
+- [x] Action buttons: **UPDATE:** All implemented with responsive mobile layout
+  - **Delete Selected** - POST /api/v1/documents/batch-delete (Smart routing implemented)
   - **Move to Collection** - Bulk PUT requests to update collection_id
-  - **Delete All My Documents** - POST /api/v1/documents/delete-all-mine
-- [ ] Custom confirmation dialogs (similar to DeleteCollectionDialog)
+  - **Delete All My Documents** - Smart routing detects when all selected, routes to /delete-all-mine
+- [x] Custom confirmation dialogs (similar to DeleteConfirmDialog) **UPDATE:** BatchDeleteDialog with adaptive styling (red for all, amber for partial)
 - [ ] Progress indicator during batch operations
 - [ ] Error handling (show which operations failed)
+
+**RESPONSIVE DESIGN UPDATE (2025-11-30):**
+- [x] Mobile-optimized layout with flex-col on small screens
+- [x] Responsive icon sizes: `w-3.5 h-3.5 sm:w-4 sm:h-4`
+- [x] Shortened button text on mobile: "MOVE" instead of "MOVE TO COLLECTION"
+- [x] Full-width buttons on mobile: `flex-1 sm:flex-none`
+- [x] Adaptive text sizes: `text-sm sm:text-base md:text-lg`
+- [x] Proper gap spacing: `gap-2 sm:gap-3`
 
 **API Integration:**
 ```typescript
