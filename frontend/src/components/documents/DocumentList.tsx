@@ -17,7 +17,7 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "../ui/button";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
@@ -113,6 +113,7 @@ export function DocumentList({
   const [documents] = useState<Document[]>(MOCK_DOCUMENTS);
   const [currentPage, setCurrentPage] = useState(1);
   const [hoveredDoc, setHoveredDoc] = useState<string | null>(null);
+  const [retryingDocs, setRetryingDocs] = useState<Set<string>>(new Set());
   const [deleteDialog, setDeleteDialog] = useState<{
     isOpen: boolean;
     documentId: string;
@@ -128,6 +129,27 @@ export function DocumentList({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentDocuments = documents.slice(startIndex, endIndex);
+
+  // Clear retrying state when document status changes from error
+  // This will be triggered when the backend returns updated document status
+  useEffect(() => {
+    const errorDocIds = new Set(
+      documents
+        .filter((doc) => doc.status === "error")
+        .map((doc) => doc.document_id),
+    );
+
+    setRetryingDocs((prev) => {
+      const newRetrying = new Set<string>();
+      for (const docId of prev) {
+        // Keep in retrying set only if still in error state
+        if (errorDocIds.has(docId)) {
+          newRetrying.add(docId);
+        }
+      }
+      return newRetrying;
+    });
+  }, [documents]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -287,13 +309,37 @@ export function DocumentList({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      // Add to retrying set
+                      setRetryingDocs((prev) =>
+                        new Set(prev).add(doc.document_id),
+                      );
+                      // Call the retry handler
                       onRetryDocument?.(doc.document_id);
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900 transition-colors w-fit"
+                    disabled={retryingDocs.has(doc.document_id)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border transition-colors w-fit ${
+                      retryingDocs.has(doc.document_id)
+                        ? "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-60"
+                        : "bg-blue-100 dark:bg-blue-950 border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900"
+                    }`}
                   >
-                    <RefreshCw className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                    <span className="text-xs font-medium text-blue-700 dark:text-blue-300 font-['Inter']">
-                      Retry
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 ${
+                        retryingDocs.has(doc.document_id)
+                          ? "text-slate-500 dark:text-slate-400 animate-spin"
+                          : "text-blue-600 dark:text-blue-400"
+                      }`}
+                    />
+                    <span
+                      className={`text-xs font-medium font-['Inter'] ${
+                        retryingDocs.has(doc.document_id)
+                          ? "text-slate-600 dark:text-slate-400"
+                          : "text-blue-700 dark:text-blue-300"
+                      }`}
+                    >
+                      {retryingDocs.has(doc.document_id)
+                        ? "Retrying..."
+                        : "Retry"}
                     </span>
                   </button>
                 )}
