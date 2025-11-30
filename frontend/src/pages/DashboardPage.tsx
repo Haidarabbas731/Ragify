@@ -1,7 +1,7 @@
 /**
  * Dashboard Page - Data Observatory
  * Industrial-futuristic control room aesthetic with Mission Control typography
- * Fonts: Space Grotesk (headings), Inter (UI), JetBrains Mono (data/stats)
+ * Fonts: Space Grotesk (headings), Inter (UI), Fira Code (data/stats)
  */
 
 import {
@@ -153,7 +153,7 @@ export function DashboardPage() {
                 >
                   <FolderOpen className="w-4 h-4" />
                   <span>All Documents</span>
-                  <span className="ml-auto text-xs font-['JetBrains_Mono'] font-semibold">
+                  <span className="ml-auto text-xs font-['Fira_Code'] font-semibold">
                     {stats.totalDocuments}
                   </span>
                 </button>
@@ -177,7 +177,7 @@ export function DashboardPage() {
                 </span>
               </div>
               <div className="space-y-1">
-                <p className="text-3xl font-bold font-['JetBrains_Mono'] text-slate-900 dark:text-slate-100 tabular-nums">
+                <p className="text-3xl font-bold font-['Fira_Code'] text-slate-900 dark:text-slate-100 tabular-nums">
                   {stats.totalDocuments}
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-['Inter']">
@@ -197,7 +197,7 @@ export function DashboardPage() {
                 </span>
               </div>
               <div className="space-y-1">
-                <p className="text-3xl font-bold font-['JetBrains_Mono'] text-slate-900 dark:text-slate-100 tabular-nums">
+                <p className="text-3xl font-bold font-['Fira_Code'] text-slate-900 dark:text-slate-100 tabular-nums">
                   {stats.totalChunks.toLocaleString()}
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-['Inter']">
@@ -218,7 +218,7 @@ export function DashboardPage() {
               </div>
               <div className="space-y-3">
                 <div className="flex items-baseline gap-2">
-                  <p className="text-3xl font-bold font-['JetBrains_Mono'] text-slate-900 dark:text-slate-100 tabular-nums">
+                  <p className="text-3xl font-bold font-['Fira_Code'] text-slate-900 dark:text-slate-100 tabular-nums">
                     {stats.storageUsed}
                   </p>
                   <span className="text-lg font-medium text-slate-500 dark:text-slate-400 font-['Inter']">
