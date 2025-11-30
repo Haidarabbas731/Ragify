@@ -1,7 +1,7 @@
 /**
  * Collections Component - Archive Vault
  * Museum-grade collection management with refined industrial aesthetic
- * Fonts: DM Serif Display (collection names), Manrope (UI), JetBrains Mono (metadata)
+ * Fonts: Space Grotesk (headings), Inter (body), Fira Code (stats)
  */
 
 import {
@@ -13,12 +13,13 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
+import { DeleteCollectionDialog } from "./DeleteCollectionDialog";
 
 interface Collection {
   collection_id: string;
@@ -74,6 +75,13 @@ export function Collections({
   const [editingCollection, setEditingCollection] = useState<Collection | null>(
     null,
   );
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    collection: Collection | null;
+  }>({
+    isOpen: false,
+    collection: null,
+  });
 
   const handleCreateCollection = (name: string, description: string) => {
     const newCollection: Collection = {
@@ -112,20 +120,21 @@ export function Collections({
     toast.success(`Collection "${name}" updated`);
   };
 
-  const handleDeleteCollection = (collection: Collection) => {
-    if (
-      confirm(
-        `Delete collection "${collection.name}"?\n\nDocuments will not be deleted, only the collection.`,
-      )
-    ) {
-      setCollections((prev) =>
-        prev.filter((col) => col.collection_id !== collection.collection_id),
-      );
-      if (selectedCollectionId === collection.collection_id) {
-        onSelectCollection?.(null);
-      }
-      toast.success(`Collection "${collection.name}" deleted`);
+  const handleDeleteCollection = () => {
+    if (!deleteDialog.collection) return;
+
+    setCollections((prev) =>
+      prev.filter(
+        (col) => col.collection_id !== deleteDialog.collection?.collection_id,
+      ),
+    );
+
+    if (selectedCollectionId === deleteDialog.collection.collection_id) {
+      onSelectCollection?.(null);
     }
+
+    toast.success(`Collection "${deleteDialog.collection.name}" deleted`);
+    setDeleteDialog({ isOpen: false, collection: null });
   };
 
   return (
@@ -133,16 +142,16 @@ export function Collections({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100 font-['DM_Serif_Display',serif] tracking-tight">
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100 font-['Space_Grotesk'] tracking-tight">
             Collections
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 font-['Manrope',sans-serif]">
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 font-['Inter']">
             Organize your documents into curated collections
           </p>
         </div>
         <Button
           onClick={() => setIsCreateModalOpen(true)}
-          className="gap-2 bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 hover:from-slate-800 hover:to-slate-600 dark:hover:from-slate-200 dark:hover:to-slate-400 text-white dark:text-slate-900 shadow-lg hover:shadow-xl transition-all duration-300 font-['Manrope',sans-serif] font-semibold"
+          className="gap-2 bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 hover:from-slate-800 hover:to-slate-600 dark:hover:from-slate-200 dark:hover:to-slate-400 text-white dark:text-slate-900 shadow-lg hover:shadow-xl transition-all duration-300 font-['Inter'] font-semibold"
         >
           <Plus className="w-4 h-4" />
           New Collection
@@ -183,7 +192,7 @@ export function Collections({
           {/* Content */}
           <div>
             <h3
-              className={`text-xl font-bold mb-1 font-['DM_Serif_Display',serif] transition-colors ${
+              className={`text-xl font-bold mb-1 font-['Space_Grotesk'] tracking-tight transition-colors ${
                 selectedCollectionId === null
                   ? "text-slate-900 dark:text-slate-100"
                   : "text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-slate-100"
@@ -191,14 +200,14 @@ export function Collections({
             >
               All Documents
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-['Manrope',sans-serif] mb-4">
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-['Inter'] mb-4">
               View all documents across collections
             </p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['JetBrains_Mono',monospace] tabular-nums">
+              <span className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['Fira_Code'] tabular-nums">
                 {collections.reduce((sum, col) => sum + col.document_count, 0)}
               </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-['Manrope',sans-serif]">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
                 documents
               </span>
             </div>
@@ -262,7 +271,7 @@ export function Collections({
               className="w-full text-left mb-4"
             >
               <h3
-                className={`text-xl font-bold mb-1 font-['DM_Serif_Display',serif] transition-colors line-clamp-2 ${
+                className={`text-xl font-bold mb-1 font-['Space_Grotesk'] tracking-tight transition-colors line-clamp-2 ${
                   selectedCollectionId === collection.collection_id
                     ? "text-slate-900 dark:text-slate-100"
                     : "text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-slate-100"
@@ -271,7 +280,7 @@ export function Collections({
                 {collection.name}
               </h3>
               {collection.description && (
-                <p className="text-sm text-slate-600 dark:text-slate-400 font-['Manrope',sans-serif] line-clamp-2">
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-['Inter'] line-clamp-2">
                   {collection.description}
                 </p>
               )}
@@ -280,10 +289,10 @@ export function Collections({
             {/* Stats & Actions */}
             <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['JetBrains_Mono',monospace] tabular-nums">
+                <span className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['Fira_Code'] tabular-nums">
                   {collection.document_count}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-['Manrope',sans-serif]">
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
                   docs
                 </span>
               </div>
@@ -305,7 +314,7 @@ export function Collections({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDeleteCollection(collection);
+                    setDeleteDialog({ isOpen: true, collection });
                   }}
                   className="p-2 rounded-md hover:bg-red-100 dark:hover:bg-red-950 transition-colors"
                   aria-label="Delete collection"
@@ -326,15 +335,15 @@ export function Collections({
               <FolderOpen className="w-10 h-10 text-slate-400 dark:text-slate-500" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 font-['DM_Serif_Display',serif]">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 font-['Space_Grotesk'] tracking-tight">
                 No collections yet
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-['Manrope',sans-serif] mb-4">
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-['Inter'] mb-4">
                 Create your first collection to organize your documents
               </p>
               <Button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="gap-2 font-['Manrope',sans-serif]"
+                className="gap-2 font-['Inter']"
               >
                 <Plus className="w-4 h-4" />
                 Create Collection
@@ -367,6 +376,15 @@ export function Collections({
         initialDescription={editingCollection?.description || ""}
         mode={editingCollection ? "edit" : "create"}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteCollectionDialog
+        isOpen={deleteDialog.isOpen}
+        collectionName={deleteDialog.collection?.name || ""}
+        documentCount={deleteDialog.collection?.document_count || 0}
+        onConfirm={handleDeleteCollection}
+        onCancel={() => setDeleteDialog({ isOpen: false, collection: null })}
+      />
     </div>
   );
 }
@@ -392,14 +410,14 @@ function CollectionModal({
   const [description, setDescription] = useState(initialDescription);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
 
-  // Reset form when modal opens
-  useState(() => {
+  // Reset form when modal opens or initial values change
+  useEffect(() => {
     if (isOpen) {
       setName(initialName);
       setDescription(initialDescription);
       setIsAnimatingOut(false);
     }
-  });
+  }, [isOpen, initialName, initialDescription]);
 
   const handleClose = () => {
     setIsAnimatingOut(true);
@@ -447,7 +465,7 @@ function CollectionModal({
         {/* Header */}
         <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-6 py-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['DM_Serif_Display',serif]">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['Space_Grotesk'] tracking-tight">
               {mode === "create" ? "Create Collection" : "Edit Collection"}
             </h2>
             <button
@@ -467,7 +485,7 @@ function CollectionModal({
           <div>
             <Label
               htmlFor="collection-name"
-              className="text-slate-700 dark:text-slate-300 font-['Manrope',sans-serif] font-medium"
+              className="text-slate-700 dark:text-slate-300 font-['Inter'] font-medium"
             >
               Collection Name *
             </Label>
@@ -477,7 +495,7 @@ function CollectionModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Work Documents, Research Papers"
-              className="mt-2 font-['Manrope',sans-serif] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+              className="mt-2 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
               autoFocus
             />
           </div>
@@ -486,7 +504,7 @@ function CollectionModal({
           <div>
             <Label
               htmlFor="collection-description"
-              className="text-slate-700 dark:text-slate-300 font-['Manrope',sans-serif] font-medium"
+              className="text-slate-700 dark:text-slate-300 font-['Inter'] font-medium"
             >
               Description (Optional)
             </Label>
@@ -496,7 +514,7 @@ function CollectionModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add a description to help identify this collection..."
               rows={3}
-              className="mt-2 font-['Manrope',sans-serif] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 resize-none"
+              className="mt-2 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 resize-none"
             />
           </div>
 
@@ -506,13 +524,13 @@ function CollectionModal({
               type="button"
               onClick={handleClose}
               variant="outline"
-              className="flex-1 font-['Manrope',sans-serif] border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+              className="flex-1 font-['Inter'] border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 hover:from-slate-800 hover:to-slate-600 dark:hover:from-slate-200 dark:hover:to-slate-400 text-white dark:text-slate-900 font-['Manrope',sans-serif] font-semibold"
+              className="flex-1 bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 hover:from-slate-800 hover:to-slate-600 dark:hover:from-slate-200 dark:hover:to-slate-400 text-white dark:text-slate-900 font-['Inter'] font-semibold"
             >
               {mode === "create" ? "Create" : "Save Changes"}
             </Button>
