@@ -20,7 +20,6 @@ interface BatchActionsProps {
   onDeselectAll: () => void;
   onBatchDelete: () => void;
   onMoveToCollection: (collectionId: string) => void;
-  onDeleteAll: () => void;
   collections: Array<{ collection_id: string; name: string }>;
 }
 
@@ -31,7 +30,6 @@ export function BatchActions({
   onDeselectAll,
   onBatchDelete,
   onMoveToCollection,
-  onDeleteAll,
   collections,
 }: BatchActionsProps) {
   const [showCollectionMenu, setShowCollectionMenu] = useState(false);
@@ -166,30 +164,29 @@ export function BatchActions({
               )}
             </div>
 
-            {/* Delete Selected */}
+            {/* Delete Selected - Smart button that changes to red when all selected */}
             <button
               type="button"
               onClick={onBatchDelete}
               disabled={selectedCount === 0}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 disabled:from-slate-400 disabled:to-slate-500 text-white font-bold rounded shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed border-2 border-amber-800 dark:border-amber-500"
+              className={`flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br text-white font-bold rounded shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed border-2 ${
+                isAllSelected
+                  ? "from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 border-red-800 dark:border-red-500"
+                  : "from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 border-amber-800 dark:border-amber-500"
+              } disabled:from-slate-400 disabled:to-slate-500`}
               style={{ fontFamily: "Rajdhani, sans-serif" }}
             >
-              <Trash2 className="w-4 h-4" strokeWidth={2.5} />
-              <span>DELETE SELECTED</span>
-            </button>
-
-            {/* Delete All My Documents - Critical Action */}
-            <button
-              type="button"
-              onClick={onDeleteAll}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold rounded shadow-lg hover:shadow-xl transition-all border-2 border-red-800 dark:border-red-500 ml-auto"
-              style={{ fontFamily: "Rajdhani, sans-serif" }}
-            >
-              <AlertTriangle
-                className="w-4 h-4 animate-pulse"
-                strokeWidth={2.5}
-              />
-              <span>DELETE ALL MINE</span>
+              {isAllSelected ? (
+                <AlertTriangle
+                  className="w-4 h-4 animate-pulse"
+                  strokeWidth={2.5}
+                />
+              ) : (
+                <Trash2 className="w-4 h-4" strokeWidth={2.5} />
+              )}
+              <span>
+                {isAllSelected ? `DELETE ALL ${totalCount}` : "DELETE SELECTED"}
+              </span>
             </button>
           </div>
         )}
