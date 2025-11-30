@@ -160,6 +160,14 @@ export function DashboardPage() {
               <span>Documents</span>
             </Link>
             <Link
+              to="/documents"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+            >
+              <FileText className="w-5 h-5" />
+              <span>All Documents</span>
+            </Link>
+            <Link
               to="/chat"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
@@ -252,6 +260,13 @@ export function DashboardPage() {
               >
                 <HardDrive className="w-5 h-5" />
                 <span>Documents</span>
+              </Link>
+              <Link
+                to="/documents"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+              >
+                <FileText className="w-5 h-5" />
+                <span>All Documents</span>
               </Link>
               <Link
                 to="/chat"
@@ -403,6 +418,7 @@ export function DashboardPage() {
                 Recent Documents
               </h2>
               <Button
+                onClick={() => navigate("/documents")}
                 variant="outline"
                 size="sm"
                 className="font-['Inter'] font-medium border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"

@@ -998,6 +998,368 @@ status: 'processing' | 'active' | 'error' | 'deleted'
 - [ ] Call POST /api/v1/documents/{id}/retry
 - [ ] Add back to dashboard button
 
+---
+
+## 12.4A Remaining Document Features Implementation Plan
+
+**Context:** Collections Management completed. The following document-related features remain from the frontend implementation plan. Backend API analysis shows all required endpoints already exist - no backend changes needed.
+
+**Reference Plan:** `C:\Users\haida\.claude\plans\twinkling-soaring-butterfly.md`
+
+### Backend API Available (Verified 2025-11-30)
+
+**Document Endpoints (12 total):**
+- ✅ `GET /api/v1/documents` - List all user documents
+  - Query params: `page`, `limit`, `collection_id`, `status_filter`, `sort_by`, `order`
+  - Default limit=50, max=1000
+  - Returns: documents list + pagination metadata
+- ✅ `GET /api/v1/documents/{document_id}` - Get single document
+- ✅ `PUT /api/v1/documents/{document_id}` - Update metadata (collection_id, category, tags)
+- ✅ `DELETE /api/v1/documents/{document_id}` - Soft delete
+- ✅ `POST /api/v1/documents/batch-delete` - Batch delete (body: {document_ids: []})
+- ✅ `POST /api/v1/documents/delete-all-mine` - Delete all user documents
+- ✅ `POST /api/v1/documents/{document_id}/retry` - Retry failed processing
+
+**Collection Endpoints (5 total):**
+- ✅ All CRUD operations exist
+- ✅ Documents can exist without collection (nullable foreign key)
+- ✅ Deleting collection preserves documents (sets collection_id to NULL)
+
+### Phase 1: "View All Documents" Page ⭐ HIGHEST PRIORITY
+
+**File:** `frontend/src/pages/DocumentsPage.tsx` → **COMPLETED 2025-11-30**
+
+**Why First:** Fixes broken "View All" button on dashboard
+
+**Features:**
+- [x] Create DocumentsPage component with full layout **UPDATE:** Implemented with "Archive Command Center" terminal aesthetic
+- [x] Add sticky navigation header (same as CollectionsPage) **UPDATE:** Emerald green theme, "ARCHIVE//SYS" branding
+- [x] Add sidebar navigation (Desktop + Mobile) **UPDATE:** Full navigation with highlighted "All Documents"
+- [x] Reuse existing DocumentList component **UPDATE:** Integrated seamlessly
+- [ ] Add pagination controls (navigate between pages) **NOTE:** Ready for API integration
+- [ ] Show document count and page info **NOTE:** Ready for API integration
+- [x] "Back to Dashboard" button **UPDATE:** Implemented with ArrowLeft icon
+- [x] Full dark mode support **UPDATE:** Terminal aesthetic works in both light/dark modes
+
+**IMPLEMENTATION SUMMARY - 2025-11-30**
+
+**FILES CREATED:**
+1. `frontend/src/pages/DocumentsPage.tsx` - Full-page document archive with terminal aesthetic
+
+**FILES MODIFIED:**
+1. `frontend/src/App.tsx` - Added /documents protected route
+2. `frontend/src/pages/DashboardPage.tsx` - Connected "View All" button + added "All Documents" sidebar link
+
+**DESIGN CONCEPT: "Archive Command Center"**
+- **Aesthetic:** Terminal-meets-Data-Visualization fusion
+- **Inspiration:** NASA mission control + vintage computer labs
+- **Color Scheme:** Black/dark slate backgrounds with emerald green accents
+- **Typography:** JetBrains Mono (monospace data), Space Grotesk (headings)
+- **Effects:** Scan-line CRT overlay, grid background pattern, pixel-perfect details
+- **Branding:** "ARCHIVE//SYS" terminal-style logo
+
+**KEY FEATURES IMPLEMENTED:**
+- ✅ Terminal aesthetic with scan-line animation overlay
+- ✅ Grid background pattern for retro feel
+- ✅ Emerald green color theme (#22c55e, emerald-400)
+- ✅ Sticky navigation bar with glass morphism
+- ✅ Desktop + mobile sidebar navigation
+- ✅ "All Documents" highlighted in sidebar
+- ✅ "BACK" button with gradient divider
+- ✅ "DOCUMENT ARCHIVE" heading in Space Grotesk
+- ✅ Terminal prompt indicator: "> Full system catalog // All files indexed"
+- ✅ Integrated DocumentList component
+- ✅ Dark mode toggle support
+- ✅ User email display in monospace font
+- ✅ Logout button with red accent
+
+**CHROME DEVTOOLS VERIFICATION:**
+- ✅ Console: No errors or warnings
+- ✅ Navigation: View All button → /documents working
+- ✅ Routing: Protected route redirects to /login when unauthenticated
+- ✅ Visual rendering: Terminal aesthetic perfect in dark mode
+- ✅ Document list: All 5 mock documents displaying correctly
+- ✅ Status badges: Processing, Active, Error states working
+- ✅ Retry button: Functional for error status documents
+- ✅ Delete dialog: Terminal warning aesthetic showing correctly
+
+**UNIQUE DESIGN ELEMENTS:**
+- Emerald green (#22c55e) as primary accent (vs blue in other pages)
+- Monospace fonts throughout for data authenticity
+- Scan-line overlay with 8s animation loop
+- Grid background with 50px spacing
+- "ARCHIVE//SYS" wordmark branding
+- Terminal command prompt style (">" indicator)
+- Gradient accent elements (emerald to teal)
+- CRT-style visual effects
+
+**IMPROVEMENTS MADE:**
+- ✅ **Added "All Documents" to sidebar navigation** (both desktop + mobile)
+- ✅ Fixed Biome linting errors (escaped "//" in JSX text)
+- ✅ Fixed TypeScript error (onDocumentClick receives docId string, not full object)
+- ✅ Added FileText import for sidebar icon
+
+**COMMITS:**
+- Pending commit with DocumentsPage implementation
+
+**TESTING STATUS:**
+- ✅ Chrome DevTools verified
+- ✅ Console clean
+- ✅ Navigation working
+- ✅ Linting passed (Biome)
+- ⬜ Build has pre-existing UploadZone.tsx TypeScript error (not related to DocumentsPage)
+- ✅ Dark mode rendering correct
+- ✅ Mobile responsive layout
+
+**NEXT STEPS:**
+- Phase 2: Search & Filter Component
+- Phase 3: Batch Operations Component
+- Phase 4: Document Detail View
+
+**API Integration:**
+```typescript
+// Use existing GET /api/v1/documents endpoint
+const { data, isLoading } = useQuery({
+  queryKey: ['documents', page, limit, collectionFilter, statusFilter],
+  queryFn: () => api.get('/documents', {
+    params: {
+      page,
+      limit: 50,
+      collection_id: collectionFilter,
+      status_filter: statusFilter
+    }
+  })
+});
+```
+
+**Routes to Add:**
+- [ ] `/documents` - View all documents page
+- [ ] Update DashboardPage "View All" button to navigate to `/documents`
+
+**Estimated Time:** 1-2 days
+**Complexity:** LOW (reuse DocumentList component)
+
+---
+
+### Phase 2: Search & Filter Component
+
+**File:** `frontend/src/components/documents/SearchFilter.tsx`
+
+**Why Second:** Makes "View All" page actually useful
+
+**Features:**
+- [ ] Search input (client-side filter by filename - backend doesn't support text search)
+- [ ] Collection dropdown filter (use collection_id query param)
+- [ ] Status filter dropdown (use status_filter query param: 'processing', 'active', 'error', 'stuck')
+- [ ] Sort dropdown (use sort_by and order query params)
+  - Options: created_at, filename, status
+  - Order: asc, desc
+- [ ] Clear all filters button
+- [ ] Show active filter count badge
+
+**API Integration:**
+```typescript
+const [filters, setFilters] = useState({
+  collection_id: null,
+  status_filter: null, // 'processing', 'error', 'active', 'stuck'
+  sort_by: 'created_at', // or 'filename', 'status'
+  order: 'desc' // or 'asc'
+});
+
+// Search by name - client-side filtering
+const [searchTerm, setSearchTerm] = useState('');
+const filteredDocs = documents.filter(doc =>
+  doc.filename.toLowerCase().includes(searchTerm.toLowerCase())
+);
+```
+
+**Integration Points:**
+- [ ] Add to DocumentsPage (top of page, above document list)
+- [ ] Optionally add to Dashboard for quick filtering
+
+**Estimated Time:** 2 days
+**Complexity:** MEDIUM (UI components + state management)
+
+---
+
+### Phase 3: Batch Operations Component
+
+**File:** `frontend/src/components/documents/BatchActions.tsx`
+
+**Why Third:** Power user feature, less critical than viewing
+
+**Features:**
+- [ ] Checkbox column in DocumentList
+- [ ] "Select All" / "Deselect All" controls
+- [ ] Selected count indicator (e.g., "3 documents selected")
+- [ ] Action buttons:
+  - **Delete Selected** - POST /api/v1/documents/batch-delete
+  - **Move to Collection** - Bulk PUT requests to update collection_id
+  - **Delete All My Documents** - POST /api/v1/documents/delete-all-mine
+- [ ] Custom confirmation dialogs (similar to DeleteCollectionDialog)
+- [ ] Progress indicator during batch operations
+- [ ] Error handling (show which operations failed)
+
+**API Integration:**
+```typescript
+// Batch delete - backend supports natively
+const batchDelete = async (documentIds: string[]) => {
+  await api.post('/documents/batch-delete', { document_ids: documentIds });
+};
+
+// Delete all - backend supports natively
+const deleteAllMine = async () => {
+  const confirmed = await showDoubleConfirmDialog(); // Type "DELETE ALL"
+  if (confirmed) {
+    await api.post('/documents/delete-all-mine');
+  }
+};
+
+// Move to collection - need to loop PUT requests
+const moveToCollection = async (documentIds: string[], collectionId: string) => {
+  await Promise.all(
+    documentIds.map(id =>
+      api.put(`/documents/${id}`, null, {
+        params: { collection_id: collectionId }
+      })
+    )
+  );
+};
+```
+
+**UI Considerations:**
+- [ ] Show progress bar for bulk operations
+- [ ] Confirmation dialogs with:
+  - Batch delete: Type "DELETE" to confirm
+  - Delete all: Type "DELETE ALL" to confirm (double warning)
+- [ ] Disable actions when no documents selected
+- [ ] Clear selection after successful operation
+
+**Estimated Time:** 3 days
+**Complexity:** HIGH (complex state management + UX)
+
+---
+
+### Phase 4: Document Detail View (Already Defined Above)
+
+**File:** `frontend/src/pages/DocumentDetailPage.tsx`
+
+**Features:** (Already listed in section 12.4)
+- [ ] Full document metadata display
+- [ ] Chunks preview (first 5 chunks)
+- [ ] "Show All Chunks" expandable section
+- [ ] Edit metadata modal (collection, category, tags)
+- [ ] Delete button with confirmation
+- [ ] Retry button (for error/stuck status)
+- [ ] Back to previous page button
+
+**API Integration:**
+```typescript
+// Get document details
+const { data: document } = useQuery({
+  queryKey: ['document', documentId],
+  queryFn: () => api.get(`/documents/${documentId}`)
+});
+
+// Update metadata
+const updateMetadata = async (data: { collection_id?, category?, tags? }) => {
+  await api.put(`/documents/${documentId}`, null, { params: data });
+};
+
+// Delete document
+const deleteDocument = async () => {
+  await api.delete(`/documents/${documentId}`);
+  navigate('/documents');
+};
+
+// Retry processing
+const retryDocument = async () => {
+  await api.post(`/documents/${documentId}/retry`);
+};
+```
+
+**Route:**
+- [ ] `/documents/:documentId` - Accessible from DocumentList by clicking document card
+
+**Estimated Time:** 2 days
+**Complexity:** MEDIUM (standard detail page pattern)
+
+---
+
+### Implementation Order Summary
+
+1. **Day 1-2**: "View All Documents" Page (DocumentsPage.tsx)
+   - Create page with full layout
+   - Add `/documents` route
+   - Connect "View All" button
+   - Test pagination with existing API
+
+2. **Day 3-4**: Search & Filter Component (SearchFilter.tsx)
+   - Create filter component
+   - Integrate with DocumentsPage
+   - Test all filter combinations
+   - Add to Dashboard (optional)
+
+3. **Day 5-7**: Batch Operations Component (BatchActions.tsx)
+   - Create batch actions component
+   - Add checkbox column to DocumentList
+   - Implement batch delete + delete all
+   - Implement bulk move to collection
+   - Create confirmation dialogs
+
+4. **Day 8-9**: Document Detail View (DocumentDetailPage.tsx)
+   - Create detail page
+   - Add `/documents/:documentId` route
+   - Implement metadata editing
+   - Add delete + retry functionality
+   - Test all operations
+
+**Total Estimated Time:** 9 days
+
+---
+
+### Files to Create/Modify
+
+**New Files (4):**
+1. `frontend/src/pages/DocumentsPage.tsx` - Full page view
+2. `frontend/src/components/documents/SearchFilter.tsx` - Filtering UI
+3. `frontend/src/components/documents/BatchActions.tsx` - Bulk operations
+4. `frontend/src/pages/DocumentDetailPage.tsx` - Detail view
+
+**Modified Files (4):**
+1. `frontend/src/App.tsx` - Add routes (/documents, /documents/:id)
+2. `frontend/src/pages/DashboardPage.tsx` - Connect "View All" button
+3. `frontend/src/components/documents/DocumentList.tsx` - Add checkbox column support
+4. `tasks/12-FRONTEND.md` - Update task completion (this file)
+
+---
+
+### Design Guidelines
+
+**Aesthetic Consistency:**
+- Use same typography as Collections (Space Grotesk, Inter, Fira Code)
+- Maintain "Data Observatory" / "Archive" theme from Dashboard/Collections
+- Full dark/light mode support
+- Glass morphism where appropriate
+- Smooth animations (200ms transitions)
+
+**Component Patterns:**
+- Reuse existing patterns (DeleteConfirmDialog style)
+- Use frontend-design skill for new components
+- Follow existing API integration patterns
+- Consistent error handling with toast notifications
+
+**Chrome DevTools Verification:**
+- Test all features in browser
+- Check console for errors
+- Verify network requests
+- Test dark/light mode rendering
+- Validate accessibility tree
+
+---
+
+**NEXT STEP:** Should we proceed with **Phase 1: "View All Documents" Page**?
+
 ### Collections Management
 **File:** `frontend/src/components/documents/Collections.tsx` → **COMPONENT CREATED**
 **PRD Reference:** Section 8.2 (Collections/Namespaces Management)
