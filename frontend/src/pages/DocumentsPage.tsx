@@ -375,8 +375,7 @@ export function DocumentsPage() {
           {/* Document List */}
           <DocumentList
             onDocumentClick={(docId) => {
-              console.log("Navigate to document:", docId);
-              // TODO: Navigate to /documents/:id when detail page is implemented
+              navigate(`/documents/${docId}`);
             }}
             onDeleteDocument={(docId) => {
               console.log("Delete document:", docId);

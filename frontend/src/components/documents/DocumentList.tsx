@@ -285,9 +285,19 @@ export function DocumentList({
                 {/* MOBILE LAYOUT */}
                 <div className="flex md:hidden flex-col gap-3">
                   {/* Mobile Header: Checkbox + File Icon + Filename */}
-                  <div className="flex items-start gap-3">
+                  <button
+                    type="button"
+                    disabled={selectionMode}
+                    className="flex items-start gap-3 cursor-pointer text-left disabled:cursor-default"
+                    onClick={() => onDocumentClick?.(doc.document_id)}
+                  >
                     {selectionMode && (
-                      <div className="flex items-center pt-0.5">
+                      // biome-ignore lint/a11y/useKeyWithClickEvents: Wrapper div for layout, interaction is on checkbox
+                      // biome-ignore lint/a11y/noStaticElementInteractions: Wrapper div for layout, interaction is on checkbox
+                      <div
+                        className="flex items-center pt-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -317,7 +327,7 @@ export function DocumentList({
                         {doc.document_id}
                       </p>
                     </div>
-                  </div>
+                  </button>
 
                   {/* Mobile Metadata Grid */}
                   <div className="grid grid-cols-2 gap-3 text-xs">
