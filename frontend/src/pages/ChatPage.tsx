@@ -295,8 +295,8 @@ export function ChatPage() {
             ))}
           </div>
 
-          {/* Back to Dashboard */}
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+          {/* Bottom Actions - Desktop */}
+          <div className="hidden lg:block p-4 border-t border-slate-200 dark:border-slate-800">
             <Link
               to="/dashboard"
               className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all"
@@ -304,6 +304,38 @@ export function ChatPage() {
               <FileText className="w-4 h-4" />
               <span className="text-sm">Back to Documents</span>
             </Link>
+          </div>
+
+          {/* Bottom Actions - Mobile */}
+          <div className="lg:hidden p-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+            {/* Dark Mode Toggle */}
+            <button
+              type="button"
+              onClick={toggleDarkMode}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-sm font-['Inter'] transition-all"
+            >
+              {darkMode ? (
+                <>
+                  <Sun className="w-4 h-4" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </button>
+
+            {/* Logout Button */}
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 text-sm font-['Inter'] transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
           </div>
         </aside>
 
