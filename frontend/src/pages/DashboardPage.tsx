@@ -14,12 +14,12 @@ import {
   Moon,
   Search,
   Sun,
-  Upload,
   User,
   X,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { DocumentList } from "../components/documents/DocumentList";
 import { UploadZone } from "../components/documents/UploadZone";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -396,27 +396,11 @@ export function DashboardPage() {
               </Button>
             </div>
 
-            {/* Empty State */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center">
-              <div className="max-w-sm mx-auto space-y-4">
-                <div className="mx-auto w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-                  <FileText className="w-10 h-10 text-slate-400 dark:text-slate-500" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2 font-['Space_Grotesk']">
-                    No documents yet
-                  </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 font-['Inter']">
-                    Upload your first document to get started with your AI
-                    knowledge base
-                  </p>
-                </div>
-                <Button className="gap-2 font-['Inter'] font-medium bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 border-0">
-                  <Upload className="w-4 h-4" />
-                  Upload Document
-                </Button>
-              </div>
-            </div>
+            {/* Document List */}
+            <DocumentList
+              onDocumentClick={(id) => console.log("Clicked document:", id)}
+              onDeleteDocument={(id) => console.log("Delete document:", id)}
+            />
           </div>
         </main>
       </div>
