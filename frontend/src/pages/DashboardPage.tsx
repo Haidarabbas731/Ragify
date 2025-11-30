@@ -175,6 +175,14 @@ export function DashboardPage() {
               <User className="w-5 h-5" />
               <span>Profile</span>
             </Link>
+            <Link
+              to="/collections"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+            >
+              <FolderOpen className="w-5 h-5" />
+              <span>Collections</span>
+            </Link>
           </div>
 
           {/* Collections Section */}
@@ -258,6 +266,13 @@ export function DashboardPage() {
               >
                 <User className="w-5 h-5" />
                 <span>Profile</span>
+              </Link>
+              <Link
+                to="/collections"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+              >
+                <FolderOpen className="w-5 h-5" />
+                <span>Collections</span>
               </Link>
             </div>
 
