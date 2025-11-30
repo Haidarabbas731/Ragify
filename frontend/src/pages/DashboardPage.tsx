@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { UploadZone } from "../components/documents/UploadZone";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { useDarkMode } from "../hooks/useDarkMode";
@@ -374,27 +375,10 @@ export function DashboardPage() {
           </div>
 
           {/* Upload Section */}
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-xl p-8 mb-8 text-center hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20">
-            <div className="max-w-md mx-auto space-y-4">
-              <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                <Upload className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 font-['Space_Grotesk']">
-                  Upload Documents
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 font-['Inter']">
-                  Drag & drop files here or click to browse
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-['Inter']">
-                  Supports PDF, DOCX, TXT, MD • Max 50MB per file
-                </p>
-              </div>
-              <Button className="gap-2 font-['Inter'] font-medium">
-                <Upload className="w-4 h-4" />
-                Select Files
-              </Button>
-            </div>
+          <div className="mb-8">
+            <UploadZone
+              onUploadComplete={() => console.log("Upload complete")}
+            />
           </div>
 
           {/* Documents Section */}
