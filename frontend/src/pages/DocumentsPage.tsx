@@ -20,6 +20,10 @@ import {
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { DocumentList } from "../components/documents/DocumentList";
+import {
+  type FilterState,
+  SearchFilter,
+} from "../components/documents/SearchFilter";
 import { Button } from "../components/ui/button";
 import { useDarkMode } from "../hooks/useDarkMode";
 import { useAuthStore } from "../store/authStore";
@@ -28,6 +32,26 @@ export function DocumentsPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [_filters, setFilters] = useState<FilterState>({
+    searchTerm: "",
+    collectionId: null,
+    statusFilter: null,
+    sortBy: "created_at",
+    order: "desc",
+  });
+
+  // Mock collections data - TODO: Replace with actual API call
+  const mockCollections = [
+    { collection_id: "coll_1", name: "Research Papers" },
+    { collection_id: "coll_2", name: "Meeting Notes" },
+    { collection_id: "coll_3", name: "Technical Docs" },
+  ];
+
+  const handleFilterChange = (newFilters: FilterState) => {
+    setFilters(newFilters);
+    // TODO: Apply filters to document list API call
+    console.log("Filters updated:", newFilters);
+  };
 
   // Initialize and get dark mode state
   const { darkMode, toggleDarkMode } = useDarkMode();
@@ -260,6 +284,12 @@ export function DocumentsPage() {
               {"/"} All files indexed
             </p>
           </div>
+
+          {/* Search & Filter */}
+          <SearchFilter
+            collections={mockCollections}
+            onFilterChange={handleFilterChange}
+          />
 
           {/* Document List */}
           <DocumentList
