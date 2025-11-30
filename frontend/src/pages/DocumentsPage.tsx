@@ -19,6 +19,9 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { BatchActions } from "../components/documents/BatchActions";
+import { BatchDeleteDialog } from "../components/documents/BatchDeleteDialog";
+import { DeleteAllDialog } from "../components/documents/DeleteAllDialog";
 import { DocumentList } from "../components/documents/DocumentList";
 import {
   type FilterState,
@@ -51,6 +54,76 @@ export function DocumentsPage() {
     setFilters(newFilters);
     // TODO: Apply filters to document list API call
     console.log("Filters updated:", newFilters);
+  };
+
+  // Batch operations state
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(
+    new Set(),
+  );
+  const [batchDeleteDialog, setBatchDeleteDialog] = useState(false);
+  const [deleteAllDialog, setDeleteAllDialog] = useState(false);
+
+  // Mock total documents count - TODO: Get from API
+  const totalDocuments = 5;
+
+  const handleSelectionChange = (documentId: string, selected: boolean) => {
+    setSelectedDocuments((prev) => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(documentId);
+      } else {
+        newSet.delete(documentId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    // TODO: Get all document IDs from API or current filtered list
+    const allDocIds = [
+      "doc_1a2b3c4d",
+      "doc_5e6f7g8h",
+      "doc_9i0j1k2l",
+      "doc_3m4n5o6p",
+      "doc_7q8r9s0t",
+    ];
+    setSelectedDocuments(new Set(allDocIds));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedDocuments(new Set());
+  };
+
+  const handleBatchDelete = () => {
+    setBatchDeleteDialog(true);
+  };
+
+  const handleConfirmBatchDelete = () => {
+    console.log("Batch delete:", Array.from(selectedDocuments));
+    // TODO: Call batch delete API
+    setSelectedDocuments(new Set());
+    setBatchDeleteDialog(false);
+  };
+
+  const handleMoveToCollection = (collectionId: string) => {
+    console.log(
+      "Move to collection:",
+      collectionId,
+      Array.from(selectedDocuments),
+    );
+    // TODO: Call bulk move API
+    setSelectedDocuments(new Set());
+  };
+
+  const handleDeleteAll = () => {
+    setDeleteAllDialog(true);
+  };
+
+  const handleConfirmDeleteAll = () => {
+    console.log("Delete all my documents");
+    // TODO: Call delete all API
+    setSelectedDocuments(new Set());
+    setDeleteAllDialog(false);
   };
 
   // Initialize and get dark mode state
@@ -291,6 +364,18 @@ export function DocumentsPage() {
             onFilterChange={handleFilterChange}
           />
 
+          {/* Batch Operations */}
+          <BatchActions
+            selectedCount={selectedDocuments.size}
+            totalCount={totalDocuments}
+            onSelectAll={handleSelectAll}
+            onDeselectAll={handleDeselectAll}
+            onBatchDelete={handleBatchDelete}
+            onMoveToCollection={handleMoveToCollection}
+            onDeleteAll={handleDeleteAll}
+            collections={mockCollections}
+          />
+
           {/* Document List */}
           <DocumentList
             onDocumentClick={(docId) => {
@@ -303,9 +388,28 @@ export function DocumentsPage() {
             onRetryDocument={(docId) => {
               console.log("Retry document:", docId);
             }}
+            selectedDocuments={selectedDocuments}
+            onSelectionChange={handleSelectionChange}
+            selectionMode={true}
           />
         </main>
       </div>
+
+      {/* Batch Delete Confirmation Dialog */}
+      <BatchDeleteDialog
+        isOpen={batchDeleteDialog}
+        selectedCount={selectedDocuments.size}
+        onConfirm={handleConfirmBatchDelete}
+        onCancel={() => setBatchDeleteDialog(false)}
+      />
+
+      {/* Delete All Confirmation Dialog */}
+      <DeleteAllDialog
+        isOpen={deleteAllDialog}
+        totalCount={totalDocuments}
+        onConfirm={handleConfirmDeleteAll}
+        onCancel={() => setDeleteAllDialog(false)}
+      />
 
       {/* Animations */}
       <style>{`
