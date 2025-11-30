@@ -869,18 +869,32 @@ frontend/
   - Red (red to orange): ≥90% used with "⚠️ Nearly full" warning
 
 ### Document Upload Interface
-**File:** `frontend/src/components/documents/UploadZone.tsx` → **INLINE IN:** `frontend/src/pages/DashboardPage.tsx`
+**File:** `frontend/src/components/documents/UploadZone.tsx` → **COMPONENT CREATED**
 
 - [x] Create upload zone UI (lines 257-278)
-- [ ] Add drag-and-drop functionality (react-dropzone)
-- [ ] Add file type validation (PDF, DOCX, TXT, MD)
-- [ ] Add file size validation (50MB max)
-- [ ] Show file preview before upload
-- [ ] Add collection selector dropdown
-- [ ] Add tag input (optional)
-- [ ] Add upload progress bar
-- [ ] Handle upload errors (file too large, invalid format)
-- [ ] Show success message with chunk count
+- [x] Add drag-and-drop functionality (react-dropzone) **UPDATE:** Implemented with `useDropzone` hook
+- [x] Add file type validation (PDF, DOCX, TXT, MD) **UPDATE:** Configured with `ALLOWED_TYPES` object
+- [x] Add file size validation (50MB max) **UPDATE:** Enforced with `MAX_FILE_SIZE` constant
+- [x] Show file preview before upload **UPDATE:** Multi-file queue with status tracking
+- [x] Add collection selector dropdown **UPDATE:** Optional collection selector added
+- [ ] Add tag input (optional) **NOTE:** Not in current MVP, defer to later
+- [x] Add upload progress bar **UPDATE:** Per-file progress with gradient bar
+- [x] Handle upload errors (file too large, invalid format) **UPDATE:** Toast notifications for rejections
+- [x] Show success message with chunk count **UPDATE:** Success status with chunk display
+
+**UPDATE: 2025-11-30**
+- ✅ Created standalone UploadZone component with "Data Intake Terminal" aesthetic
+- ✅ Implemented drag-drop with scan line animation on active drag
+- ✅ Multi-file upload queue management with individual status tracking
+- ✅ File validation: PDF, DOCX, TXT, MD formats, 50MB max size
+- ✅ Progress tracking with simulated upload (ready for API integration)
+- ✅ Collection selector dropdown (optional)
+- ✅ Status icons: pending, uploading (spinner), success (checkmark), error (alert)
+- ✅ Remove file from queue functionality
+- ✅ Upload all button with gradient styling
+- ✅ File size formatting and chunk count display
+- ✅ Full dark mode support
+- ✅ Integrated into DashboardPage
 
 **Upload Zone Design** (`DashboardPage.tsx` lines 257-278):
 - ✅ Gradient background (blue-50 to purple-50, darker in dark mode)
@@ -899,18 +913,39 @@ frontend/
 4. Success confirmation
 
 ### Document List Component
-**File:** `frontend/src/components/documents/DocumentList.tsx` → **INLINE IN:** `frontend/src/pages/DashboardPage.tsx`
+**File:** `frontend/src/components/documents/DocumentList.tsx` → **COMPONENT CREATED**
 
 - [x] Add empty state UI (no documents yet) - lines 292-311
-- [ ] Fetch documents from API (GET /api/v1/documents)
-- [ ] Display documents in list/grid view
-- [ ] Show document metadata (name, size, chunks, date)
-- [ ] Show document status badges (processing, active, error)
-- [ ] Processing: Show spinner and "Processing..." text
-- [ ] Error: Show error icon and "Retry" button
-- [ ] Add pagination (50 per page)
-- [ ] Add loading skeleton
-- [ ] Add click handler to view document details
+- [ ] Fetch documents from API (GET /api/v1/documents) **NOTE:** Using mock data, ready for API
+- [x] Display documents in list/grid view **UPDATE:** 12-column grid tabular layout
+- [x] Show document metadata (name, size, chunks, date) **UPDATE:** Complete metadata display
+- [x] Show document status badges (processing, active, error) **UPDATE:** Color-coded badges with icons
+- [x] Processing: Show spinner and "Processing..." text **UPDATE:** Blue badge with Loader2 spinner
+- [x] Error: Show error icon and "Retry" button **UPDATE:** Red badge + retry button with RefreshCw icon
+- [x] Add pagination (50 per page) **UPDATE:** Full pagination with prev/next buttons
+- [ ] Add loading skeleton **NOTE:** Defer to API integration phase
+- [x] Add click handler to view document details **UPDATE:** Click handler prop added
+
+**UPDATE: 2025-11-30**
+- ✅ Created standalone DocumentList component with "Archive Catalog" aesthetic
+- ✅ 12-column grid layout: Document (5), Status (2), Size (2), Uploaded (2), Actions (1)
+- ✅ Status badges with proper color coding:
+  - Processing: Blue badge with spinning Loader2 icon
+  - Active: Emerald badge with CheckCircle2 icon
+  - Error: Red badge with AlertCircle icon + error message display
+  - Deleted: Slate badge with muted text
+- ✅ File type badge showing extension (PDF, DOCX, TXT, MD, etc.)
+- ✅ Document metadata: filename, document_id, size, chunks, upload time
+- ✅ Relative time formatting with date-fns "formatDistanceToNow"
+- ✅ Pagination: 50 items per page with prev/next navigation
+- ✅ Hover interactions: Background highlight, delete button appears
+- ✅ Delete confirmation with browser confirm dialog
+- ✅ **Retry button for error status documents** (RefreshCw icon, blue styling)
+- ✅ Click handlers: onDocumentClick, onDeleteDocument, onRetryDocument
+- ✅ Mock data with 5 sample documents for testing
+- ✅ Accessibility: Semantic button elements, aria-labels
+- ✅ Full dark mode support with proper contrast
+- ✅ Integrated into DashboardPage
 
 **Empty State Design** (`DashboardPage.tsx` lines 292-311):
 - ✅ White card with border (slate-200 in light mode)
