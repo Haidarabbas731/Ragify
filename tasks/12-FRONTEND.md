@@ -939,13 +939,32 @@ frontend/
 - ✅ Relative time formatting with date-fns "formatDistanceToNow"
 - ✅ Pagination: 50 items per page with prev/next navigation
 - ✅ Hover interactions: Background highlight, delete button appears
-- ✅ Delete confirmation with browser confirm dialog
-- ✅ **Retry button for error status documents** (RefreshCw icon, blue styling)
+- ✅ **Custom delete confirmation dialog** (Terminal Warning aesthetic, type "DELETE" to confirm)
+- ✅ **Retry button for error status documents** with state tracking:
+  - Prevents duplicate retry requests while in progress
+  - Shows spinning icon and "Retrying..." text when active
+  - Disables button with muted gray styling during retry
+  - Auto-clears retry state when document status changes
 - ✅ Click handlers: onDocumentClick, onDeleteDocument, onRetryDocument
 - ✅ Mock data with 5 sample documents for testing
 - ✅ Accessibility: Semantic button elements, aria-labels
 - ✅ Full dark mode support with proper contrast
 - ✅ Integrated into DashboardPage
+
+**IMPROVEMENT: 2025-11-30 - Delete Confirmation Dialog**
+- ✅ Created DeleteConfirmDialog component with "Terminal Warning" aesthetic
+- ✅ Retro-terminal design: Red theme, scanline animation, noise texture
+- ✅ Type "DELETE" confirmation prevents accidental deletions
+- ✅ Keyboard support: Escape to cancel, Enter to confirm
+- ✅ Smooth animations: 200ms entrance/exit with backdrop blur
+- ✅ Visual effects: Glowing red borders, corner decorations, pulsing warning icon
+- ✅ Replaces generic browser confirm() dialog
+
+**IMPROVEMENT: 2025-11-30 - Retry State Management**
+- ✅ Track retrying documents in Set to prevent duplicate requests
+- ✅ Button disabled during retry with visual feedback
+- ✅ useEffect monitors document status changes to clear retry state
+- ✅ Prevents user from spamming retry button
 
 **Empty State Design** (`DashboardPage.tsx` lines 292-311):
 - ✅ White card with border (slate-200 in light mode)
