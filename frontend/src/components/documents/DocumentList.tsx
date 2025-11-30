@@ -361,6 +361,43 @@ export function DocumentList({
                       <p className="text-xs text-red-600 dark:text-red-400 font-['Inter']">
                         {doc.error_message}
                       </p>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Add to retrying set
+                          setRetryingDocs((prev) =>
+                            new Set(prev).add(doc.document_id),
+                          );
+                          // Call the retry handler
+                          onRetryDocument?.(doc.document_id);
+                        }}
+                        disabled={retryingDocs.has(doc.document_id)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border transition-colors w-fit ${
+                          retryingDocs.has(doc.document_id)
+                            ? "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-60"
+                            : "bg-blue-100 dark:bg-blue-950 border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900"
+                        }`}
+                      >
+                        <RefreshCw
+                          className={`w-3.5 h-3.5 ${
+                            retryingDocs.has(doc.document_id)
+                              ? "text-slate-500 dark:text-slate-400 animate-spin"
+                              : "text-blue-600 dark:text-blue-400"
+                          }`}
+                        />
+                        <span
+                          className={`text-xs font-medium font-['Inter'] ${
+                            retryingDocs.has(doc.document_id)
+                              ? "text-slate-600 dark:text-slate-400"
+                              : "text-blue-700 dark:text-blue-300"
+                          }`}
+                        >
+                          {retryingDocs.has(doc.document_id)
+                            ? "Retrying..."
+                            : "Retry"}
+                        </span>
+                      </button>
                     </div>
                   )}
                 </div>
