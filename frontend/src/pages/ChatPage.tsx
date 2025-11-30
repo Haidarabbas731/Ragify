@@ -5,6 +5,7 @@
  */
 
 import {
+  ArrowLeft,
   FileText,
   LogOut,
   Menu,
@@ -14,6 +15,7 @@ import {
   Send,
   Sun,
   User,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -44,7 +46,7 @@ export function ChatPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { darkMode, toggleDarkMode } = useDarkMode();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [isStreaming] = useState(false);
 
@@ -194,7 +196,7 @@ export function ChatPage() {
               onClick={handleLogout}
               variant="outline"
               size="sm"
-              className="gap-2 border-slate-300 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-['Inter'] font-medium"
+              className="gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-['Inter'] font-medium"
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Logout</span>
@@ -202,6 +204,19 @@ export function ChatPage() {
           </div>
         </div>
       </nav>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden cursor-default"
+          onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setSidebarOpen(false);
+          }}
+          aria-label="Close sidebar"
+        />
+      )}
 
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
@@ -211,6 +226,33 @@ export function ChatPage() {
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           } lg:translate-x-0 fixed lg:relative z-40 w-80 h-full border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-transform duration-300 flex flex-col`}
         >
+          {/* Mobile Header with Close Button */}
+          <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 font-['Space_Grotesk']">
+              Conversations
+            </h2>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label="Close sidebar"
+            >
+              <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            </button>
+          </div>
+
+          {/* Back to Documents - Mobile Only */}
+          <div className="lg:hidden p-4 border-b border-slate-200 dark:border-slate-800">
+            <Link
+              to="/dashboard"
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-sm">Back to Documents</span>
+            </Link>
+          </div>
+
           {/* New Chat Button */}
           <div className="p-4 border-b border-slate-200 dark:border-slate-800">
             <Button className="w-full gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-['Inter'] font-medium">
@@ -374,19 +416,19 @@ export function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+          <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 sm:p-4">
             <div className="max-w-3xl mx-auto">
-              <div className="flex items-end gap-3">
+              <div className="flex items-end gap-2 sm:gap-3">
                 <div className="flex-1 relative">
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    placeholder="Ask a question about your documents..."
+                    placeholder="Ask a question..."
                     rows={1}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 font-['Inter'] transition-all"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 font-['Inter'] transition-all"
                     style={{
-                      minHeight: "48px",
+                      minHeight: "40px",
                       maxHeight: "200px",
                     }}
                   />
@@ -394,12 +436,12 @@ export function ChatPage() {
                 <Button
                   onClick={handleSendMessage}
                   disabled={!message.trim()}
-                  className="h-12 px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-['Inter'] font-medium"
+                  className="h-10 sm:h-12 px-3 sm:px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-['Inter'] font-medium"
                 >
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter']">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter'] hidden sm:block">
                 Press Enter to send, Shift+Enter for new line
               </p>
             </div>
