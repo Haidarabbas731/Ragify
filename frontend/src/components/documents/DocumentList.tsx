@@ -268,6 +268,7 @@ export function DocumentList({
           {currentDocuments.map((doc) => {
             const isSelected = selectedDocuments.has(doc.document_id);
             return (
+              // biome-ignore lint/a11y/noStaticElementInteractions: Hover effects are purely visual (background color)
               <div
                 key={doc.document_id}
                 role="presentation"

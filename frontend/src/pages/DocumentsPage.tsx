@@ -184,11 +184,11 @@ export function DocumentsPage() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-4">
-            {/* Dark Mode Toggle */}
+            {/* Dark Mode Toggle - Hidden on mobile (in sidebar instead) */}
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 transition-colors"
+              className="hidden lg:flex p-2 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 transition-colors"
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
@@ -198,23 +198,23 @@ export function DocumentsPage() {
               )}
             </button>
 
-            {/* User Menu */}
-            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/30">
+            {/* User Menu - Hidden on mobile */}
+            <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/30">
               <User className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
-              <span className="text-sm font-mono text-emerald-800 dark:text-emerald-300 hidden sm:block">
+              <span className="text-sm font-mono text-emerald-800 dark:text-emerald-300">
                 {user?.email}
               </span>
             </div>
 
-            {/* Logout Button */}
+            {/* Logout Button - Hidden on mobile (in sidebar instead) */}
             <Button
               onClick={handleLogout}
               variant="outline"
               size="sm"
-              className="gap-2 border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-400 dark:hover:border-red-700 transition-all duration-300 font-mono font-medium"
+              className="hidden lg:flex gap-2 border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-400 dark:hover:border-red-700 transition-all duration-300 font-mono font-medium"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">LOGOUT</span>
+              <span>LOGOUT</span>
             </Button>
           </div>
         </div>

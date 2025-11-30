@@ -79,11 +79,11 @@ export function CollectionsPage() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-4">
-            {/* Dark Mode Toggle */}
+            {/* Dark Mode Toggle - Hidden on mobile (in sidebar instead) */}
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="hidden lg:flex p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
@@ -93,23 +93,23 @@ export function CollectionsPage() {
               )}
             </button>
 
-            {/* User Menu */}
-            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-transparent">
+            {/* User Menu - Hidden on mobile */}
+            <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-transparent">
               <User className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 hidden sm:block font-['Inter']">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-['Inter']">
                 {user?.email}
               </span>
             </div>
 
-            {/* Logout Button */}
+            {/* Logout Button - Hidden on mobile (in sidebar instead) */}
             <Button
               onClick={handleLogout}
               variant="outline"
               size="sm"
-              className="gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-['Inter'] font-medium"
+              className="hidden lg:flex gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-['Inter'] font-medium"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
+              <span>Logout</span>
             </Button>
           </div>
         </div>
