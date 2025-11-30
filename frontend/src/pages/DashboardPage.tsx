@@ -406,7 +406,7 @@ export function DashboardPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="font-['Inter'] font-medium"
+                className="font-['Inter'] font-medium border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 View All
               </Button>
@@ -427,7 +427,7 @@ export function DashboardPage() {
                     knowledge base
                   </p>
                 </div>
-                <Button className="gap-2 font-['Inter'] font-medium">
+                <Button className="gap-2 font-['Inter'] font-medium bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 border-0">
                   <Upload className="w-4 h-4" />
                   Upload Document
                 </Button>
