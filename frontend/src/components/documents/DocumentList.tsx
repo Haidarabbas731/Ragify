@@ -270,6 +270,7 @@ export function DocumentList({
             return (
               <div
                 key={doc.document_id}
+                role="presentation"
                 className={`grid ${selectionMode ? "grid-cols-13" : "grid-cols-12"} gap-4 px-6 py-4 transition-all duration-200 ${
                   hoveredDoc === doc.document_id
                     ? "bg-slate-50 dark:bg-slate-800/50"

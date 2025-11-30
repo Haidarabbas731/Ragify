@@ -21,7 +21,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BatchActions } from "../components/documents/BatchActions";
 import { BatchDeleteDialog } from "../components/documents/BatchDeleteDialog";
-import { DeleteAllDialog } from "../components/documents/DeleteAllDialog";
 import { DocumentList } from "../components/documents/DocumentList";
 import {
   type FilterState,
@@ -61,7 +60,6 @@ export function DocumentsPage() {
     new Set(),
   );
   const [batchDeleteDialog, setBatchDeleteDialog] = useState(false);
-  const [deleteAllDialog, setDeleteAllDialog] = useState(false);
 
   // Mock total documents count - TODO: Get from API
   const totalDocuments = 5;
@@ -99,8 +97,18 @@ export function DocumentsPage() {
   };
 
   const handleConfirmBatchDelete = () => {
-    console.log("Batch delete:", Array.from(selectedDocuments));
-    // TODO: Call batch delete API
+    const isAllSelected = selectedDocuments.size === totalDocuments;
+
+    if (isAllSelected) {
+      // All documents selected - use delete-all endpoint
+      console.log("Delete ALL documents - using /documents/delete-all-mine");
+      // TODO: await api.post('/documents/delete-all-mine');
+    } else {
+      // Partial selection - use batch-delete endpoint
+      console.log("Batch delete:", Array.from(selectedDocuments));
+      // TODO: await api.post('/documents/batch-delete', { document_ids: Array.from(selectedDocuments) });
+    }
+
     setSelectedDocuments(new Set());
     setBatchDeleteDialog(false);
   };
@@ -113,17 +121,6 @@ export function DocumentsPage() {
     );
     // TODO: Call bulk move API
     setSelectedDocuments(new Set());
-  };
-
-  const handleDeleteAll = () => {
-    setDeleteAllDialog(true);
-  };
-
-  const handleConfirmDeleteAll = () => {
-    console.log("Delete all my documents");
-    // TODO: Call delete all API
-    setSelectedDocuments(new Set());
-    setDeleteAllDialog(false);
   };
 
   // Initialize and get dark mode state
@@ -372,7 +369,6 @@ export function DocumentsPage() {
             onDeselectAll={handleDeselectAll}
             onBatchDelete={handleBatchDelete}
             onMoveToCollection={handleMoveToCollection}
-            onDeleteAll={handleDeleteAll}
             collections={mockCollections}
           />
 
@@ -395,20 +391,13 @@ export function DocumentsPage() {
         </main>
       </div>
 
-      {/* Batch Delete Confirmation Dialog */}
+      {/* Batch Delete Confirmation Dialog - Smart dialog that shows different messages based on selection */}
       <BatchDeleteDialog
         isOpen={batchDeleteDialog}
         selectedCount={selectedDocuments.size}
+        totalCount={totalDocuments}
         onConfirm={handleConfirmBatchDelete}
         onCancel={() => setBatchDeleteDialog(false)}
-      />
-
-      {/* Delete All Confirmation Dialog */}
-      <DeleteAllDialog
-        isOpen={deleteAllDialog}
-        totalCount={totalDocuments}
-        onConfirm={handleConfirmDeleteAll}
-        onCancel={() => setDeleteAllDialog(false)}
       />
 
       {/* Animations */}
