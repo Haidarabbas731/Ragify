@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
+import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
 interface Document {
   document_id: string;
@@ -112,6 +113,15 @@ export function DocumentList({
   const [documents] = useState<Document[]>(MOCK_DOCUMENTS);
   const [currentPage, setCurrentPage] = useState(1);
   const [hoveredDoc, setHoveredDoc] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    documentId: string;
+    filename: string;
+  }>({
+    isOpen: false,
+    documentId: "",
+    filename: "",
+  });
 
   const itemsPerPage = 50;
   const totalPages = Math.ceil(documents.length / itemsPerPage);
@@ -319,13 +329,11 @@ export function DocumentList({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (
-                        confirm(
-                          `Delete "${doc.filename}"? This action cannot be undone.`,
-                        )
-                      ) {
-                        onDeleteDocument?.(doc.document_id);
-                      }
+                      setDeleteDialog({
+                        isOpen: true,
+                        documentId: doc.document_id,
+                        filename: doc.filename,
+                      });
                     }}
                     className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-950 transition-colors"
                     aria-label="Delete document"
@@ -373,6 +381,19 @@ export function DocumentList({
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        filename={deleteDialog.filename}
+        onConfirm={() => {
+          onDeleteDocument?.(deleteDialog.documentId);
+          setDeleteDialog({ isOpen: false, documentId: "", filename: "" });
+        }}
+        onCancel={() => {
+          setDeleteDialog({ isOpen: false, documentId: "", filename: "" });
+        }}
+      />
     </div>
   );
 }
