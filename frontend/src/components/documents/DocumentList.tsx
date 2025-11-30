@@ -38,6 +38,9 @@ interface DocumentListProps {
   onDocumentClick?: (documentId: string) => void;
   onDeleteDocument?: (documentId: string) => void;
   onRetryDocument?: (documentId: string) => void;
+  selectedDocuments?: Set<string>;
+  onSelectionChange?: (documentId: string, selected: boolean) => void;
+  selectionMode?: boolean;
 }
 
 // Mock data for demonstration
@@ -109,6 +112,9 @@ export function DocumentList({
   onDocumentClick,
   onDeleteDocument,
   onRetryDocument,
+  selectedDocuments = new Set(),
+  onSelectionChange,
+  selectionMode = false,
 }: DocumentListProps) {
   const [documents] = useState<Document[]>(MOCK_DOCUMENTS);
   const [currentPage, setCurrentPage] = useState(1);
@@ -229,8 +235,17 @@ export function DocumentList({
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
         {/* Table Header */}
         <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
-          <div className="grid grid-cols-12 gap-4 px-6 py-3">
-            <div className="col-span-5 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
+          <div
+            className={`grid ${selectionMode ? "grid-cols-13" : "grid-cols-12"} gap-4 px-6 py-3`}
+          >
+            {selectionMode && (
+              <div className="col-span-1 flex items-center">
+                {/* Checkbox header - no select all here, it's in BatchActions */}
+              </div>
+            )}
+            <div
+              className={`${selectionMode ? "col-span-5" : "col-span-5"} text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']`}
+            >
               Document
             </div>
             <div className="col-span-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
@@ -250,146 +265,170 @@ export function DocumentList({
 
         {/* Document Rows */}
         <div className="divide-y divide-slate-200 dark:divide-slate-800">
-          {currentDocuments.map((doc) => (
-            <button
-              type="button"
-              key={doc.document_id}
-              className={`grid grid-cols-12 gap-4 px-6 py-4 transition-all duration-200 w-full text-left ${
-                hoveredDoc === doc.document_id
-                  ? "bg-slate-50 dark:bg-slate-800/50"
-                  : "hover:bg-slate-50 dark:hover:bg-slate-800/30"
-              }`}
-              onMouseEnter={() => setHoveredDoc(doc.document_id)}
-              onMouseLeave={() => setHoveredDoc(null)}
-              onClick={() => onDocumentClick?.(doc.document_id)}
-            >
-              {/* Document Name & Type */}
-              <div className="col-span-5 flex items-center gap-3 min-w-0">
-                <div className="flex-shrink-0">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950 dark:to-purple-950 flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                    <span className="text-xs font-bold text-blue-700 dark:text-blue-300 font-['Fira_Code']">
-                      {getFileExtension(doc.filename)}
-                    </span>
-                  </div>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate font-['Inter'] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {doc.filename}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code'] mt-0.5">
-                    {doc.document_id}
-                  </p>
-                </div>
-              </div>
-
-              {/* Status */}
-              <div className="col-span-2 flex items-center">
-                {getStatusBadge(doc.status)}
-              </div>
-
-              {/* Size & Chunks */}
-              <div className="col-span-2 flex flex-col justify-center gap-2">
-                <div>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Fira_Code']">
-                    {formatFileSize(doc.size_bytes)}
-                  </p>
-                  {doc.status === "active" && doc.chunks_count > 0 && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
-                      {doc.chunks_count} chunks
-                    </p>
-                  )}
-                  {doc.status === "error" && doc.error_message && (
-                    <p className="text-xs text-red-600 dark:text-red-400 font-['Inter'] truncate">
-                      {doc.error_message}
-                    </p>
-                  )}
-                </div>
-                {doc.status === "error" && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Add to retrying set
-                      setRetryingDocs((prev) =>
-                        new Set(prev).add(doc.document_id),
-                      );
-                      // Call the retry handler
-                      onRetryDocument?.(doc.document_id);
-                    }}
-                    disabled={retryingDocs.has(doc.document_id)}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border transition-colors w-fit ${
-                      retryingDocs.has(doc.document_id)
-                        ? "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-60"
-                        : "bg-blue-100 dark:bg-blue-950 border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900"
-                    }`}
-                  >
-                    <RefreshCw
-                      className={`w-3.5 h-3.5 ${
-                        retryingDocs.has(doc.document_id)
-                          ? "text-slate-500 dark:text-slate-400 animate-spin"
-                          : "text-blue-600 dark:text-blue-400"
-                      }`}
+          {currentDocuments.map((doc) => {
+            const isSelected = selectedDocuments.has(doc.document_id);
+            return (
+              <div
+                key={doc.document_id}
+                className={`grid ${selectionMode ? "grid-cols-13" : "grid-cols-12"} gap-4 px-6 py-4 transition-all duration-200 ${
+                  hoveredDoc === doc.document_id
+                    ? "bg-slate-50 dark:bg-slate-800/50"
+                    : isSelected && selectionMode
+                      ? "bg-emerald-50 dark:bg-emerald-950/20"
+                      : "hover:bg-slate-50 dark:hover:bg-slate-800/30"
+                }`}
+                onMouseEnter={() => setHoveredDoc(doc.document_id)}
+                onMouseLeave={() => setHoveredDoc(null)}
+              >
+                {/* Checkbox Column */}
+                {selectionMode && (
+                  <div className="col-span-1 flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onSelectionChange?.(doc.document_id, e.target.checked);
+                      }}
+                      className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
                     />
-                    <span
-                      className={`text-xs font-medium font-['Inter'] ${
-                        retryingDocs.has(doc.document_id)
-                          ? "text-slate-600 dark:text-slate-400"
-                          : "text-blue-700 dark:text-blue-300"
-                      }`}
-                    >
-                      {retryingDocs.has(doc.document_id)
-                        ? "Retrying..."
-                        : "Retry"}
-                    </span>
-                  </button>
+                  </div>
                 )}
-              </div>
 
-              {/* Upload Time */}
-              <div className="col-span-2 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm text-slate-700 dark:text-slate-300 font-['Inter']">
-                    {formatDistanceToNow(new Date(doc.uploaded_at), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="col-span-1 flex items-center justify-end">
+                {/* Document Name & Type */}
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Show dropdown menu
-                  }}
-                  className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors opacity-0 group-hover:opacity-100"
-                  aria-label="Document actions"
+                  className="col-span-5 flex items-center gap-3 min-w-0 cursor-pointer text-left"
+                  onClick={() =>
+                    !selectionMode && onDocumentClick?.(doc.document_id)
+                  }
                 >
-                  <MoreVertical className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950 dark:to-purple-950 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                      <span className="text-xs font-bold text-blue-700 dark:text-blue-300 font-['Fira_Code']">
+                        {getFileExtension(doc.filename)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate font-['Inter'] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {doc.filename}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code'] mt-0.5">
+                      {doc.document_id}
+                    </p>
+                  </div>
                 </button>
-                {hoveredDoc === doc.document_id && (
+
+                {/* Status */}
+                <div className="col-span-2 flex items-center">
+                  {getStatusBadge(doc.status)}
+                </div>
+
+                {/* Size & Chunks */}
+                <div className="col-span-2 flex flex-col justify-center gap-2">
+                  <div>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Fira_Code']">
+                      {formatFileSize(doc.size_bytes)}
+                    </p>
+                    {doc.status === "active" && doc.chunks_count > 0 && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
+                        {doc.chunks_count} chunks
+                      </p>
+                    )}
+                    {doc.status === "error" && doc.error_message && (
+                      <p className="text-xs text-red-600 dark:text-red-400 font-['Inter'] truncate">
+                        {doc.error_message}
+                      </p>
+                    )}
+                  </div>
+                  {doc.status === "error" && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Add to retrying set
+                        setRetryingDocs((prev) =>
+                          new Set(prev).add(doc.document_id),
+                        );
+                        // Call the retry handler
+                        onRetryDocument?.(doc.document_id);
+                      }}
+                      disabled={retryingDocs.has(doc.document_id)}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border transition-colors w-fit ${
+                        retryingDocs.has(doc.document_id)
+                          ? "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-60"
+                          : "bg-blue-100 dark:bg-blue-950 border-blue-300 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900"
+                      }`}
+                    >
+                      <RefreshCw
+                        className={`w-3.5 h-3.5 ${
+                          retryingDocs.has(doc.document_id)
+                            ? "text-slate-500 dark:text-slate-400 animate-spin"
+                            : "text-blue-600 dark:text-blue-400"
+                        }`}
+                      />
+                      <span
+                        className={`text-xs font-medium font-['Inter'] ${
+                          retryingDocs.has(doc.document_id)
+                            ? "text-slate-600 dark:text-slate-400"
+                            : "text-blue-700 dark:text-blue-300"
+                        }`}
+                      >
+                        {retryingDocs.has(doc.document_id)
+                          ? "Retrying..."
+                          : "Retry"}
+                      </span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Upload Time */}
+                <div className="col-span-2 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm text-slate-700 dark:text-slate-300 font-['Inter']">
+                      {formatDistanceToNow(new Date(doc.uploaded_at), {
+                        addSuffix: true,
+                      })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="col-span-1 flex items-center justify-end">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setDeleteDialog({
-                        isOpen: true,
-                        documentId: doc.document_id,
-                        filename: doc.filename,
-                      });
+                      // Show dropdown menu
                     }}
-                    className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-950 transition-colors"
-                    aria-label="Delete document"
+                    className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors opacity-0 group-hover:opacity-100"
+                    aria-label="Document actions"
                   >
-                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    <MoreVertical className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                   </button>
-                )}
+                  {hoveredDoc === doc.document_id && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteDialog({
+                          isOpen: true,
+                          documentId: doc.document_id,
+                          filename: doc.filename,
+                        });
+                      }}
+                      className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-950 transition-colors"
+                      aria-label="Delete document"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    </button>
+                  )}
+                </div>
               </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 
