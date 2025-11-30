@@ -195,7 +195,7 @@ export function DocumentsPage() {
       {/* Main Content Area */}
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden lg:block w-64 border-r border-emerald-200 dark:border-emerald-900/30 bg-white/50 dark:bg-slate-900/50 min-h-[calc(100vh-73px)]">
+        <aside className="hidden lg:block w-64 border-r border-emerald-200 dark:border-emerald-900/30 bg-white/50 dark:bg-slate-900/50 sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* Navigation Links */}
             <div className="space-y-1">
