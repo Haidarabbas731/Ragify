@@ -123,7 +123,7 @@ export function LoginPage() {
 
           {/* Heading */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-black mb-3 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 dark:from-cyan-400 dark:via-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-['Playfair_Display'] tracking-tight leading-tight drop-shadow-sm">
+            <h1 className="text-4xl md:text-5xl font-black mb-3 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 dark:from-cyan-400 dark:via-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-['Fira_Code'] tracking-tight leading-tight drop-shadow-sm">
               Welcome Back
             </h1>
             <p className="text-base text-slate-600 dark:text-slate-400 font-['DM_Sans'] font-medium tracking-wide">
