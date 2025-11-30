@@ -132,7 +132,7 @@ export function DocumentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-emerald-50 dark:bg-slate-950 relative overflow-hidden">
+    <div className="min-h-screen bg-emerald-50 dark:bg-slate-950 relative">
       {/* Scan-line overlay effect */}
       <div
         className="pointer-events-none fixed inset-0 z-50 opacity-[0.02] dark:opacity-[0.03]"
