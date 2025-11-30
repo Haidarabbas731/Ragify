@@ -233,8 +233,8 @@ export function DocumentList({
     <div className="space-y-4">
       {/* Document Grid */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-        {/* Table Header */}
-        <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+        {/* Table Header - Hidden on mobile */}
+        <div className="hidden md:block border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
           <div
             className={`grid ${selectionMode ? "grid-cols-13" : "grid-cols-12"} gap-4 px-6 py-3`}
           >
@@ -271,7 +271,7 @@ export function DocumentList({
               <div
                 key={doc.document_id}
                 role="presentation"
-                className={`grid ${selectionMode ? "grid-cols-13" : "grid-cols-12"} gap-4 px-6 py-4 transition-all duration-200 ${
+                className={`md:grid ${selectionMode ? "md:grid-cols-13" : "md:grid-cols-12"} md:gap-4 px-4 md:px-6 py-3 md:py-4 transition-all duration-200 ${
                   hoveredDoc === doc.document_id
                     ? "bg-slate-50 dark:bg-slate-800/50"
                     : isSelected && selectionMode
@@ -281,9 +281,93 @@ export function DocumentList({
                 onMouseEnter={() => setHoveredDoc(doc.document_id)}
                 onMouseLeave={() => setHoveredDoc(null)}
               >
+                {/* MOBILE LAYOUT */}
+                <div className="flex md:hidden flex-col gap-3">
+                  {/* Mobile Header: Checkbox + File Icon + Filename */}
+                  <div className="flex items-start gap-3">
+                    {selectionMode && (
+                      <div className="flex items-center pt-0.5">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            onSelectionChange?.(
+                              doc.document_id,
+                              e.target.checked,
+                            );
+                          }}
+                          className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950 dark:to-purple-950 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                        <span className="text-xs font-bold text-blue-700 dark:text-blue-300 font-['Fira_Code']">
+                          {getFileExtension(doc.filename)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Inter'] break-words">
+                        {doc.filename}
+                      </p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-['Fira_Code'] mt-0.5 truncate">
+                        {doc.document_id}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mobile Metadata Grid */}
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">
+                        Status
+                      </p>
+                      {getStatusBadge(doc.status)}
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">
+                        Size
+                      </p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Fira_Code']">
+                        {formatFileSize(doc.size_bytes)}
+                      </p>
+                      {doc.status === "active" && doc.chunks_count > 0 && (
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-['Fira_Code']">
+                          {doc.chunks_count} chunks
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">
+                        Uploaded
+                      </p>
+                      <p className="text-xs text-slate-700 dark:text-slate-300 font-['Inter']">
+                        {formatDistanceToNow(new Date(doc.uploaded_at), {
+                          addSuffix: true,
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-end justify-end">
+                      {/* Mobile actions will be rendered below */}
+                    </div>
+                  </div>
+
+                  {/* Mobile Error Message + Retry */}
+                  {doc.status === "error" && doc.error_message && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-xs text-red-600 dark:text-red-400 font-['Inter']">
+                        {doc.error_message}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* DESKTOP LAYOUT */}
                 {/* Checkbox Column */}
                 {selectionMode && (
-                  <div className="col-span-1 flex items-center">
+                  <div className="hidden md:flex col-span-1 items-center">
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -299,7 +383,7 @@ export function DocumentList({
                 {/* Document Name & Type */}
                 <button
                   type="button"
-                  className="col-span-5 flex items-center gap-3 min-w-0 cursor-pointer text-left"
+                  className="hidden md:flex col-span-5 items-center gap-3 min-w-0 cursor-pointer text-left"
                   onClick={() =>
                     !selectionMode && onDocumentClick?.(doc.document_id)
                   }
@@ -322,12 +406,12 @@ export function DocumentList({
                 </button>
 
                 {/* Status */}
-                <div className="col-span-2 flex items-center">
+                <div className="hidden md:flex col-span-2 items-center">
                   {getStatusBadge(doc.status)}
                 </div>
 
-                {/* Size & Chunks */}
-                <div className="col-span-2 flex flex-col justify-center gap-2">
+                {/* Size & Chunks - Desktop only */}
+                <div className="hidden md:flex col-span-2 flex-col justify-center gap-2">
                   <div>
                     <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Fira_Code']">
                       {formatFileSize(doc.size_bytes)}
@@ -384,8 +468,8 @@ export function DocumentList({
                   )}
                 </div>
 
-                {/* Upload Time */}
-                <div className="col-span-2 flex items-center gap-2">
+                {/* Upload Time - Desktop only */}
+                <div className="hidden md:flex col-span-2 items-center gap-2">
                   <Clock className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm text-slate-700 dark:text-slate-300 font-['Inter']">
@@ -396,8 +480,8 @@ export function DocumentList({
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="col-span-1 flex items-center justify-end">
+                {/* Actions - Desktop only */}
+                <div className="hidden md:flex col-span-1 items-center justify-end">
                   <button
                     type="button"
                     onClick={(e) => {

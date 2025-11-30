@@ -53,11 +53,11 @@ export function BatchActions({
 
       <div className="mb-4 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-lg p-4 shadow-lg">
         {/* Command Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Selection Reticle Icon */}
             <div
-              className={`relative p-2 rounded border-2 transition-all duration-300 ${
+              className={`relative p-1.5 sm:p-2 rounded border-2 transition-all duration-300 ${
                 hasSelection
                   ? "bg-emerald-500 border-emerald-600 shadow-lg shadow-emerald-900/50 animate-pulse-glow"
                   : "bg-slate-200 dark:bg-slate-700 border-slate-400 dark:border-slate-600"
@@ -74,12 +74,12 @@ export function BatchActions({
               </div>
               {hasSelection ? (
                 <CheckSquare
-                  className="w-5 h-5 text-white relative z-10"
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-white relative z-10"
                   strokeWidth={3}
                 />
               ) : (
                 <Square
-                  className="w-5 h-5 text-slate-600 dark:text-slate-400"
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 dark:text-slate-400"
                   strokeWidth={2}
                 />
               )}
@@ -88,18 +88,18 @@ export function BatchActions({
             {/* Status Display */}
             <div>
               <h3
-                className="text-lg font-bold text-slate-800 dark:text-slate-200 tracking-tight"
+                className="text-sm sm:text-base md:text-lg font-bold text-slate-800 dark:text-slate-200 tracking-tight"
                 style={{ fontFamily: "Rajdhani, sans-serif" }}
               >
                 BATCH OPERATIONS
               </h3>
               <p
-                className="text-xs font-mono text-slate-600 dark:text-slate-400"
+                className="text-[10px] sm:text-xs font-mono text-slate-600 dark:text-slate-400"
                 style={{ fontFamily: "JetBrains Mono, monospace" }}
               >
                 {hasSelection ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="flex items-center gap-1 sm:gap-2">
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse" />
                     <span className="text-emerald-700 dark:text-emerald-400 font-bold">
                       {selectedCount} TARGET{selectedCount > 1 ? "S" : ""}{" "}
                       LOCKED
@@ -113,11 +113,11 @@ export function BatchActions({
           </div>
 
           {/* Selection Controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               type="button"
               onClick={isAllSelected ? onDeselectAll : onSelectAll}
-              className="px-4 py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-bold rounded hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-500 transition-all shadow-sm"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-bold rounded hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-500 transition-all shadow-sm"
               style={{ fontFamily: "Rajdhani, sans-serif" }}
             >
               {isAllSelected ? "DESELECT ALL" : "SELECT ALL"}
@@ -127,23 +127,27 @@ export function BatchActions({
 
         {/* Action Command Bar */}
         {hasSelection && (
-          <div className="flex flex-wrap items-center gap-3 animate-slide-in">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 animate-slide-in">
             {/* Move to Collection */}
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-none">
               <button
                 type="button"
                 onClick={() => setShowCollectionMenu(!showCollectionMenu)}
                 disabled={selectedCount === 0}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 disabled:from-slate-400 disabled:to-slate-500 text-white font-bold rounded shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed border-2 border-blue-800 dark:border-blue-500"
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 disabled:from-slate-400 disabled:to-slate-500 text-white text-xs sm:text-sm font-bold rounded shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed border-2 border-blue-800 dark:border-blue-500"
                 style={{ fontFamily: "Rajdhani, sans-serif" }}
               >
-                <FolderInput className="w-4 h-4" strokeWidth={2.5} />
-                <span>MOVE TO COLLECTION</span>
+                <FolderInput
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                  strokeWidth={2.5}
+                />
+                <span className="hidden xs:inline">MOVE TO COLLECTION</span>
+                <span className="inline xs:hidden">MOVE</span>
               </button>
 
               {/* Collection Dropdown Menu */}
               {showCollectionMenu && (
-                <div className="absolute top-full left-0 mt-2 w-64 bg-white dark:bg-slate-800 border-2 border-blue-300 dark:border-blue-600 rounded-lg shadow-2xl z-50 animate-slide-down">
+                <div className="absolute top-full left-0 mt-2 w-full sm:w-64 bg-white dark:bg-slate-800 border-2 border-blue-300 dark:border-blue-600 rounded-lg shadow-2xl z-50 animate-slide-down">
                   <div className="p-2 space-y-1">
                     {collections.map((collection) => (
                       <button
@@ -153,7 +157,7 @@ export function BatchActions({
                           onMoveToCollection(collection.collection_id);
                           setShowCollectionMenu(false);
                         }}
-                        className="w-full text-left px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
+                        className="w-full text-left px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
                         style={{ fontFamily: "Archivo, sans-serif" }}
                       >
                         {collection.name}
@@ -169,7 +173,7 @@ export function BatchActions({
               type="button"
               onClick={onBatchDelete}
               disabled={selectedCount === 0}
-              className={`flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br text-white font-bold rounded shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed border-2 ${
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-br text-white text-xs sm:text-sm font-bold rounded shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed border-2 ${
                 isAllSelected
                   ? "from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 border-red-800 dark:border-red-500"
                   : "from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 border-amber-800 dark:border-amber-500"
@@ -178,14 +182,20 @@ export function BatchActions({
             >
               {isAllSelected ? (
                 <AlertTriangle
-                  className="w-4 h-4 animate-pulse"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-pulse"
                   strokeWidth={2.5}
                 />
               ) : (
-                <Trash2 className="w-4 h-4" strokeWidth={2.5} />
+                <Trash2
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                  strokeWidth={2.5}
+                />
               )}
-              <span>
+              <span className="hidden xs:inline">
                 {isAllSelected ? `DELETE ALL ${totalCount}` : "DELETE SELECTED"}
+              </span>
+              <span className="inline xs:hidden">
+                {isAllSelected ? `DEL ALL ${totalCount}` : "DELETE"}
               </span>
             </button>
           </div>
