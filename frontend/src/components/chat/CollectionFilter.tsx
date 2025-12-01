@@ -4,7 +4,14 @@
  * Matches purple/indigo theme with smooth animations
  */
 
-import { Check, ChevronDown, Filter, FolderOpen, Layers, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Filter,
+  FolderOpen,
+  Layers,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface Collection {
@@ -35,7 +42,7 @@ export function CollectionFilter({
 
   // Get selected collection for display
   const selectedCollection = collections.find(
-    (c) => c.collection_id === selectedCollectionId
+    (c) => c.collection_id === selectedCollectionId,
   );
 
   // Close dropdown when clicking outside
@@ -118,9 +125,7 @@ export function CollectionFilter({
               setIsOpen(false);
             }}
             className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
-              !selectedCollectionId
-                ? "bg-purple-50 dark:bg-purple-950/30"
-                : ""
+              !selectedCollectionId ? "bg-purple-50 dark:bg-purple-950/30" : ""
             }`}
           >
             <Layers
