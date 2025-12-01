@@ -6,6 +6,7 @@
  */
 
 import {
+  ArrowDown,
   FileText,
   LogOut,
   Menu,
@@ -17,7 +18,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { Button } from "../components/ui/button";
@@ -102,8 +103,59 @@ export function ChatPage() {
   const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
   const [currentConversationId] = useState<string | null>(null);
 
+  // Ref for auto-scroll
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+
   // Streaming hook
   const { isStreaming, streamChat } = useChatStream();
+
+  // Check if user is near bottom of chat
+  const checkScrollPosition = useCallback(() => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } =
+        messagesContainerRef.current;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const isNear = distanceFromBottom < 100;
+      setIsNearBottom(isNear);
+      setShowScrollButton(!isNear && messages.length > 3);
+    }
+  }, [messages.length]);
+
+  // Auto-scroll to bottom smoothly
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
+        behavior: smooth ? "smooth" : "auto",
+        block: "end",
+      });
+    }
+  }, []);
+
+  // Auto-scroll when messages change or streaming, but only if near bottom
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Need messages to trigger scroll on new messages
+  useEffect(() => {
+    if (isNearBottom || isStreaming) {
+      scrollToBottom(true);
+    }
+  }, [messages, isStreaming, isNearBottom, scrollToBottom]);
+
+  // Initial scroll to bottom on mount
+  useEffect(() => {
+    scrollToBottom(false);
+  }, [scrollToBottom]);
+
+  // Attach scroll listener
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.addEventListener("scroll", checkScrollPosition);
+      checkScrollPosition(); // Check initial position
+      return () => container.removeEventListener("scroll", checkScrollPosition);
+    }
+  }, [checkScrollPosition]);
 
   const handleLogout = () => {
     logout();
@@ -365,7 +417,10 @@ export function ChatPage() {
         {/* Chat Area */}
         <main className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900">
           {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto p-4 sm:p-6 relative"
+          >
             <div className="max-w-4xl mx-auto space-y-6">
               {messages.map((msg, index) => (
                 <div
@@ -470,7 +525,23 @@ export function ChatPage() {
                   </div>
                 </div>
               )}
+
+              {/* Scroll anchor */}
+              <div ref={messagesEndRef} />
             </div>
+
+            {/* Scroll to Bottom Button - Floating */}
+            {showScrollButton && (
+              <button
+                type="button"
+                onClick={() => scrollToBottom(true)}
+                className="absolute bottom-6 right-6 p-3 bg-white dark:bg-slate-800 border-2 border-blue-500 dark:border-blue-400 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 group animate-in fade-in slide-in-from-bottom-4"
+                aria-label="Scroll to bottom"
+              >
+                <ArrowDown className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover:translate-y-0.5 transition-transform" />
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 dark:bg-blue-400 rounded-full animate-pulse" />
+              </button>
+            )}
           </div>
 
           {/* Input Area */}
