@@ -128,7 +128,9 @@ export function ChatPage() {
   const [currentConversationId] = useState<string | null>(null);
 
   // Collection filter state
-  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<
+    string | null
+  >(null);
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
 
