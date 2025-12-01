@@ -440,20 +440,18 @@ export function ChatPage() {
                         </p>
                       </div>
                     </div>
-                  ) : (
-                    /* Assistant Message */
+                  ) : msg.content ? (
+                    /* Assistant Message - Only show if there's content */
                     <div className="flex justify-start">
                       <div className="max-w-[85%]">
                         <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-slate-200 dark:border-slate-700">
                           <MarkdownContent content={msg.content} />
-                          {msg.content && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter']">
-                              {msg.timestamp.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </p>
-                          )}
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter']">
+                            {msg.timestamp.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
                         </div>
 
                         {/* Source Citations */}
@@ -499,7 +497,7 @@ export function ChatPage() {
                         )}
                       </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               ))}
 
