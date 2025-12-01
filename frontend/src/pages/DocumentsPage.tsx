@@ -361,16 +361,20 @@ export function DocumentsPage() {
             onFilterChange={handleFilterChange}
           />
 
-          {/* Batch Operations */}
-          <BatchActions
-            selectedCount={selectedDocuments.size}
-            totalCount={totalDocuments}
-            onSelectAll={handleSelectAll}
-            onDeselectAll={handleDeselectAll}
-            onBatchDelete={handleBatchDelete}
-            onMoveToCollection={handleMoveToCollection}
-            collections={mockCollections}
-          />
+          {/* Batch Operations - Only show when documents are selected */}
+          {selectedDocuments.size > 0 && (
+            <div className="animate-in slide-in-from-top-2 duration-300">
+              <BatchActions
+                selectedCount={selectedDocuments.size}
+                totalCount={totalDocuments}
+                onSelectAll={handleSelectAll}
+                onDeselectAll={handleDeselectAll}
+                onBatchDelete={handleBatchDelete}
+                onMoveToCollection={handleMoveToCollection}
+                collections={mockCollections}
+              />
+            </div>
+          )}
 
           {/* Document List */}
           <DocumentList
@@ -385,7 +389,6 @@ export function DocumentsPage() {
             }}
             selectedDocuments={selectedDocuments}
             onSelectionChange={handleSelectionChange}
-            selectionMode={selectedDocuments.size > 0}
           />
         </main>
       </div>

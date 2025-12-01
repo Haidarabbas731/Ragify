@@ -40,7 +40,6 @@ interface DocumentListProps {
   onRetryDocument?: (documentId: string) => void;
   selectedDocuments?: Set<string>;
   onSelectionChange?: (documentId: string, selected: boolean) => void;
-  selectionMode?: boolean;
 }
 
 // Mock data for demonstration
@@ -114,7 +113,6 @@ export function DocumentList({
   onRetryDocument,
   selectedDocuments = new Set(),
   onSelectionChange,
-  selectionMode = false,
 }: DocumentListProps) {
   const [documents] = useState<Document[]>(MOCK_DOCUMENTS);
   const [currentPage, setCurrentPage] = useState(1);
@@ -235,17 +233,11 @@ export function DocumentList({
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
         {/* Table Header - Hidden on mobile */}
         <div className="hidden md:block border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
-          <div
-            className={`grid ${selectionMode ? "grid-cols-13" : "grid-cols-12"} gap-4 px-6 py-3`}
-          >
-            {selectionMode && (
-              <div className="col-span-1 flex items-center">
-                {/* Checkbox header - no select all here, it's in BatchActions */}
-              </div>
-            )}
-            <div
-              className={`${selectionMode ? "col-span-5" : "col-span-5"} text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']`}
-            >
+          <div className="grid grid-cols-13 gap-4 px-6 py-3">
+            <div className="col-span-1 flex items-center">
+              {/* Checkbox header - checkboxes always visible */}
+            </div>
+            <div className="col-span-5 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
               Document
             </div>
             <div className="col-span-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
@@ -272,10 +264,10 @@ export function DocumentList({
               <div
                 key={doc.document_id}
                 role="presentation"
-                className={`md:grid ${selectionMode ? "md:grid-cols-13" : "md:grid-cols-12"} md:gap-4 px-4 md:px-6 py-3 md:py-4 transition-all duration-200 ${
+                className={`md:grid md:grid-cols-13 md:gap-4 px-4 md:px-6 py-3 md:py-4 transition-all duration-200 ${
                   hoveredDoc === doc.document_id
                     ? "bg-slate-50 dark:bg-slate-800/50"
-                    : isSelected && selectionMode
+                    : isSelected
                       ? "bg-emerald-50 dark:bg-emerald-950/20"
                       : "hover:bg-slate-50 dark:hover:bg-slate-800/30"
                 }`}
@@ -285,49 +277,51 @@ export function DocumentList({
                 {/* MOBILE LAYOUT */}
                 <div className="flex md:hidden flex-col gap-3">
                   {/* Mobile Header: Checkbox + File Icon + Filename */}
-                  <button
-                    type="button"
-                    disabled={selectionMode}
-                    className="flex items-start gap-3 cursor-pointer text-left disabled:cursor-default"
-                    onClick={() => onDocumentClick?.(doc.document_id)}
-                  >
-                    {selectionMode && (
-                      // biome-ignore lint/a11y/useKeyWithClickEvents: Wrapper div for layout, interaction is on checkbox
-                      // biome-ignore lint/a11y/noStaticElementInteractions: Wrapper div for layout, interaction is on checkbox
-                      <div
-                        className="flex items-center pt-0.5"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            onSelectionChange?.(
-                              doc.document_id,
-                              e.target.checked,
-                            );
-                          }}
-                          className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
-                        />
-                      </div>
-                    )}
-                    <div className="flex-shrink-0">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950 dark:to-purple-950 flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                        <span className="text-xs font-bold text-blue-700 dark:text-blue-300 font-['Fira_Code']">
-                          {getFileExtension(doc.filename)}
-                        </span>
-                      </div>
+                  <div className="flex items-start gap-3">
+                    {/* Checkbox - Always visible */}
+                    {/* biome-ignore lint/a11y/useKeyWithClickEvents: Wrapper div for layout, interaction is on checkbox input */}
+                    {/* biome-ignore lint/a11y/noStaticElementInteractions: Wrapper div for layout, interaction is on checkbox input */}
+                    <div
+                      className="flex items-center pt-0.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          onSelectionChange?.(
+                            doc.document_id,
+                            e.target.checked,
+                          );
+                        }}
+                        className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
+                      />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Inter'] break-words">
-                        {doc.filename}
-                      </p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-['Fira_Code'] mt-0.5 truncate">
-                        {doc.document_id}
-                      </p>
-                    </div>
-                  </button>
+
+                    {/* Clickable document info */}
+                    <button
+                      type="button"
+                      className="flex items-start gap-3 flex-1 cursor-pointer text-left"
+                      onClick={() => onDocumentClick?.(doc.document_id)}
+                    >
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950 dark:to-purple-950 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                          <span className="text-xs font-bold text-blue-700 dark:text-blue-300 font-['Fira_Code']">
+                            {getFileExtension(doc.filename)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Inter'] break-words">
+                          {doc.filename}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-['Fira_Code'] mt-0.5 truncate">
+                          {doc.document_id}
+                        </p>
+                      </div>
+                    </button>
+                  </div>
 
                   {/* Mobile Metadata Grid */}
                   <div className="grid grid-cols-2 gap-3 text-xs">
@@ -413,28 +407,24 @@ export function DocumentList({
                 </div>
 
                 {/* DESKTOP LAYOUT */}
-                {/* Checkbox Column */}
-                {selectionMode && (
-                  <div className="hidden md:flex col-span-1 items-center">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        onSelectionChange?.(doc.document_id, e.target.checked);
-                      }}
-                      className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
-                    />
-                  </div>
-                )}
+                {/* Checkbox Column - Always visible */}
+                <div className="hidden md:flex col-span-1 items-center">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onSelectionChange?.(doc.document_id, e.target.checked);
+                    }}
+                    className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
+                  />
+                </div>
 
-                {/* Document Name & Type */}
+                {/* Document Name & Type - Always clickable */}
                 <button
                   type="button"
                   className="hidden md:flex col-span-5 items-center gap-3 min-w-0 cursor-pointer text-left"
-                  onClick={() =>
-                    !selectionMode && onDocumentClick?.(doc.document_id)
-                  }
+                  onClick={() => onDocumentClick?.(doc.document_id)}
                 >
                   <div className="flex-shrink-0">
                     <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-950 dark:to-purple-950 flex items-center justify-center border border-slate-200 dark:border-slate-700">
