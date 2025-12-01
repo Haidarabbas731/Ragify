@@ -1,15 +1,16 @@
 /**
- * Chat Page - Conversational Observatory
- * Refined minimalist chat interface with technical precision
- * Fonts: Fira Code (headings/timestamps), Inter (messages), Space Grotesk (titles)
+ * Chat Page - Warm Atelier
+ * Artist's studio aesthetic with terracotta, cream, and handwritten touches
+ * Fonts: Caveat (handwritten headers), Crimson Text (elegant messages), Outfit (UI)
  */
 
 import {
   ArrowLeft,
+  Coffee,
   FileText,
   LogOut,
   Menu,
-  MessageSquare,
+  MessageCircle,
   Moon,
   Plus,
   Send,
@@ -140,9 +141,9 @@ export function ChatPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="h-screen flex flex-col bg-[#F4EBE4] dark:bg-[#2B2520]">
       {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 border-b-2 border-[#C67B5C] dark:border-[#8B5A3C] bg-[#E8D5C4]/95 dark:bg-[#3D3028]/95 backdrop-blur-sm">
         <div className="flex items-center justify-between px-6 py-4">
           {/* Left Side */}
           <div className="flex items-center gap-4">
@@ -150,19 +151,22 @@ export function ChatPage() {
             <button
               type="button"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="lg:hidden p-2 rounded-lg hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 transition-colors"
               aria-label="Toggle sidebar"
             >
-              <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <Menu className="w-5 h-5 text-[#5C4033] dark:text-[#D4A574]" />
             </button>
 
             {/* Logo & Brand */}
             <Link to="/dashboard" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-                <MessageSquare className="w-6 h-6 text-white" />
+              <div className="w-11 h-11 bg-[#C67B5C] dark:bg-[#8B5A3C] rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shadow-lg">
+                <Coffee className="w-6 h-6 text-[#FAF8F3]" strokeWidth={2.5} />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-['Space_Grotesk'] tracking-tight hidden sm:block">
-                AI Chat
+              <span
+                className="text-2xl font-bold text-[#5C4033] dark:text-[#F4EBE4] font-['Caveat'] tracking-wide hidden sm:block"
+                style={{ letterSpacing: "0.02em" }}
+              >
+                Chat Studio
               </span>
             </Link>
           </div>
@@ -173,20 +177,20 @@ export function ChatPage() {
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="hidden lg:flex p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="hidden lg:flex p-2 rounded-lg hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 transition-colors"
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
-                <Sun className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <Sun className="w-5 h-5 text-[#D4A574]" />
               ) : (
-                <Moon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <Moon className="w-5 h-5 text-[#5C4033]" />
               )}
             </button>
 
             {/* User Menu - Hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-transparent">
-              <User className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-['Inter']">
+            <div className="hidden lg:flex items-center gap-3 px-4 py-2 rounded-full bg-[#FAF8F3] dark:bg-[#4D3D2F] border-2 border-[#D4A574] dark:border-[#8B5A3C]">
+              <User className="w-4 h-4 text-[#8B5A3C] dark:text-[#D4A574]" />
+              <span className="text-sm font-medium text-[#5C4033] dark:text-[#E8D5C4] font-['Outfit']">
                 {user?.email}
               </span>
             </div>
@@ -196,7 +200,7 @@ export function ChatPage() {
               onClick={handleLogout}
               variant="outline"
               size="sm"
-              className="hidden lg:flex gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-['Inter'] font-medium"
+              className="hidden lg:flex gap-2 border-2 border-[#8B5A3C] dark:border-[#D4A574] text-[#8B5A3C] dark:text-[#D4A574] hover:bg-[#8B5A3C] hover:text-[#FAF8F3] dark:hover:bg-[#D4A574] dark:hover:text-[#2B2520] transition-all duration-300 font-['Outfit'] font-semibold rounded-full"
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
@@ -209,7 +213,7 @@ export function ChatPage() {
       {sidebarOpen && (
         <button
           type="button"
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden cursor-default"
+          className="fixed inset-0 bg-[#2B2520]/60 backdrop-blur-sm z-30 lg:hidden cursor-default"
           onClick={() => setSidebarOpen(false)}
           onKeyDown={(e) => {
             if (e.key === "Escape") setSidebarOpen(false);
@@ -224,29 +228,29 @@ export function ChatPage() {
         <aside
           className={`${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0 fixed lg:relative z-40 w-80 h-full border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-transform duration-300 flex flex-col`}
+          } lg:translate-x-0 fixed lg:relative z-40 w-80 h-full border-r-2 border-[#C67B5C] dark:border-[#8B5A3C] bg-[#E8D5C4] dark:bg-[#3D3028] transition-transform duration-300 flex flex-col`}
         >
           {/* Mobile Header with Close Button */}
-          <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 font-['Space_Grotesk']">
+          <div className="lg:hidden flex items-center justify-between p-4 border-b-2 border-[#C67B5C] dark:border-[#8B5A3C]">
+            <h2 className="text-xl font-bold text-[#5C4033] dark:text-[#F4EBE4] font-['Caveat']">
               Conversations
             </h2>
             <button
               type="button"
               onClick={() => setSidebarOpen(false)}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-lg hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 transition-colors"
               aria-label="Close sidebar"
             >
-              <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <X className="w-5 h-5 text-[#5C4033] dark:text-[#D4A574]" />
             </button>
           </div>
 
           {/* Back to Documents - Mobile Only */}
-          <div className="lg:hidden p-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="lg:hidden p-4 border-b-2 border-[#C67B5C] dark:border-[#8B5A3C]">
             <Link
               to="/dashboard"
               onClick={() => setSidebarOpen(false)}
-              className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all"
+              className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 text-[#5C4033] dark:text-[#E8D5C4] font-['Outfit'] transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="text-sm">Back to Documents</span>
@@ -254,39 +258,40 @@ export function ChatPage() {
           </div>
 
           {/* New Chat Button */}
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-            <Button className="w-full gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 font-['Inter'] font-medium">
-              <Plus className="w-4 h-4" />
-              New Chat
+          <div className="p-4 border-b-2 border-[#C67B5C] dark:border-[#8B5A3C]">
+            <Button className="w-full gap-2 bg-[#C67B5C] hover:bg-[#B5674A] dark:bg-[#8B5A3C] dark:hover:bg-[#A0664A] text-[#FAF8F3] font-['Outfit'] font-semibold rounded-xl shadow-lg border-2 border-[#B5674A] dark:border-[#6D4832]">
+              <Plus className="w-5 h-5" strokeWidth={2.5} />
+              New Conversation
             </Button>
           </div>
 
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-['Inter']">
-              Recent Conversations
+            <h3 className="text-xs font-bold text-[#8B5A3C] dark:text-[#D4A574] uppercase tracking-wider mb-3 font-['Outfit']">
+              Recent Chats
             </h3>
             {conversations.map((conv) => (
               <button
                 key={conv.id}
                 type="button"
-                className="w-full text-left p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group"
+                className="w-full text-left p-4 rounded-xl hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 transition-all group border-2 border-transparent hover:border-[#C67B5C] dark:hover:border-[#8B5A3C]"
               >
                 <div className="flex items-start gap-3">
-                  <MessageSquare className="w-4 h-4 text-slate-400 dark:text-slate-500 mt-1 group-hover:text-blue-500 transition-colors" />
+                  <MessageCircle className="w-5 h-5 text-[#8B5A3C] dark:text-[#D4A574] mt-1 group-hover:scale-110 transition-transform" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate font-['Inter'] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    <p className="text-sm font-medium text-[#5C4033] dark:text-[#F4EBE4] font-['Outfit'] leading-relaxed">
                       {conv.title}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
-                        {conv.message_count} msgs
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs text-[#8B5A3C] dark:text-[#D4A574] font-['Outfit'] font-semibold">
+                        {conv.message_count} messages
                       </span>
-                      <span className="text-xs text-slate-400 dark:text-slate-500">
-                        •
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
-                        {conv.created_at.toLocaleDateString()}
+                      <span className="text-xs text-[#A0826D]">•</span>
+                      <span className="text-xs text-[#8B5A3C] dark:text-[#D4A574] font-['Outfit']">
+                        {conv.created_at.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </span>
                     </div>
                   </div>
@@ -296,32 +301,32 @@ export function ChatPage() {
           </div>
 
           {/* Bottom Actions - Desktop */}
-          <div className="hidden lg:block p-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="hidden lg:block p-4 border-t-2 border-[#C67B5C] dark:border-[#8B5A3C]">
             <Link
               to="/dashboard"
-              className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 text-[#5C4033] dark:text-[#E8D5C4] font-['Outfit'] transition-all font-medium"
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-5 h-5" />
               <span className="text-sm">Back to Documents</span>
             </Link>
           </div>
 
           {/* Bottom Actions - Mobile */}
-          <div className="lg:hidden p-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
+          <div className="lg:hidden p-4 border-t-2 border-[#C67B5C] dark:border-[#8B5A3C] space-y-3">
             {/* Dark Mode Toggle */}
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-sm font-['Inter'] transition-all"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 text-[#5C4033] dark:text-[#E8D5C4] text-sm font-['Outfit'] font-medium transition-all"
             >
               {darkMode ? (
                 <>
-                  <Sun className="w-4 h-4" />
+                  <Sun className="w-5 h-5" />
                   <span>Light Mode</span>
                 </>
               ) : (
                 <>
-                  <Moon className="w-4 h-4" />
+                  <Moon className="w-5 h-5" />
                   <span>Dark Mode</span>
                 </>
               )}
@@ -331,33 +336,33 @@ export function ChatPage() {
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 text-sm font-['Inter'] transition-all"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#8B5A3C]/20 dark:hover:bg-[#D4A574]/20 text-[#8B5A3C] dark:text-[#D4A574] text-sm font-['Outfit'] font-medium transition-all"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-5 h-5" />
               <span>Logout</span>
             </button>
           </div>
         </aside>
 
         {/* Chat Area */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden bg-[#FAF8F3] dark:bg-[#1F1A15]">
           {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            <div className="max-w-3xl mx-auto space-y-6">
+          <div className="flex-1 overflow-y-auto px-4 py-8">
+            <div className="max-w-4xl mx-auto space-y-8">
               {messages.map((msg, index) => (
                 <div
                   key={msg.id}
-                  className="animate-in fade-in slide-in-from-bottom-4 duration-500"
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  className="animate-in fade-in slide-in-from-bottom-4 duration-700"
+                  style={{ animationDelay: `${index * 150}ms` }}
                 >
                   {msg.role === "user" ? (
                     /* User Message */
                     <div className="flex justify-end">
-                      <div className="max-w-[80%] bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-2xl rounded-tr-sm px-5 py-3 shadow-lg shadow-blue-500/20">
-                        <p className="text-sm leading-relaxed font-['Inter']">
+                      <div className="max-w-[75%] bg-[#C67B5C] dark:bg-[#8B5A3C] text-[#FAF8F3] rounded-3xl rounded-br-md px-6 py-4 shadow-xl border-2 border-[#B5674A] dark:border-[#6D4832]">
+                        <p className="text-base leading-relaxed font-['Outfit'] font-medium">
                           {msg.content}
                         </p>
-                        <p className="text-xs text-blue-100 mt-2 font-['Fira_Code']">
+                        <p className="text-xs text-[#F4EBE4]/80 mt-3 font-['Outfit'] italic">
                           {msg.timestamp.toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -369,11 +374,11 @@ export function ChatPage() {
                     /* Assistant Message */
                     <div className="flex justify-start">
                       <div className="max-w-[85%]">
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm">
-                          <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 font-['Inter'] whitespace-pre-wrap">
+                        <div className="bg-white dark:bg-[#2B2520] rounded-3xl rounded-tl-md px-6 py-5 shadow-xl border-2 border-[#E8D5C4] dark:border-[#4D3D2F]">
+                          <p className="text-base leading-relaxed text-[#3D2E26] dark:text-[#E8D5C4] font-['Crimson_Text'] whitespace-pre-wrap">
                             {msg.content}
                           </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 font-['Fira_Code']">
+                          <p className="text-xs text-[#8B5A3C] dark:text-[#D4A574] mt-4 font-['Outfit'] italic">
                             {msg.timestamp.toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
@@ -383,31 +388,31 @@ export function ChatPage() {
 
                         {/* Source Citations */}
                         {msg.sources && msg.sources.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
+                          <div className="mt-4 space-y-2">
+                            <p className="text-xs font-bold text-[#8B5A3C] dark:text-[#D4A574] uppercase tracking-wider font-['Outfit'] mb-2">
                               Sources
                             </p>
                             {msg.sources.map((source) => (
                               <div
                                 key={`${source.document_name}-${source.chunk_index}`}
-                                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group"
+                                className="bg-[#F4EBE4] dark:bg-[#3D3028] border-2 border-[#E8D5C4] dark:border-[#4D3D2F] rounded-2xl p-4 hover:border-[#C67B5C] dark:hover:border-[#8B5A3C] hover:shadow-lg transition-all cursor-pointer group"
                               >
                                 <div className="flex items-start gap-3">
-                                  <div className="p-1.5 bg-blue-100 dark:bg-blue-950 rounded">
-                                    <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                  <div className="p-2 bg-[#D4A574] dark:bg-[#8B5A3C] rounded-xl">
+                                    <FileText className="w-4 h-4 text-[#FAF8F3]" />
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate font-['Inter'] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    <p className="text-sm font-semibold text-[#5C4033] dark:text-[#F4EBE4] font-['Outfit'] group-hover:text-[#C67B5C] dark:group-hover:text-[#D4A574] transition-colors">
                                       {source.document_name}
                                     </p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <span className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
+                                    <div className="flex items-center gap-2 mt-2">
+                                      <span className="text-xs text-[#8B5A3C] dark:text-[#D4A574] font-['Outfit']">
                                         Chunk #{source.chunk_index}
                                       </span>
-                                      <span className="text-xs text-slate-400 dark:text-slate-500">
+                                      <span className="text-xs text-[#A0826D]">
                                         •
                                       </span>
-                                      <span className="text-xs text-emerald-600 dark:text-emerald-400 font-['Fira_Code']">
+                                      <span className="text-xs text-[#5C8B3C] dark:text-[#7FA550] font-['Outfit'] font-bold">
                                         {(source.relevance_score * 100).toFixed(
                                           0,
                                         )}
@@ -429,17 +434,20 @@ export function ChatPage() {
               {/* Streaming Indicator */}
               {isStreaming && (
                 <div className="flex justify-start">
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  <div className="bg-white dark:bg-[#2B2520] rounded-3xl rounded-tl-md px-6 py-5 shadow-xl border-2 border-[#E8D5C4] dark:border-[#4D3D2F]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 bg-[#C67B5C] dark:bg-[#D4A574] rounded-full animate-bounce" />
                       <div
-                        className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                        className="w-3 h-3 bg-[#C67B5C] dark:bg-[#D4A574] rounded-full animate-bounce"
                         style={{ animationDelay: "0.2s" }}
                       />
                       <div
-                        className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                        className="w-3 h-3 bg-[#C67B5C] dark:bg-[#D4A574] rounded-full animate-bounce"
                         style={{ animationDelay: "0.4s" }}
                       />
+                      <span className="text-sm text-[#8B5A3C] dark:text-[#D4A574] font-['Outfit'] italic ml-2">
+                        thinking...
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -448,19 +456,19 @@ export function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 sm:p-4">
-            <div className="max-w-3xl mx-auto">
-              <div className="flex items-end gap-2 sm:gap-3">
+          <div className="border-t-2 border-[#E8D5C4] dark:border-[#4D3D2F] bg-[#F4EBE4] dark:bg-[#2B2520] p-4 sm:p-6">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-end gap-3">
                 <div className="flex-1 relative">
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    placeholder="Ask a question..."
+                    placeholder="Share your thoughts..."
                     rows={1}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 font-['Inter'] transition-all"
+                    className="w-full px-5 py-4 text-base bg-white dark:bg-[#3D3028] border-2 border-[#D4A574] dark:border-[#8B5A3C] rounded-2xl resize-none focus:outline-none focus:ring-4 focus:ring-[#D4A574]/30 dark:focus:ring-[#8B5A3C]/30 focus:border-[#C67B5C] dark:focus:border-[#D4A574] text-[#3D2E26] dark:text-[#E8D5C4] placeholder:text-[#A0826D] dark:placeholder:text-[#8B5A3C] font-['Outfit'] transition-all shadow-lg"
                     style={{
-                      minHeight: "40px",
+                      minHeight: "56px",
                       maxHeight: "200px",
                     }}
                   />
@@ -468,13 +476,13 @@ export function ChatPage() {
                 <Button
                   onClick={handleSendMessage}
                   disabled={!message.trim()}
-                  className="h-10 sm:h-12 px-3 sm:px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-['Inter'] font-medium"
+                  className="h-14 px-6 bg-[#C67B5C] hover:bg-[#B5674A] dark:bg-[#8B5A3C] dark:hover:bg-[#A0664A] disabled:opacity-40 disabled:cursor-not-allowed font-['Outfit'] font-bold rounded-2xl shadow-lg border-2 border-[#B5674A] dark:border-[#6D4832] text-[#FAF8F3]"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-5 h-5" strokeWidth={2.5} />
                 </Button>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter'] hidden sm:block">
-                Press Enter to send, Shift+Enter for new line
+              <p className="text-xs text-[#8B5A3C] dark:text-[#D4A574] mt-3 font-['Outfit'] italic hidden sm:block">
+                Press Enter to send • Shift+Enter for new line
               </p>
             </div>
           </div>
