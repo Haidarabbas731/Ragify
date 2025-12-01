@@ -208,9 +208,9 @@ export function DocumentDetailPage() {
     : mockDocument.chunks.slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-slate-900 dark:bg-slate-900 bg-slate-50 text-slate-100 dark:text-slate-100 text-slate-900 relative overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 relative overflow-x-hidden">
       {/* Animated Grid Background */}
-      <div className="fixed inset-0 opacity-20 dark:opacity-20 opacity-10 pointer-events-none">
+      <div className="fixed inset-0 opacity-10 dark:opacity-20 pointer-events-none">
         <div
           className="absolute inset-0"
           style={{
@@ -226,7 +226,7 @@ export function DocumentDetailPage() {
 
       {/* Scan Line Effect */}
       <div
-        className="fixed inset-0 pointer-events-none opacity-30 dark:opacity-30 opacity-15"
+        className="fixed inset-0 pointer-events-none opacity-15 dark:opacity-30"
         style={{
           background:
             "linear-gradient(to bottom, transparent 0%, rgba(34, 211, 238, 0.05) 50%, transparent 100%)",
@@ -235,7 +235,7 @@ export function DocumentDetailPage() {
       />
 
       {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 border-b border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40 bg-slate-900/95 dark:bg-slate-900/95 bg-white/95 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 border-b border-cyan-600/40 dark:border-cyan-500/30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl">
         <div className="flex items-center justify-between px-6 py-4">
           {/* Logo & Brand */}
           <Link to="/documents" className="flex items-center gap-3 group">
@@ -244,10 +244,10 @@ export function DocumentDetailPage() {
               <div className="absolute inset-0 rounded bg-cyan-400/20 blur-md animate-pulse" />
             </div>
             <div>
-              <span className="block text-sm font-bold font-['IBM_Plex_Sans_Condensed'] tracking-wider text-cyan-400 dark:text-cyan-400 text-cyan-600">
+              <span className="block text-sm font-bold font-['IBM_Plex_Sans_Condensed'] tracking-wider text-cyan-600 dark:text-cyan-400">
                 {"FORENSICS//LAB"}
               </span>
-              <span className="block text-[10px] font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70">
+              <span className="block text-[10px] font-mono text-cyan-700/70 dark:text-cyan-500/60">
                 DOCUMENT ANALYSIS
               </span>
             </div>
@@ -259,20 +259,20 @@ export function DocumentDetailPage() {
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="hidden lg:flex p-2 rounded-lg hover:bg-cyan-500/10 transition-colors border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30"
+              className="hidden lg:flex p-2 rounded-lg hover:bg-cyan-500/10 transition-colors border border-cyan-600/30 dark:border-cyan-500/20"
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
-                <Sun className="w-5 h-5 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
+                <Sun className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
               ) : (
-                <Moon className="w-5 h-5 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
+                <Moon className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
               )}
             </button>
 
             {/* User Menu - Hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-cyan-500/10 dark:bg-cyan-500/10 bg-cyan-50 border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30">
-              <User className="w-5 h-5 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
-              <span className="text-sm font-medium text-cyan-100 dark:text-cyan-100 text-cyan-900 font-['JetBrains_Mono']">
+            <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-cyan-50 dark:bg-cyan-500/10 border border-cyan-600/30 dark:border-cyan-500/20">
+              <User className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+              <span className="text-sm font-medium text-cyan-900 dark:text-cyan-100 font-['JetBrains_Mono']">
                 {user?.email}
               </span>
             </div>
@@ -282,7 +282,7 @@ export function DocumentDetailPage() {
               onClick={handleLogout}
               variant="outline"
               size="sm"
-              className="hidden lg:flex gap-2 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 dark:border-red-500/30 dark:text-red-400 border-red-600/40 dark:text-red-600 hover:dark:bg-red-500/10 hover:bg-red-50 transition-all duration-300 font-['IBM_Plex_Sans_Condensed'] font-semibold"
+              className="hidden lg:flex gap-2 border-red-600/40 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-600/70 dark:hover:border-red-500/50 transition-all duration-300 font-['IBM_Plex_Sans_Condensed'] font-semibold"
             >
               <LogOut className="w-4 h-4" />
               <span>LOGOUT</span>
@@ -297,21 +297,21 @@ export function DocumentDetailPage() {
         <button
           type="button"
           onClick={() => navigate("/documents")}
-          className="group flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-slate-800/50 dark:bg-slate-800/50 bg-white border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30 hover:border-cyan-500/40 dark:hover:border-cyan-500/40 hover:border-cyan-600/60 hover:bg-slate-800/70 dark:hover:bg-slate-800/70 hover:bg-cyan-50/50 transition-all duration-300"
+          className="group flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20 hover:border-cyan-600/60 dark:hover:border-cyan-500/40 hover:bg-cyan-50/50 dark:hover:bg-slate-800/70 transition-all duration-300"
         >
-          <ArrowLeft className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600 group-hover:-translate-x-1 transition-transform" />
-          <span className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-400 dark:text-cyan-400 text-cyan-600 tracking-wide">
+          <ArrowLeft className="w-4 h-4 text-cyan-600 dark:text-cyan-400 group-hover:-translate-x-1 transition-transform" />
+          <span className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-600 dark:text-cyan-400 tracking-wide">
             BACK TO ARCHIVE
           </span>
         </button>
 
         {/* Document Header */}
-        <div className="mb-8 p-6 rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 dark:from-slate-800/80 dark:to-slate-900/80 from-white to-slate-50 border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30 backdrop-blur-sm">
+        <div className="mb-8 p-6 rounded-xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-800/80 dark:to-slate-900/80 border border-cyan-600/30 dark:border-cyan-500/20 backdrop-blur-sm">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-5 h-5 text-cyan-400 dark:text-cyan-400 text-cyan-600 flex-shrink-0" />
-                <h1 className="text-2xl font-bold font-['IBM_Plex_Sans_Condensed'] text-cyan-100 dark:text-cyan-100 text-cyan-900 tracking-tight break-words">
+                <FileText className="w-5 h-5 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+                <h1 className="text-2xl font-bold font-['IBM_Plex_Sans_Condensed'] text-cyan-900 dark:text-cyan-100 tracking-tight break-words">
                   {mockDocument.filename}
                 </h1>
               </div>
@@ -343,7 +343,7 @@ export function DocumentDetailPage() {
                 onClick={() => setIsEditModalOpen(true)}
                 variant="outline"
                 size="sm"
-                className="gap-2 border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40 text-cyan-400 dark:text-cyan-400 text-cyan-600 hover:bg-cyan-500/10 dark:hover:bg-cyan-500/10 hover:bg-cyan-50 hover:border-cyan-500/50 dark:hover:border-cyan-500/50 hover:border-cyan-600/70 font-['IBM_Plex_Sans_Condensed'] font-semibold"
+                className="gap-2 border-cyan-600/40 dark:border-cyan-500/30 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 hover:border-cyan-600/70 dark:hover:border-cyan-500/50 font-['IBM_Plex_Sans_Condensed'] font-semibold"
               >
                 <Edit3 className="w-4 h-4" />
                 <span className="hidden sm:inline">EDIT</span>
@@ -372,7 +372,7 @@ export function DocumentDetailPage() {
                 onClick={() => setIsDeleteModalOpen(true)}
                 variant="outline"
                 size="sm"
-                className="gap-2 border-red-500/30 dark:border-red-500/30 border-red-600/40 text-red-400 dark:text-red-400 text-red-600 hover:bg-red-500/10 dark:hover:bg-red-500/10 hover:bg-red-50 hover:border-red-500/50 dark:hover:border-red-500/50 hover:border-red-600/70 font-['IBM_Plex_Sans_Condensed'] font-semibold"
+                className="gap-2 border-red-600/40 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/10 hover:bg-red-50 hover:border-red-500/50 dark:hover:border-red-500/50 hover:border-red-600/70 font-['IBM_Plex_Sans_Condensed'] font-semibold"
               >
                 <Trash2 className="w-4 h-4" />
                 <span className="hidden sm:inline">DELETE</span>
@@ -384,14 +384,14 @@ export function DocumentDetailPage() {
         {/* Metadata Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {/* File Size */}
-          <div className="p-4 rounded-lg bg-slate-800/50 dark:bg-slate-800/50 bg-white border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20">
             <div className="flex items-center gap-2 mb-2">
-              <HardDrive className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
-              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-500 dark:text-cyan-500 text-cyan-700 tracking-wide">
+              <HardDrive className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-500 tracking-wide">
                 FILE SIZE
               </span>
             </div>
-            <p className="text-lg font-mono font-bold text-cyan-100 dark:text-cyan-100 text-cyan-900">
+            <p className="text-lg font-mono font-bold text-cyan-900 dark:text-cyan-100">
               {formatFileSize(mockDocument.size_bytes)}
             </p>
             <p className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70 mt-1">
@@ -400,14 +400,14 @@ export function DocumentDetailPage() {
           </div>
 
           {/* Chunks Count */}
-          <div className="p-4 rounded-lg bg-slate-800/50 dark:bg-slate-800/50 bg-white border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20">
             <div className="flex items-center gap-2 mb-2">
-              <Layers className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
-              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-500 dark:text-cyan-500 text-cyan-700 tracking-wide">
+              <Layers className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-500 tracking-wide">
                 CHUNKS
               </span>
             </div>
-            <p className="text-lg font-mono font-bold text-cyan-100 dark:text-cyan-100 text-cyan-900">
+            <p className="text-lg font-mono font-bold text-cyan-900 dark:text-cyan-100">
               {mockDocument.chunks_count}
             </p>
             <p className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70 mt-1">
@@ -416,14 +416,14 @@ export function DocumentDetailPage() {
           </div>
 
           {/* MIME Type */}
-          <div className="p-4 rounded-lg bg-slate-800/50 dark:bg-slate-800/50 bg-white border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20">
             <div className="flex items-center gap-2 mb-2">
-              <Hash className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
-              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-500 dark:text-cyan-500 text-cyan-700 tracking-wide">
+              <Hash className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-500 tracking-wide">
                 MIME TYPE
               </span>
             </div>
-            <p className="text-lg font-mono font-bold text-cyan-100 dark:text-cyan-100 text-cyan-900">
+            <p className="text-lg font-mono font-bold text-cyan-900 dark:text-cyan-100">
               {mockDocument.mime_type.split("/")[1].toUpperCase()}
             </p>
             <p className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70 mt-1">
@@ -432,27 +432,27 @@ export function DocumentDetailPage() {
           </div>
 
           {/* Uploaded At */}
-          <div className="p-4 rounded-lg bg-slate-800/50 dark:bg-slate-800/50 bg-white border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
-              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-500 dark:text-cyan-500 text-cyan-700 tracking-wide">
+              <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-500 tracking-wide">
                 UPLOADED
               </span>
             </div>
-            <p className="text-sm font-mono font-bold text-cyan-100 dark:text-cyan-100 text-cyan-900">
+            <p className="text-sm font-mono font-bold text-cyan-900 dark:text-cyan-100">
               {formatDate(mockDocument.uploaded_at)}
             </p>
           </div>
 
           {/* Processed At */}
-          <div className="p-4 rounded-lg bg-slate-800/50 dark:bg-slate-800/50 bg-white border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
-              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-500 dark:text-cyan-500 text-cyan-700 tracking-wide">
+              <Clock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-500 tracking-wide">
                 PROCESSED
               </span>
             </div>
-            <p className="text-sm font-mono font-bold text-cyan-100 dark:text-cyan-100 text-cyan-900">
+            <p className="text-sm font-mono font-bold text-cyan-900 dark:text-cyan-100">
               {mockDocument.processed_at
                 ? formatDate(mockDocument.processed_at)
                 : "N/A"}
@@ -460,32 +460,32 @@ export function DocumentDetailPage() {
           </div>
 
           {/* Collection */}
-          <div className="p-4 rounded-lg bg-slate-800/50 dark:bg-slate-800/50 bg-white border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30">
+          <div className="p-4 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20">
             <div className="flex items-center gap-2 mb-2">
-              <FolderOpen className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
-              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-500 dark:text-cyan-500 text-cyan-700 tracking-wide">
+              <FolderOpen className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+              <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-500 tracking-wide">
                 COLLECTION
               </span>
             </div>
-            <p className="text-sm font-mono font-bold text-cyan-100 dark:text-cyan-100 text-cyan-900">
+            <p className="text-sm font-mono font-bold text-cyan-900 dark:text-cyan-100">
               {mockDocument.collection_name || "None"}
             </p>
           </div>
         </div>
 
         {/* Category & Tags */}
-        <div className="mb-8 p-6 rounded-xl bg-slate-800/50 dark:bg-slate-800/50 bg-white border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30">
+        <div className="mb-8 p-6 rounded-xl bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Category */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Tag className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
-                <span className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-500 dark:text-cyan-500 text-cyan-700 tracking-wide">
+                <Tag className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                <span className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-500 tracking-wide">
                   CATEGORY
                 </span>
               </div>
-              <div className="inline-block px-3 py-1.5 rounded-lg bg-cyan-500/10 dark:bg-cyan-500/10 bg-cyan-100 border border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40">
-                <span className="text-sm font-mono font-semibold text-cyan-300 dark:text-cyan-300 text-cyan-800">
+              <div className="inline-block px-3 py-1.5 rounded-lg bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-600/40 dark:border-cyan-500/30">
+                <span className="text-sm font-mono font-semibold text-cyan-800 dark:text-cyan-300">
                   {mockDocument.category || "uncategorized"}
                 </span>
               </div>
@@ -494,8 +494,8 @@ export function DocumentDetailPage() {
             {/* Tags */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Tag className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
-                <span className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-500 dark:text-cyan-500 text-cyan-700 tracking-wide">
+                <Tag className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                <span className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-500 tracking-wide">
                   TAGS
                 </span>
               </div>
@@ -504,7 +504,7 @@ export function DocumentDetailPage() {
                   mockDocument.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-3 py-1.5 rounded-lg bg-cyan-500/10 dark:bg-cyan-500/10 bg-cyan-100 border border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40 text-sm font-mono font-semibold text-cyan-300 dark:text-cyan-300 text-cyan-800"
+                      className="px-3 py-1.5 rounded-lg bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-600/40 dark:border-cyan-500/30 text-sm font-mono font-semibold text-cyan-800 dark:text-cyan-300"
                     >
                       {tag}
                     </span>
@@ -523,11 +523,11 @@ export function DocumentDetailPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Layers className="w-5 h-5 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
-              <h2 className="text-xl font-bold font-['IBM_Plex_Sans_Condensed'] text-cyan-100 dark:text-cyan-100 text-cyan-900 tracking-tight">
+              <Layers className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+              <h2 className="text-xl font-bold font-['IBM_Plex_Sans_Condensed'] text-cyan-900 dark:text-cyan-100 tracking-tight">
                 CONTENT CHUNKS
               </h2>
-              <span className="px-2 py-1 rounded bg-cyan-500/20 dark:bg-cyan-500/20 bg-cyan-100 border border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40 text-xs font-mono font-bold text-cyan-300 dark:text-cyan-300 text-cyan-800">
+              <span className="px-2 py-1 rounded bg-cyan-100 dark:bg-cyan-500/20 border border-cyan-600/40 dark:border-cyan-500/30 text-xs font-mono font-bold text-cyan-800 dark:text-cyan-300">
                 {mockDocument.chunks_count}
               </span>
             </div>
@@ -537,15 +537,15 @@ export function DocumentDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowAllChunks(!showAllChunks)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 dark:bg-slate-800/50 bg-white border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30 hover:border-cyan-500/40 dark:hover:border-cyan-500/40 hover:border-cyan-600/60 hover:bg-slate-800/70 dark:hover:bg-slate-800/70 hover:bg-cyan-50/50 transition-all duration-300"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20 hover:border-cyan-600/60 dark:hover:border-cyan-500/40 hover:bg-cyan-50/50 dark:hover:bg-slate-800/70 transition-all duration-300"
               >
-                <span className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-400 dark:text-cyan-400 text-cyan-600">
+                <span className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-600 dark:text-cyan-400">
                   {showAllChunks ? "SHOW LESS" : "SHOW ALL"}
                 </span>
                 {showAllChunks ? (
-                  <ChevronUp className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
+                  <ChevronUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                 ) : (
-                  <ChevronDown className="w-4 h-4 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
+                  <ChevronDown className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                 )}
               </button>
             )}
@@ -556,16 +556,16 @@ export function DocumentDetailPage() {
             {chunksToShow.map((chunk, index) => (
               <div
                 key={chunk.chunk_id}
-                className="p-4 rounded-lg bg-slate-800/50 dark:bg-slate-800/50 bg-white border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30 hover:border-cyan-500/40 dark:hover:border-cyan-500/40 hover:border-cyan-600/60 transition-all duration-300"
+                className="p-4 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20 hover:border-cyan-600/60 dark:hover:border-cyan-500/40 transition-all duration-300"
                 style={{
                   animation: `fadeSlideIn 0.3s ease-out ${index * 0.05}s both`,
                 }}
               >
                 {/* Chunk Header */}
-                <div className="flex items-center justify-between mb-3 pb-3 border-b border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30">
+                <div className="flex items-center justify-between mb-3 pb-3 border-b border-cyan-600/30 dark:border-cyan-500/20">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded bg-cyan-500/20 dark:bg-cyan-500/20 bg-cyan-100 border border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40 flex items-center justify-center">
-                      <span className="text-xs font-mono font-bold text-cyan-300 dark:text-cyan-300 text-cyan-800">
+                    <div className="w-6 h-6 rounded bg-cyan-100 dark:bg-cyan-500/20 border border-cyan-600/40 dark:border-cyan-500/30 flex items-center justify-center">
+                      <span className="text-xs font-mono font-bold text-cyan-800 dark:text-cyan-300">
                         {chunk.chunk_index + 1}
                       </span>
                     </div>
@@ -581,7 +581,7 @@ export function DocumentDetailPage() {
                         </span>
                       )}
                       {chunk.metadata.section && (
-                        <span className="px-2 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-500/10 bg-cyan-100 border border-cyan-500/20 dark:border-cyan-500/20 border-cyan-600/30 text-xs font-mono text-cyan-400 dark:text-cyan-400 text-cyan-700">
+                        <span className="px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-600/30 dark:border-cyan-500/20 text-xs font-mono text-cyan-700 dark:text-cyan-400">
                           {chunk.metadata.section}
                         </span>
                       )}
@@ -610,22 +610,22 @@ export function DocumentDetailPage() {
 
       {/* Edit Metadata Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 dark:bg-black/80 bg-slate-900/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 dark:bg-black/80 backdrop-blur-sm">
           <div
-            className="w-full max-w-lg p-6 rounded-xl bg-slate-800 dark:bg-slate-800 bg-white border border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40 shadow-2xl shadow-cyan-500/20 dark:shadow-cyan-500/20 shadow-cyan-600/30"
+            className="w-full max-w-lg p-6 rounded-xl bg-white dark:bg-slate-800 border border-cyan-600/40 dark:border-cyan-500/30 shadow-2xl shadow-cyan-500/20 dark:shadow-cyan-500/20 shadow-cyan-600/30"
             style={{ animation: "modalFadeIn 0.2s ease-out" }}
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold font-['IBM_Plex_Sans_Condensed'] text-cyan-100 dark:text-cyan-100 text-cyan-900">
+              <h3 className="text-xl font-bold font-['IBM_Plex_Sans_Condensed'] text-cyan-900 dark:text-cyan-100">
                 EDIT METADATA
               </h3>
               <button
                 type="button"
                 onClick={() => setIsEditModalOpen(false)}
-                className="p-2 rounded-lg hover:bg-cyan-500/10 dark:hover:bg-cyan-500/10 hover:bg-cyan-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-cyan-100 dark:hover:bg-cyan-500/10 transition-colors"
               >
-                <X className="w-5 h-5 text-cyan-400 dark:text-cyan-400 text-cyan-600" />
+                <X className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
               </button>
             </div>
 
@@ -633,7 +633,7 @@ export function DocumentDetailPage() {
             <div className="space-y-4">
               {/* Collection */}
               <div>
-                <Label className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-400 dark:text-cyan-400 text-cyan-700 mb-2 block">
+                <Label className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-400 mb-2 block">
                   COLLECTION
                 </Label>
                 <Select
@@ -642,7 +642,7 @@ export function DocumentDetailPage() {
                     setEditForm({ ...editForm, collection_id: value })
                   }
                 >
-                  <SelectTrigger className="w-full bg-slate-900 dark:bg-slate-900 bg-slate-50 border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40 text-cyan-100 dark:text-cyan-100 text-cyan-900 font-mono">
+                  <SelectTrigger className="w-full bg-slate-50 dark:bg-slate-900 border-cyan-600/40 dark:border-cyan-500/30 text-cyan-900 dark:text-cyan-100 font-mono">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -662,7 +662,7 @@ export function DocumentDetailPage() {
               <div>
                 <Label
                   htmlFor="category"
-                  className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-400 dark:text-cyan-400 text-cyan-700 mb-2 block"
+                  className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-400 mb-2 block"
                 >
                   CATEGORY
                 </Label>
@@ -672,7 +672,7 @@ export function DocumentDetailPage() {
                   onChange={(e) =>
                     setEditForm({ ...editForm, category: e.target.value })
                   }
-                  className="bg-slate-900 dark:bg-slate-900 bg-slate-50 border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40 text-cyan-100 dark:text-cyan-100 text-cyan-900 font-mono"
+                  className="bg-slate-50 dark:bg-slate-900 border-cyan-600/40 dark:border-cyan-500/30 text-cyan-900 dark:text-cyan-100 font-mono"
                   placeholder="e.g., financial, technical, research"
                 />
               </div>
@@ -681,7 +681,7 @@ export function DocumentDetailPage() {
               <div>
                 <Label
                   htmlFor="tags"
-                  className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-400 dark:text-cyan-400 text-cyan-700 mb-2 block"
+                  className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-400 mb-2 block"
                 >
                   TAGS
                 </Label>
@@ -691,7 +691,7 @@ export function DocumentDetailPage() {
                   onChange={(e) =>
                     setEditForm({ ...editForm, tags: e.target.value })
                   }
-                  className="bg-slate-900 dark:bg-slate-900 bg-slate-50 border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40 text-cyan-100 dark:text-cyan-100 text-cyan-900 font-mono"
+                  className="bg-slate-50 dark:bg-slate-900 border-cyan-600/40 dark:border-cyan-500/30 text-cyan-900 dark:text-cyan-100 font-mono"
                   placeholder="Comma-separated tags"
                 />
                 <p className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70 mt-1">
@@ -711,7 +711,7 @@ export function DocumentDetailPage() {
               <Button
                 onClick={() => setIsEditModalOpen(false)}
                 variant="outline"
-                className="flex-1 border-cyan-500/30 dark:border-cyan-500/30 border-cyan-600/40 text-cyan-400 dark:text-cyan-400 text-cyan-600 hover:bg-cyan-500/10 dark:hover:bg-cyan-500/10 hover:bg-cyan-100 font-['IBM_Plex_Sans_Condensed'] font-bold"
+                className="flex-1 border-cyan-600/40 dark:border-cyan-500/30 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-500/10 font-['IBM_Plex_Sans_Condensed'] font-bold"
               >
                 CANCEL
               </Button>
@@ -722,33 +722,33 @@ export function DocumentDetailPage() {
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 dark:bg-black/80 bg-slate-900/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 dark:bg-black/80 backdrop-blur-sm">
           <div
-            className="w-full max-w-md p-6 rounded-xl bg-slate-800 dark:bg-slate-800 bg-white border border-red-500/30 dark:border-red-500/30 border-red-600/40 shadow-2xl shadow-red-500/20 dark:shadow-red-500/20 shadow-red-600/30"
+            className="w-full max-w-md p-6 rounded-xl bg-white dark:bg-slate-800 border border-red-600/40 dark:border-red-500/30 shadow-2xl shadow-red-500/20 dark:shadow-red-500/20 shadow-red-600/30"
             style={{ animation: "modalFadeIn 0.2s ease-out" }}
           >
             {/* Warning Icon */}
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-red-500/20 dark:bg-red-500/20 bg-red-100 border-2 border-red-500/40 dark:border-red-500/40 border-red-600/50 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-red-400 dark:text-red-400 text-red-600" />
+              <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/20 border-2 border-red-600/50 dark:border-red-500/40 flex items-center justify-center">
+                <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
               </div>
             </div>
 
             {/* Modal Header */}
-            <h3 className="text-xl font-bold font-['IBM_Plex_Sans_Condensed'] text-red-100 dark:text-red-100 text-red-900 text-center mb-2">
+            <h3 className="text-xl font-bold font-['IBM_Plex_Sans_Condensed'] text-red-900 dark:text-red-100 text-center mb-2">
               DELETE DOCUMENT?
             </h3>
-            <p className="text-sm font-mono text-red-400/80 dark:text-red-400/80 text-red-700/90 text-center mb-6">
+            <p className="text-sm font-mono text-red-700/90 dark:text-red-400/80 text-center mb-6">
               This action cannot be undone. All chunks and metadata will be
               permanently deleted.
             </p>
 
             {/* Document Info */}
-            <div className="mb-6 p-3 rounded-lg bg-red-500/10 dark:bg-red-500/10 bg-red-50 border border-red-500/20 dark:border-red-500/20 border-red-600/30">
-              <p className="text-sm font-mono text-red-100 dark:text-red-100 text-red-900 break-words">
+            <div className="mb-6 p-3 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-600/30 dark:border-red-500/20">
+              <p className="text-sm font-mono text-red-900 dark:text-red-100 break-words">
                 {mockDocument.filename}
               </p>
-              <p className="text-xs font-mono text-red-400/60 dark:text-red-400/60 text-red-700/70 mt-1">
+              <p className="text-xs font-mono text-red-700/70 dark:text-red-400/60 mt-1">
                 {mockDocument.chunks_count} chunks •{" "}
                 {formatFileSize(mockDocument.size_bytes)}
               </p>
@@ -765,7 +765,7 @@ export function DocumentDetailPage() {
               <Button
                 onClick={() => setIsDeleteModalOpen(false)}
                 variant="outline"
-                className="flex-1 border-slate-600 dark:border-slate-600 border-slate-400 text-slate-300 dark:text-slate-300 text-slate-700 hover:bg-slate-700 dark:hover:bg-slate-700 hover:bg-slate-200 font-['IBM_Plex_Sans_Condensed'] font-bold"
+                className="flex-1 border-slate-600 dark:border-slate-600 border-slate-400 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-['IBM_Plex_Sans_Condensed'] font-bold"
               >
                 CANCEL
               </Button>
