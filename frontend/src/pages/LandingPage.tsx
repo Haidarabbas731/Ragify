@@ -10,7 +10,7 @@ import { ThreeBackground } from "../components/landing/ThreeBackground";
 import { LandingFooter } from "../components/layout/LandingFooter";
 import { LandingNav } from "../components/layout/LandingNav";
 import { Button } from "../components/ui/button";
-import { useDarkMode } from "../hooks/useDarkMode";
+import { useDarkMode } from "../contexts/DarkModeContext";
 
 gsap.registerPlugin(ScrollTrigger);
 

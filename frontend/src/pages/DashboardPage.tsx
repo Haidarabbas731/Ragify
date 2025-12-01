@@ -23,7 +23,7 @@ import { DocumentList } from "../components/documents/DocumentList";
 import { UploadZone } from "../components/documents/UploadZone";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { useDarkMode } from "../hooks/useDarkMode";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import { useAuthStore } from "../store/authStore";
 
 export function DashboardPage() {

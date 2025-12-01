@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function useDarkMode() {
   const [darkMode, setDarkMode] = useState(() => {
@@ -11,6 +11,7 @@ export function useDarkMode() {
   });
 
   useEffect(() => {
+    console.log("useEffect running, darkMode:", darkMode);
     localStorage.setItem("darkMode", JSON.stringify(darkMode));
     if (darkMode) {
       document.documentElement.classList.add("dark");
@@ -19,7 +20,13 @@ export function useDarkMode() {
     }
   }, [darkMode]);
 
-  const toggleDarkMode = () => setDarkMode(!darkMode);
+  const toggleDarkMode = useCallback(() => {
+    console.log("toggleDarkMode called");
+    setDarkMode((prev: boolean) => {
+      console.log("setDarkMode callback, prev:", prev, "new:", !prev);
+      return !prev;
+    });
+  }, []);
 
   return { darkMode, toggleDarkMode };
 }
