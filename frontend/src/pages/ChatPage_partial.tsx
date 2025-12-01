@@ -4,13 +4,17 @@
  * Fonts: Space Grotesk (headings), Inter (UI), Fira Code (metadata)
  * Color: Purple/indigo palette complementing dashboard's blue-purple theme
  * Style: Clean, professional, conversation-focused
- * Features: Collapsible sidebar like ChatGPT/Claude
+ * Features: Collapsible sidebar, collection filter
  */
 
 import {
+  Check,
+  ChevronDown,
   FileText,
+  Filter,
   FolderOpen,
   HardDrive,
+  Layers,
   LogOut,
   Menu,
   MessageSquare,
@@ -26,7 +30,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CollectionFilter } from "../components/chat/CollectionFilter";
 import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { Button } from "../components/ui/button";
 import { useDarkMode } from "../contexts/DarkModeContext";
@@ -123,9 +126,11 @@ export function ChatPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
   const [currentConversationId] = useState<string | null>(null);
-  const [selectedCollectionId, setSelectedCollectionId] = useState<
-    string | null
-  >(null);
+
+  // Collection filter state
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
 
   // Ref for auto-scroll
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -212,7 +217,6 @@ export function ChatPage() {
     await streamChat({
       query: userMessage.content,
       conversationId: currentConversationId || undefined,
-      collectionId: selectedCollectionId || undefined,
       onChunk: (chunk) => {
         // Update assistant message with streaming content
         setMessages((prev) =>
@@ -465,34 +469,6 @@ export function ChatPage() {
 
         {/* Chat Area */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Active Filter Banner */}
-          {selectedCollectionId && (
-            <div className="bg-purple-50 dark:bg-purple-950/30 border-b border-purple-200 dark:border-purple-800 px-6 py-3">
-              <div className="max-w-4xl mx-auto flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  <span className="text-sm font-medium text-purple-700 dark:text-purple-300 font-['Inter']">
-                    Filtering by:{" "}
-                    <span className="font-semibold">
-                      {
-                        MOCK_COLLECTIONS.find(
-                          (c) => c.collection_id === selectedCollectionId,
-                        )?.name
-                      }
-                    </span>
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCollectionId(null)}
-                  className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium font-['Inter'] transition-colors"
-                >
-                  Clear filter
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Messages Container */}
           <div
             ref={messagesContainerRef}
@@ -623,34 +599,25 @@ export function ChatPage() {
           {/* Input Area */}
           <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
             <div className="max-w-4xl mx-auto">
-              {/* Input Row with Integrated Filter */}
-              <div className="flex items-center gap-3">
-                {/* Collection Filter on Left */}
-                <div className="hidden sm:block flex-shrink-0">
-                  <CollectionFilter
-                    collections={MOCK_COLLECTIONS}
-                    selectedCollectionId={selectedCollectionId}
-                    onSelectCollection={setSelectedCollectionId}
-                  />
-                </div>
-
-                {/* Text Input */}
-                <div className="flex-1 flex items-center">
+              <div className="flex items-end gap-3">
+                <div className="flex-1">
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder="Ask anything about your documents..."
                     rows={1}
-                    className="w-full h-[44px] px-4 py-[10px] text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-purple-400 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 transition-all font-['Inter'] leading-[1.2] box-border"
+                    className="w-full px-4 py-3 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-purple-400 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 transition-all font-['Inter']"
+                    style={{
+                      minHeight: "44px",
+                      maxHeight: "200px",
+                    }}
                   />
                 </div>
-
-                {/* Send Button */}
                 <Button
                   onClick={handleSendMessage}
                   disabled={!message.trim() || isStreaming}
-                  className="!h-[44px] !min-h-[44px] !py-0 px-5 flex items-center justify-center bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-700 dark:disabled:to-slate-800 disabled:cursor-not-allowed text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:shadow-none font-['Inter'] font-semibold flex-shrink-0"
+                  className="h-[44px] px-5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-700 dark:disabled:to-slate-800 disabled:cursor-not-allowed text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:shadow-none font-['Inter'] font-semibold"
                 >
                   {isStreaming ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -659,22 +626,9 @@ export function ChatPage() {
                   )}
                 </Button>
               </div>
-
-              {/* Bottom Row: Filter on mobile + Help Text */}
-              <div className="flex items-center justify-between mt-2">
-                {/* Mobile Collection Filter */}
-                <div className="sm:hidden">
-                  <CollectionFilter
-                    collections={MOCK_COLLECTIONS}
-                    selectedCollectionId={selectedCollectionId}
-                    onSelectCollection={setSelectedCollectionId}
-                  />
-                </div>
-                {/* Help Text */}
-                <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block font-['Inter']">
-                  Press Enter to send, Shift+Enter for new line
-                </p>
-              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 hidden sm:block font-['Inter']">
+                Press Enter to send, Shift+Enter for new line
+              </p>
             </div>
           </div>
         </main>
