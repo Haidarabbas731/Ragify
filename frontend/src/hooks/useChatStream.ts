@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import { api } from "../lib/api";
+import api from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
 interface ChatStreamOptions {
