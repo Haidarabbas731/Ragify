@@ -1,16 +1,15 @@
 /**
- * Chat Page - Warm Atelier
- * Artist's studio aesthetic with terracotta, cream, and editorial typography
- * Fonts: Libre Baskerville (elegant branding), Lora (warm message serif), Work Sans (clean UI)
+ * Chat Page - Modern SaaS Dashboard
+ * Clean, professional interface inspired by modern business dashboards
+ * Fonts: DM Sans (UI), Inter (body), SF Pro Display (headings)
+ * Color: Subtle blues, grays, white space, minimal accents
  */
 
 import {
-  ArrowLeft,
-  Coffee,
   FileText,
   LogOut,
   Menu,
-  MessageCircle,
+  MessageSquare,
   Moon,
   Plus,
   Send,
@@ -20,6 +19,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { Button } from "../components/ui/button";
 import { useDarkMode } from "../hooks/useDarkMode";
 import { useAuthStore } from "../store/authStore";
@@ -90,7 +90,7 @@ export function ChatPage() {
       id: "2",
       role: "assistant",
       content:
-        "RAG (Retrieval-Augmented Generation) is a technique that combines information retrieval with language generation. It works by first retrieving relevant documents from a knowledge base, then using those documents as context for generating accurate, grounded responses.",
+        "**RAG (Retrieval-Augmented Generation)** is a technique that combines information retrieval with language generation.\n\n## How it works:\n\n1. **Retrieval**: First retrieves relevant documents from a knowledge base\n2. **Augmentation**: Uses those documents as context\n3. **Generation**: Generates accurate, grounded responses\n\nHere's a simple example:\n\n```python\ndef retrieve_and_generate(query, knowledge_base):\n    # Retrieve relevant documents\n    relevant_docs = search(query, knowledge_base)\n    \n    # Generate response with context\n    response = llm.generate(query, context=relevant_docs)\n    \n    return response\n```\n\nThis approach ensures responses are both *accurate* and *verifiable*.",
       timestamp: new Date("2024-01-15T10:00:05"),
       sources: [
         {
@@ -141,63 +141,63 @@ export function ChatPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-[#F4EBE4] dark:bg-[#2B2520]">
+    <div className="h-screen flex flex-col bg-white dark:bg-slate-950">
       {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 border-b-2 border-[#C67B5C] dark:border-[#8B5A3C] bg-[#E8D5C4]/95 dark:bg-[#3D3028]/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between px-6 py-4">
+      <nav className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <div className="flex items-center justify-between px-4 sm:px-6 h-16">
           {/* Left Side */}
           <div className="flex items-center gap-4">
             {/* Mobile Menu Toggle */}
             <button
               type="button"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 transition-colors"
+              className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Toggle sidebar"
             >
-              <Menu className="w-5 h-5 text-[#5C4033] dark:text-[#D4A574]" />
+              <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
             </button>
 
             {/* Logo & Brand */}
-            <Link to="/dashboard" className="flex items-center gap-3 group">
-              <div className="w-11 h-11 bg-[#C67B5C] dark:bg-[#8B5A3C] rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shadow-lg">
-                <Coffee className="w-6 h-6 text-[#FAF8F3]" strokeWidth={2.5} />
+            <Link to="/dashboard" className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-white" strokeWidth={2} />
               </div>
-              <span className="text-xl font-bold text-[#5C4033] dark:text-[#F4EBE4] font-['Libre_Baskerville'] tracking-wide hidden sm:block">
-                Chat Studio
+              <span className="text-lg font-semibold text-slate-900 dark:text-white font-['DM_Sans'] hidden sm:block">
+                Chat
               </span>
             </Link>
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-4">
-            {/* Dark Mode Toggle - Hidden on mobile (in sidebar instead) */}
+          <div className="flex items-center gap-3">
+            {/* Dark Mode Toggle */}
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="hidden lg:flex p-2 rounded-lg hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 transition-colors"
+              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
-                <Sun className="w-5 h-5 text-[#D4A574]" />
+                <Sun className="w-5 h-5 text-slate-400" />
               ) : (
-                <Moon className="w-5 h-5 text-[#5C4033]" />
+                <Moon className="w-5 h-5 text-slate-600" />
               )}
             </button>
 
             {/* User Menu - Hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-3 px-4 py-2 rounded-full bg-[#FAF8F3] dark:bg-[#4D3D2F] border-2 border-[#D4A574] dark:border-[#8B5A3C]">
-              <User className="w-4 h-4 text-[#8B5A3C] dark:text-[#D4A574]" />
-              <span className="text-sm font-medium text-[#5C4033] dark:text-[#E8D5C4] font-['Work_Sans']">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+              <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+              <span className="text-sm text-slate-700 dark:text-slate-300 font-['Inter']">
                 {user?.email}
               </span>
             </div>
 
-            {/* Logout Button - Hidden on mobile (in sidebar instead) */}
+            {/* Logout Button */}
             <Button
               onClick={handleLogout}
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="hidden lg:flex gap-2 border-2 border-[#8B5A3C] dark:border-[#D4A574] text-[#8B5A3C] dark:text-[#D4A574] hover:bg-[#8B5A3C] hover:text-[#FAF8F3] dark:hover:bg-[#D4A574] dark:hover:text-[#2B2520] transition-all duration-300 font-['Work_Sans'] font-semibold rounded-full"
+              className="hidden lg:flex gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-['DM_Sans']"
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
@@ -210,7 +210,7 @@ export function ChatPage() {
       {sidebarOpen && (
         <button
           type="button"
-          className="fixed inset-0 bg-[#2B2520]/60 backdrop-blur-sm z-30 lg:hidden cursor-default"
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden cursor-default"
           onClick={() => setSidebarOpen(false)}
           onKeyDown={(e) => {
             if (e.key === "Escape") setSidebarOpen(false);
@@ -225,141 +225,99 @@ export function ChatPage() {
         <aside
           className={`${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0 fixed lg:relative z-40 w-80 h-full border-r-2 border-[#C67B5C] dark:border-[#8B5A3C] bg-[#E8D5C4] dark:bg-[#3D3028] transition-transform duration-300 flex flex-col`}
+          } lg:translate-x-0 fixed lg:relative z-40 w-72 h-full border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 transition-transform duration-300 flex flex-col`}
         >
-          {/* Mobile Header with Close Button */}
-          <div className="lg:hidden flex items-center justify-between p-4 border-b-2 border-[#C67B5C] dark:border-[#8B5A3C]">
-            <h2 className="text-lg font-bold text-[#5C4033] dark:text-[#F4EBE4] font-['Libre_Baskerville']">
+          {/* Mobile Header */}
+          <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white font-['DM_Sans']">
               Conversations
             </h2>
             <button
               type="button"
               onClick={() => setSidebarOpen(false)}
-              className="p-2 rounded-lg hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 transition-colors"
+              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Close sidebar"
             >
-              <X className="w-5 h-5 text-[#5C4033] dark:text-[#D4A574]" />
+              <X className="w-5 h-5 text-slate-500" />
             </button>
           </div>
 
-          {/* Back to Documents - Mobile Only */}
-          <div className="lg:hidden p-4 border-b-2 border-[#C67B5C] dark:border-[#8B5A3C]">
-            <Link
-              to="/dashboard"
-              onClick={() => setSidebarOpen(false)}
-              className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 text-[#5C4033] dark:text-[#E8D5C4] font-['Work_Sans'] transition-all"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Back to Documents</span>
-            </Link>
-          </div>
-
           {/* New Chat Button */}
-          <div className="p-4 border-b-2 border-[#C67B5C] dark:border-[#8B5A3C]">
-            <Button className="w-full gap-2 bg-[#C67B5C] hover:bg-[#B5674A] dark:bg-[#8B5A3C] dark:hover:bg-[#A0664A] text-[#FAF8F3] font-['Work_Sans'] font-semibold rounded-xl shadow-lg border-2 border-[#B5674A] dark:border-[#6D4832]">
-              <Plus className="w-5 h-5" strokeWidth={2.5} />
-              New Conversation
+          <div className="p-4">
+            <Button className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white font-['DM_Sans'] font-medium shadow-sm">
+              <Plus className="w-4 h-4" />
+              New Chat
             </Button>
           </div>
 
           {/* Conversations List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            <h3 className="text-xs font-bold text-[#8B5A3C] dark:text-[#D4A574] uppercase tracking-wider mb-3 font-['Work_Sans']">
-              Recent Chats
+          <div className="flex-1 overflow-y-auto px-3">
+            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-3 font-['DM_Sans']">
+              Recent
             </h3>
-            {conversations.map((conv) => (
-              <button
-                key={conv.id}
-                type="button"
-                className="w-full text-left p-4 rounded-xl hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 transition-all group border-2 border-transparent hover:border-[#C67B5C] dark:hover:border-[#8B5A3C]"
-              >
-                <div className="flex items-start gap-3">
-                  <MessageCircle className="w-5 h-5 text-[#8B5A3C] dark:text-[#D4A574] mt-1 group-hover:scale-110 transition-transform" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#5C4033] dark:text-[#F4EBE4] font-['Work_Sans'] leading-relaxed">
-                      {conv.title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-[#8B5A3C] dark:text-[#D4A574] font-['Work_Sans'] font-semibold">
-                        {conv.message_count} messages
-                      </span>
-                      <span className="text-xs text-[#A0826D]">•</span>
-                      <span className="text-xs text-[#8B5A3C] dark:text-[#D4A574] font-['Work_Sans']">
-                        {conv.created_at.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </span>
+            <div className="space-y-1">
+              {conversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  type="button"
+                  className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                >
+                  <div className="flex items-start gap-3">
+                    <MessageSquare className="w-4 h-4 text-slate-400 dark:text-slate-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate font-['Inter'] group-hover:text-slate-900 dark:group-hover:text-white">
+                        {conv.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
+                          {conv.message_count} messages
+                        </span>
+                        <span className="text-xs text-slate-400">•</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
+                          {conv.created_at.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Bottom Actions - Desktop */}
-          <div className="hidden lg:block p-4 border-t-2 border-[#C67B5C] dark:border-[#8B5A3C]">
+          {/* Bottom Actions */}
+          <div className="p-4 border-t border-slate-200 dark:border-slate-800">
             <Link
               to="/dashboard"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 text-[#5C4033] dark:text-[#E8D5C4] font-['Work_Sans'] transition-all font-medium"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-['DM_Sans'] transition-colors"
             >
-              <FileText className="w-5 h-5" />
-              <span className="text-sm">Back to Documents</span>
+              <FileText className="w-4 h-4" />
+              <span className="text-sm font-medium">Documents</span>
             </Link>
-          </div>
-
-          {/* Bottom Actions - Mobile */}
-          <div className="lg:hidden p-4 border-t-2 border-[#C67B5C] dark:border-[#8B5A3C] space-y-3">
-            {/* Dark Mode Toggle */}
-            <button
-              type="button"
-              onClick={toggleDarkMode}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#D4A574]/30 dark:hover:bg-[#4D3D2F]/50 text-[#5C4033] dark:text-[#E8D5C4] text-sm font-['Work_Sans'] font-medium transition-all"
-            >
-              {darkMode ? (
-                <>
-                  <Sun className="w-5 h-5" />
-                  <span>Light Mode</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-5 h-5" />
-                  <span>Dark Mode</span>
-                </>
-              )}
-            </button>
-
-            {/* Logout Button */}
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#8B5A3C]/20 dark:hover:bg-[#D4A574]/20 text-[#8B5A3C] dark:text-[#D4A574] text-sm font-['Work_Sans'] font-medium transition-all"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Logout</span>
-            </button>
           </div>
         </aside>
 
         {/* Chat Area */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-[#FAF8F3] dark:bg-[#1F1A15]">
+        <main className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900">
           {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto px-4 py-8">
-            <div className="max-w-4xl mx-auto space-y-8">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="max-w-4xl mx-auto space-y-6">
               {messages.map((msg, index) => (
                 <div
                   key={msg.id}
-                  className="animate-in fade-in slide-in-from-bottom-4 duration-700"
-                  style={{ animationDelay: `${index * 150}ms` }}
+                  className="animate-in fade-in slide-in-from-bottom-2 duration-500"
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
                   {msg.role === "user" ? (
                     /* User Message */
                     <div className="flex justify-end">
-                      <div className="max-w-[75%] bg-[#C67B5C] dark:bg-[#8B5A3C] text-[#FAF8F3] rounded-3xl rounded-br-md px-6 py-4 shadow-xl border-2 border-[#B5674A] dark:border-[#6D4832]">
-                        <p className="text-base leading-relaxed font-['Work_Sans'] font-medium">
+                      <div className="max-w-[85%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
+                        <p className="text-sm leading-relaxed font-['Inter']">
                           {msg.content}
                         </p>
-                        <p className="text-xs text-[#F4EBE4]/80 mt-3 font-['Work_Sans'] italic">
+                        <p className="text-xs text-blue-100 mt-2 font-['Inter']">
                           {msg.timestamp.toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
@@ -371,11 +329,9 @@ export function ChatPage() {
                     /* Assistant Message */
                     <div className="flex justify-start">
                       <div className="max-w-[85%]">
-                        <div className="bg-white dark:bg-[#2B2520] rounded-3xl rounded-tl-md px-6 py-5 shadow-xl border-2 border-[#E8D5C4] dark:border-[#4D3D2F]">
-                          <p className="text-base leading-relaxed text-[#3D2E26] dark:text-[#E8D5C4] font-['Lora'] whitespace-pre-wrap">
-                            {msg.content}
-                          </p>
-                          <p className="text-xs text-[#8B5A3C] dark:text-[#D4A574] mt-4 font-['Work_Sans'] italic">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-slate-200 dark:border-slate-700">
+                          <MarkdownContent content={msg.content} />
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter']">
                             {msg.timestamp.toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
@@ -385,41 +341,43 @@ export function ChatPage() {
 
                         {/* Source Citations */}
                         {msg.sources && msg.sources.length > 0 && (
-                          <div className="mt-4 space-y-2">
-                            <p className="text-xs font-bold text-[#8B5A3C] dark:text-[#D4A574] uppercase tracking-wider font-['Work_Sans'] mb-2">
+                          <div className="mt-3 space-y-2">
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-['DM_Sans']">
                               Sources
                             </p>
-                            {msg.sources.map((source) => (
-                              <div
-                                key={`${source.document_name}-${source.chunk_index}`}
-                                className="bg-[#F4EBE4] dark:bg-[#3D3028] border-2 border-[#E8D5C4] dark:border-[#4D3D2F] rounded-2xl p-4 hover:border-[#C67B5C] dark:hover:border-[#8B5A3C] hover:shadow-lg transition-all cursor-pointer group"
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className="p-2 bg-[#D4A574] dark:bg-[#8B5A3C] rounded-xl">
-                                    <FileText className="w-4 h-4 text-[#FAF8F3]" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold text-[#5C4033] dark:text-[#F4EBE4] font-['Work_Sans'] group-hover:text-[#C67B5C] dark:group-hover:text-[#D4A574] transition-colors">
-                                      {source.document_name}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                      <span className="text-xs text-[#8B5A3C] dark:text-[#D4A574] font-['Work_Sans']">
-                                        Chunk #{source.chunk_index}
-                                      </span>
-                                      <span className="text-xs text-[#A0826D]">
-                                        •
-                                      </span>
-                                      <span className="text-xs text-[#5C8B3C] dark:text-[#7FA550] font-['Work_Sans'] font-bold">
-                                        {(source.relevance_score * 100).toFixed(
-                                          0,
-                                        )}
-                                        % match
-                                      </span>
+                            <div className="grid gap-2">
+                              {msg.sources.map((source) => (
+                                <div
+                                  key={`${source.document_name}-${source.chunk_index}`}
+                                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer"
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                      <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate font-['Inter']">
+                                        {source.document_name}
+                                      </p>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
+                                          Chunk #{source.chunk_index}
+                                        </span>
+                                        <span className="text-xs text-slate-300 dark:text-slate-600">
+                                          •
+                                        </span>
+                                        <span className="text-xs font-medium text-green-600 dark:text-green-400 font-['Inter']">
+                                          {(
+                                            source.relevance_score * 100
+                                          ).toFixed(0)}
+                                          % match
+                                        </span>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -431,19 +389,19 @@ export function ChatPage() {
               {/* Streaming Indicator */}
               {isStreaming && (
                 <div className="flex justify-start">
-                  <div className="bg-white dark:bg-[#2B2520] rounded-3xl rounded-tl-md px-6 py-5 shadow-xl border-2 border-[#E8D5C4] dark:border-[#4D3D2F]">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 bg-[#C67B5C] dark:bg-[#D4A574] rounded-full animate-bounce" />
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
                       <div
-                        className="w-3 h-3 bg-[#C67B5C] dark:bg-[#D4A574] rounded-full animate-bounce"
+                        className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"
                         style={{ animationDelay: "0.2s" }}
                       />
                       <div
-                        className="w-3 h-3 bg-[#C67B5C] dark:bg-[#D4A574] rounded-full animate-bounce"
+                        className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"
                         style={{ animationDelay: "0.4s" }}
                       />
-                      <span className="text-sm text-[#8B5A3C] dark:text-[#D4A574] font-['Work_Sans'] italic ml-2">
-                        thinking...
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter'] ml-1">
+                        Typing...
                       </span>
                     </div>
                   </div>
@@ -453,19 +411,19 @@ export function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <div className="border-t-2 border-[#E8D5C4] dark:border-[#4D3D2F] bg-[#F4EBE4] dark:bg-[#2B2520] p-4 sm:p-6">
+          <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-4">
             <div className="max-w-4xl mx-auto">
-              <div className="flex items-end gap-3">
+              <div className="flex items-end gap-2">
                 <div className="flex-1 relative">
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    placeholder="Share your thoughts..."
+                    placeholder="Type a message..."
                     rows={1}
-                    className="w-full px-5 py-4 text-base bg-white dark:bg-[#3D3028] border-2 border-[#D4A574] dark:border-[#8B5A3C] rounded-2xl resize-none focus:outline-none focus:ring-4 focus:ring-[#D4A574]/30 dark:focus:ring-[#8B5A3C]/30 focus:border-[#C67B5C] dark:focus:border-[#D4A574] text-[#3D2E26] dark:text-[#E8D5C4] placeholder:text-[#A0826D] dark:placeholder:text-[#8B5A3C] font-['Work_Sans'] transition-all shadow-lg"
+                    className="w-full px-4 py-3 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 font-['Inter'] transition-all"
                     style={{
-                      minHeight: "56px",
+                      minHeight: "48px",
                       maxHeight: "200px",
                     }}
                   />
@@ -473,13 +431,13 @@ export function ChatPage() {
                 <Button
                   onClick={handleSendMessage}
                   disabled={!message.trim()}
-                  className="h-14 px-6 bg-[#C67B5C] hover:bg-[#B5674A] dark:bg-[#8B5A3C] dark:hover:bg-[#A0664A] disabled:opacity-40 disabled:cursor-not-allowed font-['Work_Sans'] font-bold rounded-2xl shadow-lg border-2 border-[#B5674A] dark:border-[#6D4832] text-[#FAF8F3]"
+                  className="h-12 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-['DM_Sans'] font-medium shadow-sm"
                 >
-                  <Send className="w-5 h-5" strokeWidth={2.5} />
+                  <Send className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-xs text-[#8B5A3C] dark:text-[#D4A574] mt-3 font-['Work_Sans'] italic hidden sm:block">
-                Press Enter to send • Shift+Enter for new line
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter'] hidden sm:block">
+                Press Enter to send, Shift+Enter for new line
               </p>
             </div>
           </div>
