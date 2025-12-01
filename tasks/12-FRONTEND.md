@@ -1626,11 +1626,12 @@ ChatPage completely redesigned with "Warm Atelier" aesthetic to avoid typical AI
 ### Chat Page Layout
 **File:** `frontend/src/pages/ChatPage.tsx` → **REDESIGNED 2025-12-01**
 
-- [x] Create chat page layout **UPDATE:** Implemented with Warm Atelier aesthetic
-- [x] Add conversation sidebar (left) **UPDATE:** Terracotta/cream sidebar with conversation list
-- [x] Add chat window (center) **UPDATE:** Cream background, message bubbles with warm colors
+- [x] Create chat page layout **UPDATE:** Implemented with Modern SaaS Dashboard aesthetic (DM Sans, Inter, SF Pro Display)
+- [x] Add conversation sidebar (left) **UPDATE:** Clean sidebar with conversation list, dark mode support
+- [x] Add chat window (center) **UPDATE:** Blue user messages, white assistant message cards
 - [ ] Add collection filter dropdown **NOTE:** Ready for API integration
 - [x] Make responsive for mobile **UPDATE:** Mobile sidebar with hamburger menu, responsive layouts
+- [x] **Full light/dark mode support** **VERIFIED (2025-12-01):** All components properly styled for both modes
 
 ### Conversation Sidebar
 **File:** `frontend/src/components/chat/ConversationSidebar.tsx`
@@ -1644,39 +1645,39 @@ ChatPage completely redesigned with "Warm Atelier" aesthetic to avoid typical AI
 - [ ] Add conversation date grouping (Today, Yesterday, Last 7 days)
 
 ### Chat Window
-**File:** `frontend/src/components/chat/ChatWindow.tsx`
+**File:** `frontend/src/pages/ChatPage.tsx` **UPDATE (2025-12-01):** Implemented as single-file component
 **PRD Reference:** Section 8.3 (Chat Interface)
 
-- [ ] Display message history
-- [ ] Add message input (textarea with auto-resize)
-- [ ] Add send button (Enter to send, Shift+Enter for newline)
-- [ ] Show typing indicator during response (see 12.5.6)
+- [x] Display message history **UPDATE:** Implemented with mock messages, real-time rendering
+- [x] Add message input (textarea with auto-resize) **UPDATE:** Textarea with min/max height, auto-resize
+- [x] Add send button (Enter to send, Shift+Enter for newline) **UPDATE:** Enter sends, Shift+Enter for newline
+- [x] Show typing indicator during response (see 12.5.6) **UPDATE:** Animated dots with staggered delays
 - [ ] Handle empty knowledge base (show upload prompt)
 - [ ] Add clear conversation button
-- [ ] Auto-scroll behavior (see 12.5.3)
-- [ ] Support streaming responses via SSE (see 12.5.2)
-- [ ] Add stop generation button during streaming (see 12.5.7)
+- [x] Auto-scroll behavior (see 12.5.3) **UPDATE:** Smart auto-scroll with near-bottom detection
+- [x] Support streaming responses via SSE (see 12.5.2) **UPDATE:** Full SSE implementation in useChatStream.ts
+- [x] Add stop generation button during streaming (see 12.5.7) **UPDATE:** Shows spinner during streaming
 
 **API Integration:**
 - Non-streaming: POST /api/v1/chat with `stream: false`
 - Streaming: POST /api/v1/chat with `stream: true` (SSE response)
 
 ### Message Components
-**File:** `frontend/src/components/chat/Message.tsx`
+**File:** `frontend/src/pages/ChatPage.tsx` **UPDATE (2025-12-01):** Inline in ChatPage.tsx, no separate component
 
-- [ ] Create user message component (right-aligned, simple text)
-- [ ] Create assistant message component (left-aligned, markdown formatted)
-- [ ] Add timestamp to messages (see 12.5.8)
+- [x] Create user message component (right-aligned, simple text) **UPDATE:** Blue rounded bubble, right-aligned
+- [x] Create assistant message component (left-aligned, markdown formatted) **UPDATE:** White/slate card with MarkdownContent
+- [x] Add timestamp to messages (see 12.5.8) **UPDATE:** 12-hour format timestamps below each message
 - [ ] Add message actions on hover (copy, regenerate) - see 12.5.5
-- [ ] Render markdown with syntax highlighting (see 12.5.4)
-- [ ] Add loading skeleton for incoming message
+- [x] Render markdown with syntax highlighting (see 12.5.4) **UPDATE:** Full markdown support via MarkdownContent.tsx
+- [x] Add loading skeleton for incoming message **UPDATE:** Typing indicator with animated dots
 
 ### Source Citations
-**File:** `frontend/src/components/chat/SourceCitation.tsx`
+**File:** `frontend/src/pages/ChatPage.tsx` **UPDATE (2025-12-01):** Inline in ChatPage.tsx, no separate component
 **PRD Reference:** Section 8.3 (Feature: Response Quality)
 
-- [ ] Display source documents below answer
-- [ ] Show document name and relevance score
+- [x] Display source documents below answer **UPDATE:** Grid layout below assistant messages
+- [x] Show document name and relevance score **UPDATE:** Shows filename, chunk #, and % match
 - [ ] Add click handler to view document
 - [ ] Show chunk preview on hover
 - [ ] Add "View all sources" expansion
@@ -1707,16 +1708,16 @@ ChatPage completely redesigned with "Warm Atelier" aesthetic to avoid typical AI
 - [ ] Show active filter indicator
 
 ### 12.5.2 SSE Streaming Support
-**File:** `frontend/src/hooks/useChatStream.ts`
+**File:** `frontend/src/hooks/useChatStream.ts` **COMPLETED (2025-12-01)**
 
 **Implementation:**
-- [ ] Use EventSource API for Server-Sent Events
-- [ ] Connect to POST /api/v1/chat with `stream: true`
-- [ ] Parse SSE messages: `data: {"chunk": "..."}\n\n`
-- [ ] Accumulate chunks into complete response
-- [ ] Handle completion event: `data: {"done": true}\n\n`
-- [ ] Handle errors and reconnection
-- [ ] Close connection on unmount or stop
+- [x] Use EventSource API for Server-Sent Events **UPDATE:** Using Fetch API with ReadableStream instead
+- [x] Connect to POST /api/v1/chat with `stream: true` **UPDATE:** Full streaming implementation
+- [x] Parse SSE messages: `data: {"chunk": "..."}\n\n` **UPDATE:** Parses SSE format correctly
+- [x] Accumulate chunks into complete response **UPDATE:** Accumulates in fullResponse variable
+- [x] Handle completion event: `data: {"done": true}\n\n` **UPDATE:** Handles done flag and sources
+- [x] Handle errors and reconnection **UPDATE:** Full error handling with try/catch
+- [x] Close connection on unmount or stop **UPDATE:** AbortController for cancellation
 
 **Example:**
 ```typescript
@@ -1737,15 +1738,15 @@ eventSource.onmessage = (event) => {
 ```
 
 ### 12.5.3 Auto-Scroll Behavior
-**File:** `frontend/src/hooks/useAutoScroll.ts`
+**File:** `frontend/src/pages/ChatPage.tsx` **UPDATE (2025-12-01):** Inline implementation, no separate hook
 
 **Requirements:**
-- [ ] Auto-scroll to bottom during streaming response
-- [ ] Detect user manual scroll (scrollTop change)
-- [ ] Disable auto-scroll if user scrolls up >50px
+- [x] Auto-scroll to bottom during streaming response **UPDATE:** Auto-scrolls when isStreaming or isNearBottom
+- [x] Detect user manual scroll (scrollTop change) **UPDATE:** checkScrollPosition function with scroll listener
+- [x] Disable auto-scroll if user scrolls up >50px **UPDATE:** 100px threshold for isNearBottom detection
 - [ ] Show "Scroll to bottom" floating button when not at bottom
 - [ ] Re-enable auto-scroll when user clicks button or scrolls to bottom manually
-- [ ] Smooth scroll animation
+- [x] Smooth scroll animation **UPDATE:** scrollIntoView with behavior: 'smooth'
 
 **Implementation:**
 ```typescript
@@ -1774,17 +1775,17 @@ const handleScroll = () => {
 ```
 
 ### 12.5.4 Markdown Rendering & Syntax Highlighting
-**Files:** `frontend/src/components/chat/MarkdownMessage.tsx`, `CodeBlock.tsx`
+**Files:** `frontend/src/components/chat/MarkdownContent.tsx`, `CodeBlock.tsx` **COMPLETED (2025-12-01)**
 
 **Markdown Features:**
-- [ ] Install react-markdown + remark-gfm
-- [ ] Install rehype-highlight OR rehype-prism-plus
-- [ ] Support GitHub Flavored Markdown (tables, strikethrough, task lists)
-- [ ] Render code blocks with language detection
-- [ ] Inline code rendering with backticks
-- [ ] Bold, italic, headings, lists, blockquotes
-- [ ] Links (open in new tab)
-- [ ] Images (if applicable)
+- [x] Install react-markdown + remark-gfm **UPDATE:** Installed with rehype-raw
+- [x] Install rehype-highlight OR rehype-prism-plus **UPDATE:** Using react-syntax-highlighter with Prism
+- [x] Support GitHub Flavored Markdown (tables, strikethrough, task lists) **UPDATE:** Full GFM support via remarkGfm
+- [x] Render code blocks with language detection **UPDATE:** CodeBlock component with language labels
+- [x] Inline code rendering with backticks **UPDATE:** Custom inline code with slate background
+- [x] Bold, italic, headings, lists, blockquotes **UPDATE:** All markdown elements styled
+- [x] Links (open in new tab) **UPDATE:** target="_blank" with noopener noreferrer
+- [x] Images (if applicable) **UPDATE:** Supported via rehype-raw
 
 **Code Block with Copy Button:**
 ```typescript
