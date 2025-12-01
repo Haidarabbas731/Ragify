@@ -11,7 +11,7 @@ import {
   oneDark,
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { useDarkMode } from "../../hooks/useDarkMode";
+import { useDarkMode } from "../../contexts/DarkModeContext";
 import { Button } from "../ui/button";
 
 interface CodeBlockProps {
@@ -38,29 +38,35 @@ export function CodeBlock({ language = "text", value }: CodeBlockProps) {
   };
 
   return (
-    <div className="relative group my-3 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
-      {/* Language label + Copy button */}
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 font-['DM_Sans'] uppercase tracking-wider">
+    <div className="relative group my-4 rounded-3xl overflow-hidden shadow-lg shadow-stone-200/50 dark:shadow-stone-900/50 border border-stone-200/80 dark:border-stone-700/80">
+      {/* Language label + Copy button - Warm Library style */}
+      <div className="flex items-center justify-between px-5 py-3 bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 dark:from-amber-950 dark:via-orange-950 dark:to-rose-950 border-b border-stone-200/60 dark:border-stone-700/60">
+        <span className="text-xs font-semibold text-stone-600 dark:text-stone-300 font-['Inter'] uppercase tracking-wide">
           {language}
         </span>
         <Button
           size="sm"
           variant="ghost"
           onClick={handleCopy}
-          className="h-7 px-2 gap-1.5 hover:bg-slate-200 dark:hover:bg-slate-700"
+          className="h-8 px-3 gap-1.5 rounded-xl bg-white/80 dark:bg-stone-800/80 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-stone-200 dark:border-stone-700 shadow-sm transition-all duration-200"
         >
           {copied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-              <span className="text-xs text-green-600 dark:text-green-400 font-['DM_Sans']">
-                Copied!
+              <Check
+                className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"
+                strokeWidth={2.5}
+              />
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-['Inter'] font-medium">
+                Copied
               </span>
             </>
           ) : (
             <>
-              <Copy className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-              <span className="text-xs text-slate-600 dark:text-slate-400 font-['DM_Sans']">
+              <Copy
+                className="w-3.5 h-3.5 text-stone-600 dark:text-stone-400"
+                strokeWidth={2}
+              />
+              <span className="text-xs text-stone-600 dark:text-stone-400 font-['Inter'] font-medium">
                 Copy
               </span>
             </>
@@ -74,14 +80,17 @@ export function CodeBlock({ language = "text", value }: CodeBlockProps) {
         style={darkMode ? oneDark : oneLight}
         customStyle={{
           margin: 0,
-          padding: "1rem",
+          padding: "1.25rem",
           fontSize: "0.875rem",
-          lineHeight: "1.5",
-          background: darkMode ? "#1e293b" : "#f8fafc",
+          lineHeight: "1.6",
+          background: darkMode ? "#1c1917" : "#fafaf9",
+          fontWeight: "normal",
+          borderRadius: "0 0 1.5rem 1.5rem",
         }}
         codeTagProps={{
           style: {
-            fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Source Code Pro', monospace",
+            fontWeight: "normal",
           },
         }}
       >

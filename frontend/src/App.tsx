@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { DarkModeProvider } from "./contexts/DarkModeContext";
 import { ChatPage } from "./pages/ChatPage";
 import { CollectionsPage } from "./pages/CollectionsPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -24,8 +25,9 @@ function App() {
   }, [initializeAuth]);
 
   return (
-    <BrowserRouter>
-      <Routes>
+    <DarkModeProvider>
+      <BrowserRouter>
+        <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route
           path="/login"
@@ -118,6 +120,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+    </DarkModeProvider>
   );
 }
 

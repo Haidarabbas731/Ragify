@@ -34,11 +34,11 @@ export function MarkdownContent({
             const inline = !match;
             const value = String(children).replace(/\n$/, "");
 
-            // Inline code
+            // Inline code - Warm Library style
             if (inline) {
               return (
                 <code
-                  className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-['Fira_Code'] text-sm border border-slate-200 dark:border-slate-700"
+                  className="px-2 py-1 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 font-['JetBrains_Mono'] text-sm rounded-md border border-amber-200/60 dark:border-amber-800/60 font-medium shadow-sm"
                   {...props}
                 >
                   {children}

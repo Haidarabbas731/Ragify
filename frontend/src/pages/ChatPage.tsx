@@ -1,18 +1,22 @@
 /**
- * Chat Page - Modern SaaS Dashboard
- * Clean, professional interface inspired by modern business dashboards
- * Fonts: DM Sans (UI), Inter (body), SF Pro Display (headings)
- * Color: Subtle blues, grays, white space, minimal accents
+ * Chat Page - Warm Modernist Library
+ * Sophisticated chat interface inspired by contemporary libraries at golden hour
+ * Fonts: Lora (headings), Source Serif Pro (reading), Inter (UI)
+ * Color: Cream, soft peach, warm grays, terracotta, sage green
+ * Style: Organic shapes, soft shadows, glassmorphism, coffee & paper palette
  */
 
 import {
+  BookMarked,
+  Coffee,
   FileText,
   LogOut,
   Menu,
-  MessageSquare,
+  MessageCircle,
   Moon,
   Plus,
   Send,
+  Sparkles,
   Sun,
   User,
   X,
@@ -22,7 +26,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { Button } from "../components/ui/button";
 import { useChatStream } from "../hooks/useChatStream";
-import { useDarkMode } from "../hooks/useDarkMode";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import { useAuthStore } from "../store/authStore";
 
 interface Message {
@@ -253,9 +257,9 @@ export function ChatPage() {
   ];
 
   return (
-    <div className="h-screen flex flex-col bg-white dark:bg-slate-950">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-stone-50 via-amber-50/30 to-orange-50/20 dark:from-stone-950 dark:via-stone-900 dark:to-stone-950 font-['Inter'] transition-colors duration-700">
       {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+      <nav className="sticky top-0 z-50 backdrop-blur-2xl bg-white/60 dark:bg-stone-950/60 border-b border-stone-200/40 dark:border-stone-700/40 shadow-sm">
         <div className="flex items-center justify-between px-4 sm:px-6 h-16">
           {/* Left Side */}
           <div className="flex items-center gap-4">
@@ -263,43 +267,46 @@ export function ChatPage() {
             <button
               type="button"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="lg:hidden p-2.5 rounded-2xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-all duration-300"
               aria-label="Toggle sidebar"
             >
-              <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <Menu className="w-5 h-5 text-stone-700 dark:text-stone-300" />
             </button>
 
             {/* Logo & Brand */}
-            <Link to="/dashboard" className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-white" strokeWidth={2} />
+            <Link to="/dashboard" className="flex items-center gap-3 group">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-600/20 to-orange-600/20 dark:from-amber-500/10 dark:to-orange-500/10 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500" />
+                <div className="relative w-11 h-11 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40 rounded-3xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 border border-amber-200/50 dark:border-amber-700/30">
+                  <Coffee className="w-5 h-5 text-amber-700 dark:text-amber-400" strokeWidth={2} />
+                </div>
               </div>
-              <span className="text-lg font-semibold text-slate-900 dark:text-white font-['DM_Sans'] hidden sm:block">
-                Chat
+              <span className="text-xl font-serif font-semibold text-stone-800 dark:text-stone-100 hidden sm:block tracking-tight" style={{fontFamily: "'Lora', serif"}}>
+                Knowledge Café
               </span>
             </Link>
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {/* Dark Mode Toggle */}
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2.5 rounded-2xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 transition-all duration-300 shadow-sm"
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
-                <Sun className="w-5 h-5 text-slate-400" />
+                <Sun className="w-5 h-5 text-amber-600" />
               ) : (
-                <Moon className="w-5 h-5 text-slate-600" />
+                <Moon className="w-5 h-5 text-stone-700" />
               )}
             </button>
 
             {/* User Menu - Hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-              <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-              <span className="text-sm text-slate-700 dark:text-slate-300 font-['Inter']">
+            <div className="hidden lg:flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-stone-100 to-amber-50 dark:from-stone-800 dark:to-stone-800 border border-stone-200/50 dark:border-stone-700/50 shadow-sm">
+              <User className="w-4 h-4 text-stone-600 dark:text-stone-400" />
+              <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
                 {user?.email}
               </span>
             </div>
@@ -309,10 +316,10 @@ export function ChatPage() {
               onClick={handleLogout}
               variant="ghost"
               size="sm"
-              className="hidden lg:flex gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-['DM_Sans']"
+              className="hidden lg:flex gap-2 px-4 py-2.5 rounded-2xl bg-rose-100/60 dark:bg-rose-900/20 hover:bg-rose-200/80 dark:hover:bg-rose-800/30 text-rose-700 dark:text-rose-400 font-medium transition-all duration-300 shadow-sm"
             >
               <LogOut className="w-4 h-4" />
-              <span>Logout</span>
+              <span>Exit</span>
             </Button>
           </div>
         </div>
@@ -322,7 +329,7 @@ export function ChatPage() {
       {sidebarOpen && (
         <button
           type="button"
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden cursor-default"
+          className="fixed inset-0 bg-stone-900/20 backdrop-blur-sm z-30 lg:hidden cursor-default"
           onClick={() => setSidebarOpen(false)}
           onKeyDown={(e) => {
             if (e.key === "Escape") setSidebarOpen(false);
@@ -337,55 +344,54 @@ export function ChatPage() {
         <aside
           className={`${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0 fixed lg:relative z-40 w-72 h-full border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 transition-transform duration-300 flex flex-col`}
+          } lg:translate-x-0 fixed lg:relative z-40 w-80 h-full backdrop-blur-2xl bg-white/70 dark:bg-stone-950/70 border-r border-stone-200/40 dark:border-stone-700/40 transition-all duration-500 flex flex-col shadow-2xl lg:shadow-none`}
         >
           {/* Mobile Header */}
-          <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-            <h2 className="text-base font-semibold text-slate-900 dark:text-white font-['DM_Sans']">
+          <div className="lg:hidden flex items-center justify-between p-4 border-b border-stone-200/40 dark:border-stone-700/40">
+            <h2 className="text-lg font-serif font-semibold text-stone-800 dark:text-stone-100" style={{fontFamily: "'Lora', serif"}}>
               Conversations
             </h2>
             <button
               type="button"
               onClick={() => setSidebarOpen(false)}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 rounded-2xl hover:bg-stone-100 dark:hover:bg-stone-800 transition-all"
               aria-label="Close sidebar"
             >
-              <X className="w-5 h-5 text-slate-500" />
+              <X className="w-5 h-5 text-stone-600 dark:text-stone-400" />
             </button>
           </div>
 
           {/* New Chat Button */}
-          <div className="p-4">
-            <Button className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white font-['DM_Sans'] font-medium shadow-sm">
-              <Plus className="w-4 h-4" />
-              New Chat
+          <div className="p-4 border-b border-stone-200/40 dark:border-stone-700/40">
+            <Button className="w-full gap-2.5 bg-gradient-to-r from-amber-500/90 to-orange-500/90 hover:from-amber-600 hover:to-orange-600 dark:from-amber-600/80 dark:to-orange-600/80 dark:hover:from-amber-600 dark:hover:to-orange-600 text-white font-medium rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 py-6 text-base">
+              <Plus className="w-5 h-5" strokeWidth={2.5} />
+              <span className="font-serif" style={{fontFamily: "'Lora', serif"}}>New Conversation</span>
             </Button>
           </div>
 
           {/* Conversations List */}
-          <div className="flex-1 overflow-y-auto px-3">
-            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-3 font-['DM_Sans']">
+          <div className="flex-1 overflow-y-auto p-3 custom-scrollbar">
+            <h3 className="text-xs font-bold text-stone-600 dark:text-stone-400 uppercase tracking-widest mb-3 px-3 flex items-center gap-2">
+              <MessageCircle className="w-3.5 h-3.5" />
               Recent
             </h3>
-            <div className="space-y-1">
+            <div className="space-y-2">
               {conversations.map((conv) => (
                 <button
                   key={conv.id}
                   type="button"
-                  className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+                  className="w-full text-left p-4 rounded-3xl bg-gradient-to-br from-stone-50 to-amber-50/30 dark:from-stone-900/50 dark:to-stone-900/30 hover:from-amber-50/80 hover:to-orange-50/50 dark:hover:from-stone-800/60 dark:hover:to-stone-800/40 border border-stone-200/30 dark:border-stone-700/30 hover:border-amber-300/50 dark:hover:border-amber-700/30 transition-all duration-300 group shadow-sm hover:shadow-md"
                 >
                   <div className="flex items-start gap-3">
-                    <MessageSquare className="w-4 h-4 text-slate-400 dark:text-slate-500 mt-0.5 flex-shrink-0" />
+                    <BookMarked className="w-4.5 h-4.5 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0 group-hover:text-orange-600 dark:group-hover:text-amber-400 transition-colors" strokeWidth={2} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate font-['Inter'] group-hover:text-slate-900 dark:group-hover:text-white">
+                      <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate mb-1.5 group-hover:text-amber-900 dark:group-hover:text-amber-100">
                         {conv.title}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
-                          {conv.message_count} messages
-                        </span>
-                        <span className="text-xs text-slate-400">•</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
+                      <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
+                        <span>{conv.message_count} messages</span>
+                        <span className="text-stone-400 dark:text-stone-600">•</span>
+                        <span>
                           {conv.created_at.toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
@@ -400,53 +406,56 @@ export function ChatPage() {
           </div>
 
           {/* Bottom Actions */}
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="p-4 border-t border-stone-200/40 dark:border-stone-700/40">
             <Link
               to="/dashboard"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 font-['DM_Sans'] transition-colors"
+              className="flex items-center gap-3 px-4 py-3 rounded-3xl bg-gradient-to-br from-stone-100 to-amber-50/50 dark:from-stone-800/60 dark:to-stone-800/40 hover:from-amber-100/80 hover:to-orange-100/60 dark:hover:from-stone-700/70 dark:hover:to-stone-700/50 text-stone-700 dark:text-stone-200 font-medium transition-all duration-300 shadow-sm hover:shadow-md border border-stone-200/30 dark:border-stone-700/30"
             >
               <FileText className="w-4 h-4" />
-              <span className="text-sm font-medium">Documents</span>
+              <span>Your Library</span>
             </Link>
           </div>
         </aside>
 
         {/* Chat Area */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-900">
+        <main className="flex-1 flex flex-col overflow-hidden">
           {/* Messages Container */}
           <div
             ref={messagesContainerRef}
-            className="flex-1 overflow-y-auto p-4 sm:p-6 relative"
+            className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar"
           >
-            <div className="max-w-4xl mx-auto space-y-6">
-              {messages.map((msg, index) => (
+            <div className="max-w-4xl mx-auto space-y-8">
+              {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className="animate-in fade-in slide-in-from-bottom-2 duration-500"
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  className="animate-in fade-in slide-in-from-bottom-4 duration-700"
                 >
                   {msg.role === "user" ? (
                     /* User Message */
                     <div className="flex justify-end">
-                      <div className="max-w-[85%] bg-blue-600 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
-                        <p className="text-sm leading-relaxed font-['Inter']">
-                          {msg.content}
-                        </p>
-                        <p className="text-xs text-blue-100 mt-2 font-['Inter']">
-                          {msg.timestamp.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
+                      <div className="max-w-[80%] relative group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-600/5 dark:to-orange-600/5 rounded-[2rem] blur-xl group-hover:blur-2xl transition-all duration-500" />
+                        <div className="relative bg-gradient-to-br from-amber-500 to-orange-600 dark:from-amber-600/90 dark:to-orange-600/90 text-white rounded-[2rem] rounded-br-lg px-6 py-4 shadow-lg hover:shadow-xl transition-all duration-300">
+                          <p className="text-sm leading-relaxed font-medium" style={{fontFamily: "'Source Serif Pro', serif"}}>
+                            {msg.content}
+                          </p>
+                          <p className="text-xs text-white/75 mt-2.5">
+                            {msg.timestamp.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   ) : msg.content ? (
                     /* Assistant Message - Only show if there's content */
                     <div className="flex justify-start">
-                      <div className="max-w-[85%]">
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-slate-200 dark:border-slate-700">
+                      <div className="max-w-[80%] relative group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-stone-300/10 to-amber-300/10 dark:from-stone-700/10 dark:to-amber-700/10 rounded-[2rem] blur-xl group-hover:blur-2xl transition-all duration-500" />
+                        <div className="relative backdrop-blur-xl bg-white/80 dark:bg-stone-900/80 rounded-[2rem] rounded-tl-lg px-6 py-5 shadow-lg border border-stone-200/40 dark:border-stone-700/30 hover:shadow-xl transition-all duration-300">
                           <MarkdownContent content={msg.content} />
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter']">
+                          <p className="text-xs text-stone-500 dark:text-stone-400 mt-4 pt-3 border-t border-stone-200/50 dark:border-stone-700/50">
                             {msg.timestamp.toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
@@ -456,32 +465,31 @@ export function ChatPage() {
 
                         {/* Source Citations */}
                         {msg.sources && msg.sources.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-['DM_Sans']">
-                              Sources
+                          <div className="mt-4 space-y-2.5">
+                            <p className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500" />
+                              Referenced sources
                             </p>
-                            <div className="grid gap-2">
+                            <div className="grid gap-2.5">
                               {msg.sources.map((source) => (
                                 <div
                                   key={`${source.document_name}-${source.chunk_index}`}
-                                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer"
+                                  className="backdrop-blur-xl bg-gradient-to-br from-amber-50/80 to-orange-50/60 dark:from-stone-800/60 dark:to-amber-900/20 rounded-3xl p-4 border border-amber-200/40 dark:border-amber-700/20 hover:border-amber-300/60 dark:hover:border-amber-600/30 transition-all duration-300 cursor-pointer group/source shadow-sm hover:shadow-md"
                                 >
-                                  <div className="flex items-start gap-3">
-                                    <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded">
-                                      <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                  <div className="flex items-start gap-3.5">
+                                    <div className="p-2.5 bg-gradient-to-br from-amber-400 to-orange-500 dark:from-amber-600/80 dark:to-orange-600/80 rounded-2xl shadow-md">
+                                      <FileText className="w-4 h-4 text-white" strokeWidth={2} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate font-['Inter']">
+                                      <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate mb-1.5">
                                         {source.document_name}
                                       </p>
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
-                                          Chunk #{source.chunk_index}
+                                      <div className="flex items-center gap-2.5 text-xs">
+                                        <span className="text-stone-600 dark:text-stone-400">
+                                          Section {source.chunk_index}
                                         </span>
-                                        <span className="text-xs text-slate-300 dark:text-slate-600">
-                                          •
-                                        </span>
-                                        <span className="text-xs font-medium text-green-600 dark:text-green-400 font-['Inter']">
+                                        <span className="text-stone-400 dark:text-stone-600">•</span>
+                                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                                           {(
                                             source.relevance_score * 100
                                           ).toFixed(0)}
@@ -504,19 +512,21 @@ export function ChatPage() {
               {/* Streaming Indicator */}
               {isStreaming && (
                 <div className="flex justify-start">
-                  <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-                      <div
-                        className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"
-                        style={{ animationDelay: "0.2s" }}
-                      />
-                      <div
-                        className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"
-                        style={{ animationDelay: "0.4s" }}
-                      />
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter'] ml-1">
-                        Typing...
+                  <div className="backdrop-blur-xl bg-white/80 dark:bg-stone-900/80 rounded-[2rem] rounded-tl-lg px-6 py-4 shadow-lg border border-stone-200/40 dark:border-stone-700/30">
+                    <div className="flex items-center gap-3">
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 bg-gradient-to-r from-amber-500 to-orange-600 dark:from-amber-600 dark:to-orange-600 rounded-full animate-pulse" />
+                        <div
+                          className="w-2 h-2 bg-gradient-to-r from-amber-500 to-orange-600 dark:from-amber-600 dark:to-orange-600 rounded-full animate-pulse"
+                          style={{ animationDelay: "0.2s" }}
+                        />
+                        <div
+                          className="w-2 h-2 bg-gradient-to-r from-amber-500 to-orange-600 dark:from-amber-600 dark:to-orange-600 rounded-full animate-pulse"
+                          style={{ animationDelay: "0.4s" }}
+                        />
+                      </div>
+                      <span className="text-sm text-stone-600 dark:text-stone-300 font-medium">
+                        Thinking...
                       </span>
                     </div>
                   </div>
@@ -529,42 +539,66 @@ export function ChatPage() {
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-4">
+          <div className="backdrop-blur-2xl bg-white/70 dark:bg-stone-950/70 border-t border-stone-200/40 dark:border-stone-700/40 p-4 sm:p-6 shadow-2xl">
             <div className="max-w-4xl mx-auto">
-              <div className="flex items-end gap-2">
-                <div className="flex-1 relative">
+              <div className="flex items-end gap-3">
+                <div className="flex-1 relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-200/20 to-orange-200/20 dark:from-amber-900/10 dark:to-orange-900/10 rounded-3xl blur-xl group-focus-within:blur-2xl transition-all duration-500" />
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    placeholder="Type a message..."
+                    placeholder="Ask me anything..."
                     rows={1}
-                    className="w-full px-4 py-3 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 font-['Inter'] transition-all"
+                    className="relative w-full px-6 py-4 text-base bg-gradient-to-br from-stone-50 to-amber-50/30 dark:from-stone-900/80 dark:to-stone-900/60 border border-stone-200/50 dark:border-stone-700/40 rounded-3xl resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/50 dark:focus:ring-amber-600/50 text-stone-800 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 transition-all duration-300 shadow-md focus:shadow-lg backdrop-blur-xl"
                     style={{
-                      minHeight: "48px",
+                      minHeight: "58px",
                       maxHeight: "200px",
+                      fontFamily: "'Source Serif Pro', serif",
                     }}
                   />
                 </div>
                 <Button
                   onClick={handleSendMessage}
                   disabled={!message.trim() || isStreaming}
-                  className="h-12 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-['DM_Sans'] font-medium shadow-sm"
+                  className="relative h-[58px] px-6 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 dark:from-amber-600/90 dark:to-orange-600/90 dark:hover:from-amber-600 dark:hover:to-orange-600 disabled:from-stone-400 disabled:to-stone-500 disabled:cursor-not-allowed text-white rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:shadow-none hover:scale-105 active:scale-95"
                 >
                   {isStreaming ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2.5 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <Send className="w-4 h-4" />
+                    <Send className="w-5 h-5" strokeWidth={2.5} />
                   )}
                 </Button>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter'] hidden sm:block">
-                Press Enter to send, Shift+Enter for new line
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-3.5 hidden sm:block text-center">
+                Press Enter to send • Shift+Enter for new line
               </p>
             </div>
           </div>
         </main>
       </div>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(to bottom, rgb(217 119 6 / 0.3), rgb(234 88 12 / 0.3));
+          border-radius: 999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(to bottom, rgb(217 119 6 / 0.5), rgb(234 88 12 / 0.5));
+        }
+        :global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(to bottom, rgb(217 119 6 / 0.2), rgb(234 88 12 / 0.2));
+        }
+        :global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(to bottom, rgb(217 119 6 / 0.4), rgb(234 88 12 / 0.4));
+        }
+      `}</style>
     </div>
   );
 }

@@ -13,7 +13,7 @@ import { z } from "zod";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { useDarkMode } from "../hooks/useDarkMode";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import api from "../lib/api";
 
 // Password strength validation

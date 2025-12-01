@@ -27,7 +27,7 @@ import {
   SearchFilter,
 } from "../components/documents/SearchFilter";
 import { Button } from "../components/ui/button";
-import { useDarkMode } from "../hooks/useDarkMode";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import { useAuthStore } from "../store/authStore";
 
 export function DocumentsPage() {

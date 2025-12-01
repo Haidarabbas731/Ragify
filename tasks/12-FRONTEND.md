@@ -1632,6 +1632,7 @@ ChatPage completely redesigned with "Warm Atelier" aesthetic to avoid typical AI
 - [ ] Add collection filter dropdown **NOTE:** Ready for API integration
 - [x] Make responsive for mobile **UPDATE:** Mobile sidebar with hamburger menu, responsive layouts
 - [x] **Full light/dark mode support** **VERIFIED (2025-12-01):** All components properly styled for both modes
+- [x] **Dark mode toggle working** **FIXED (2025-12-01):** Resolved state conflict issue by implementing DarkModeContext (React Context Provider) to replace multiple independent useDarkMode hook instances. Multiple components (ChatPage, CodeBlock, etc.) were creating separate state instances causing conflicts. Now uses shared context provider wrapping entire app.
 
 ### Conversation Sidebar
 **File:** `frontend/src/components/chat/ConversationSidebar.tsx`
