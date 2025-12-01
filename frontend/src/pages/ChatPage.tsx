@@ -6,7 +6,6 @@
  */
 
 import {
-  ArrowDown,
   FileText,
   LogOut,
   Menu,
@@ -106,7 +105,6 @@ export function ChatPage() {
   // Ref for auto-scroll
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const [showScrollButton, setShowScrollButton] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
 
   // Streaming hook
@@ -120,9 +118,8 @@ export function ChatPage() {
       const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
       const isNear = distanceFromBottom < 100;
       setIsNearBottom(isNear);
-      setShowScrollButton(!isNear && messages.length > 3);
     }
-  }, [messages.length]);
+  }, []);
 
   // Auto-scroll to bottom smoothly
   const scrollToBottom = useCallback((smooth = true) => {
@@ -176,13 +173,13 @@ export function ChatPage() {
     setMessages((prev) => [...prev, userMessage]);
     setMessage("");
 
-    // Create placeholder for assistant message
+    // Create placeholder for assistant message (without timestamp initially)
     const assistantMessageId = (Date.now() + 1).toString();
     const assistantMessage: Message = {
       id: assistantMessageId,
       role: "assistant",
       content: "",
-      timestamp: new Date(),
+      timestamp: new Date(), // Will be updated on completion
     };
     setMessages((prev) => [...prev, assistantMessage]);
 
@@ -449,12 +446,14 @@ export function ChatPage() {
                       <div className="max-w-[85%]">
                         <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-slate-200 dark:border-slate-700">
                           <MarkdownContent content={msg.content} />
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter']">
-                            {msg.timestamp.toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
+                          {msg.content && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter']">
+                              {msg.timestamp.toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                          )}
                         </div>
 
                         {/* Source Citations */}
@@ -529,19 +528,6 @@ export function ChatPage() {
               {/* Scroll anchor */}
               <div ref={messagesEndRef} />
             </div>
-
-            {/* Scroll to Bottom Button - Floating */}
-            {showScrollButton && (
-              <button
-                type="button"
-                onClick={() => scrollToBottom(true)}
-                className="absolute bottom-6 right-6 p-3 bg-white dark:bg-slate-800 border-2 border-blue-500 dark:border-blue-400 rounded-full shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 group animate-in fade-in slide-in-from-bottom-4"
-                aria-label="Scroll to bottom"
-              >
-                <ArrowDown className="w-5 h-5 text-blue-600 dark:text-blue-400 group-hover:translate-y-0.5 transition-transform" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 dark:bg-blue-400 rounded-full animate-pulse" />
-              </button>
-            )}
           </div>
 
           {/* Input Area */}
