@@ -21,6 +21,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { Button } from "../components/ui/button";
+import { useChatStream } from "../hooks/useChatStream";
 import { useDarkMode } from "../hooks/useDarkMode";
 import { useAuthStore } from "../store/authStore";
 
@@ -43,17 +44,141 @@ interface Conversation {
   created_at: Date;
 }
 
+// Mock messages for demonstration
+const MOCK_MESSAGES: Message[] = [
+  {
+    id: "1",
+    role: "user",
+    content: "What is RAG and how does it work?",
+    timestamp: new Date("2024-01-15T10:00:00"),
+  },
+  {
+    id: "2",
+    role: "assistant",
+    content:
+      "**RAG (Retrieval-Augmented Generation)** is a technique that combines information retrieval with language generation.\n\n## How it works:\n\n1. **Retrieval**: First retrieves relevant documents from a knowledge base\n2. **Augmentation**: Uses those documents as context\n3. **Generation**: Generates accurate, grounded responses\n\nHere's a simple example:\n\n```python\ndef retrieve_and_generate(query, knowledge_base):\n    # Retrieve relevant documents\n    relevant_docs = search(query, knowledge_base)\n    \n    # Generate response with context\n    response = llm.generate(query, context=relevant_docs)\n    \n    return response\n```\n\nThis approach ensures responses are both *accurate* and *verifiable*.",
+    timestamp: new Date("2024-01-15T10:00:05"),
+    sources: [
+      {
+        document_name: "rag-overview.pdf",
+        chunk_index: 3,
+        relevance_score: 0.92,
+      },
+      {
+        document_name: "llm-techniques.md",
+        chunk_index: 7,
+        relevance_score: 0.87,
+      },
+    ],
+  },
+  {
+    id: "3",
+    role: "user",
+    content: "Can you explain the retrieval process in more detail?",
+    timestamp: new Date("2024-01-15T10:01:00"),
+  },
+  {
+    id: "4",
+    role: "assistant",
+    content:
+      "The retrieval process involves several key steps:\n\n1. **Query Embedding**: Your question is converted into a vector representation\n2. **Similarity Search**: The system searches through stored document chunks to find the most relevant ones\n3. **Ranking**: Retrieved chunks are ranked by relevance score\n4. **Context Assembly**: Top chunks are combined to provide context for the AI response\n\nThis ensures responses are grounded in your actual documents rather than hallucinated information.",
+    timestamp: new Date("2024-01-15T10:01:05"),
+    sources: [
+      {
+        document_name: "rag-overview.pdf",
+        chunk_index: 5,
+        relevance_score: 0.94,
+      },
+    ],
+  },
+];
+
 export function ChatPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [isStreaming] = useState(false);
+  const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
+  const [currentConversationId] = useState<string | null>(null);
+
+  // Streaming hook
+  const { isStreaming, streamChat } = useChatStream();
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || isStreaming) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: message.trim(),
+      timestamp: new Date(),
+    };
+
+    // Add user message to chat
+    setMessages((prev) => [...prev, userMessage]);
+    setMessage("");
+
+    // Create placeholder for assistant message
+    const assistantMessageId = (Date.now() + 1).toString();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, assistantMessage]);
+
+    // Stream the response
+    await streamChat({
+      query: userMessage.content,
+      conversationId: currentConversationId || undefined,
+      onChunk: (chunk) => {
+        // Update assistant message with streaming content
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? { ...msg, content: msg.content + chunk }
+              : msg,
+          ),
+        );
+      },
+      onComplete: (fullResponse, sources) => {
+        // Update with final response and sources
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? { ...msg, content: fullResponse, sources }
+              : msg,
+          ),
+        );
+      },
+      onError: (error) => {
+        // Show error message
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId
+              ? {
+                  ...msg,
+                  content: `**Error:** ${error}\n\nPlease try again.`,
+                }
+              : msg,
+          ),
+        );
+      },
+    });
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   // Mock conversations (will be replaced with real API data)
@@ -77,68 +202,6 @@ export function ChatPage() {
       created_at: new Date("2024-01-13"),
     },
   ];
-
-  // Mock messages (will be replaced with real API data)
-  const messages: Message[] = [
-    {
-      id: "1",
-      role: "user",
-      content: "What is RAG and how does it work?",
-      timestamp: new Date("2024-01-15T10:00:00"),
-    },
-    {
-      id: "2",
-      role: "assistant",
-      content:
-        "**RAG (Retrieval-Augmented Generation)** is a technique that combines information retrieval with language generation.\n\n## How it works:\n\n1. **Retrieval**: First retrieves relevant documents from a knowledge base\n2. **Augmentation**: Uses those documents as context\n3. **Generation**: Generates accurate, grounded responses\n\nHere's a simple example:\n\n```python\ndef retrieve_and_generate(query, knowledge_base):\n    # Retrieve relevant documents\n    relevant_docs = search(query, knowledge_base)\n    \n    # Generate response with context\n    response = llm.generate(query, context=relevant_docs)\n    \n    return response\n```\n\nThis approach ensures responses are both *accurate* and *verifiable*.",
-      timestamp: new Date("2024-01-15T10:00:05"),
-      sources: [
-        {
-          document_name: "rag-overview.pdf",
-          chunk_index: 3,
-          relevance_score: 0.92,
-        },
-        {
-          document_name: "llm-techniques.md",
-          chunk_index: 7,
-          relevance_score: 0.87,
-        },
-      ],
-    },
-    {
-      id: "3",
-      role: "user",
-      content: "Can you explain the retrieval process in more detail?",
-      timestamp: new Date("2024-01-15T10:01:00"),
-    },
-    {
-      id: "4",
-      role: "assistant",
-      content:
-        "The retrieval process involves several key steps:\n\n1. Query Embedding: Your question is converted into a vector representation\n2. Similarity Search: The system searches through stored document chunks to find the most relevant ones\n3. Ranking: Retrieved chunks are ranked by relevance score\n4. Context Assembly: Top chunks are combined to provide context for the AI response\n\nThis ensures responses are grounded in your actual documents rather than hallucinated information.",
-      timestamp: new Date("2024-01-15T10:01:08"),
-      sources: [
-        {
-          document_name: "rag-overview.pdf",
-          chunk_index: 5,
-          relevance_score: 0.94,
-        },
-      ],
-    },
-  ];
-
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
-    // TODO: Implement API call to send message
-    setMessage("");
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
 
   return (
     <div className="h-screen flex flex-col bg-white dark:bg-slate-950">
@@ -430,10 +493,14 @@ export function ChatPage() {
                 </div>
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!message.trim()}
+                  disabled={!message.trim() || isStreaming}
                   className="h-12 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-['DM_Sans'] font-medium shadow-sm"
                 >
-                  <Send className="w-4 h-4" />
+                  {isStreaming ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
                 </Button>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-['Inter'] hidden sm:block">
