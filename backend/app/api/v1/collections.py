@@ -123,10 +123,13 @@ async def get_collection(
 
     # Single query with LEFT JOIN to get collection + document count
     query = (
-        select(Collection, func.count(Document.document_id).label("doc_count"))
+        select(
+            Collection,
+            func.count(Document.document_id).label("doc_count"),  # type:ignore
+        )  # type:ignore
         .outerjoin(
             Document,
-            (Collection.collection_id == Document.collection_id)
+            (Collection.collection_id == Document.collection_id)  # type:ignore
             & (Document.status != "DELETED"),
         )
         .where(
@@ -180,7 +183,7 @@ async def update_collection_endpoint(
             )
 
         # Add document count using optimized query
-        count_query = select(func.count(Document.document_id)).where(
+        count_query = select(func.count(Document.document_id)).where(  # type:ignore
             Document.collection_id == collection_id, Document.status != "DELETED"
         )
         count_result = await db.exec(count_query)
