@@ -20,6 +20,7 @@ from app.schemas.document import (
     BatchDeleteResponse,
     BatchUpdateRequest,
     BatchUpdateResponse,
+    BulkUploadResponse,
     DocumentListParams,
     DocumentResponse,
     DocumentsListResponse,
@@ -184,6 +185,199 @@ async def upload_document(
         print(f"Warning: Failed to enqueue processing job for {document_id}: {e}")
 
     return document
+
+
+@router.post(
+    "/bulk-upload", response_model=BulkUploadResponse, status_code=status.HTTP_201_CREATED
+)
+async def bulk_upload_documents(
+    files: list[UploadFile] = File(..., description="Multiple document files (PDF, DOCX, TXT, MD)"),
+    collection_id: str | None = Form(
+        None,
+        description="Optional collection ID for all documents",
+    ),
+    category: str | None = Form(None, description="Optional category tag for all documents"),
+    tags: str | None = Form(None, description="Optional comma-separated tags for all documents"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    arq: ArqRedis = Depends(get_arq_redis),
+) -> dict:
+    """
+    Upload multiple documents in a single request.
+
+    Workflow:
+    1. Validate each file type and size
+    2. Check total size against user storage quota
+    3. Upload files to B2 storage
+    4. Create document records (status=PROCESSING)
+    5. Enqueue background processing jobs
+    6. Return upload results with success/failure counts
+
+    Args:
+        files: List of uploaded files
+        collection_id: Optional collection ID applied to all documents
+        category: Optional category tag applied to all documents
+        tags: Optional comma-separated tags applied to all documents
+        current_user: Authenticated user
+        db: Database session
+        arq: ARQ Redis connection
+
+    Returns:
+        Bulk upload result with uploaded documents and error details
+
+    Raises:
+        HTTPException: 400 if validation fails, 413 if quota exceeded
+    """
+    # Enforce max batch size
+    max_batch = settings.MAX_UPLOAD_BATCH
+    if len(files) > max_batch:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot upload more than {max_batch} files at once",
+        )
+
+    uploaded_documents = []
+    failed_uploads = []
+    total_size = 0
+    b2_service = await get_b2_service()
+
+    # Validate collection_id if provided
+    validated_collection_id = None
+    if collection_id:
+        validate_uuid(collection_id, "collection_id")
+        result = await db.exec(
+            select(Collection).where(
+                Collection.collection_id == collection_id,
+                Collection.user_id == current_user.user_id,
+            )
+        )
+        collection = result.first()
+        if collection:
+            validated_collection_id = collection_id
+
+    # Prepare common metadata
+    doc_metadata = {}
+    if category:
+        doc_metadata["category"] = category
+    if tags:
+        doc_metadata["tags"] = [tag.strip() for tag in tags.split(",")]
+
+    # First pass: validate all files and calculate total size
+    for file in files:
+        if not file.filename:
+            failed_uploads.append({"filename": "unknown", "error": "Filename is required"})
+            continue
+
+        file_extension = file.filename.split(".")[-1].lower()
+        if file_extension not in settings.allowed_file_types_list:
+            failed_uploads.append(
+                {
+                    "filename": file.filename,
+                    "error": f"File type not supported. Allowed types: {settings.ALLOWED_FILE_TYPES}",
+                }
+            )
+            continue
+
+        # Get file size
+        file.file.seek(0, 2)
+        file_size = file.file.tell()
+        file.file.seek(0)
+
+        # Validate individual file size
+        max_size_bytes = settings.MAX_FILE_SIZE_MB * 1024 * 1024
+        if file_size > max_size_bytes:
+            failed_uploads.append(
+                {
+                    "filename": file.filename,
+                    "error": f"File size ({file_size} bytes) exceeds maximum allowed size ({max_size_bytes} bytes)",
+                }
+            )
+            continue
+
+        total_size += file_size
+
+    # Check total storage quota
+    new_storage_used = current_user.storage_used_bytes + total_size
+    if new_storage_used > current_user.storage_limit_bytes:
+        remaining = current_user.storage_limit_bytes - current_user.storage_used_bytes
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Storage quota exceeded. Remaining: {remaining} bytes, Required: {total_size} bytes",
+        )
+
+    # Second pass: upload valid files
+    for file in files:
+        # Skip files that failed validation
+        if any(f["filename"] == file.filename for f in failed_uploads):
+            continue
+
+        try:
+            if not file.filename:
+                continue
+
+            file_extension = file.filename.split(".")[-1].lower()
+
+            # Get file size again
+            file.file.seek(0, 2)
+            file_size = file.file.tell()
+            file.file.seek(0)
+
+            # Upload to B2
+            storage_key = await b2_service.upload_file(file, current_user.user_id)
+
+            # Extract document_id from storage_key
+            document_id = storage_key.split("/")[-1].split("-")[0]
+
+            # Create document record
+            document = Document(
+                document_id=document_id,
+                user_id=current_user.user_id,
+                collection_id=validated_collection_id,
+                filename=file.filename,
+                file_type=file_extension,
+                size_bytes=file_size,
+                storage_key=storage_key,
+                doc_metadata=doc_metadata.copy(),
+                status=DocumentStatus.PROCESSING.value,
+                uploaded_at=datetime.now(UTC),
+            )
+
+            db.add(document)
+
+            # Enqueue background processing job
+            try:
+                await arq.enqueue_job(
+                    "process_document",
+                    document_id=document_id,
+                    user_id=current_user.user_id,
+                )
+            except Exception as e:
+                print(f"Warning: Failed to enqueue processing job for {document_id}: {e}")
+
+            uploaded_documents.append(document)
+
+        except Exception as e:
+            failed_uploads.append(
+                {"filename": file.filename, "error": f"Upload failed: {str(e)}"}
+            )
+
+    # Update user storage
+    if uploaded_documents:
+        current_user.storage_used_bytes = new_storage_used
+        db.add(current_user)
+
+    await db.commit()
+
+    # Refresh all uploaded documents
+    for doc in uploaded_documents:
+        await db.refresh(doc)
+
+    return {
+        "uploaded_count": len(uploaded_documents),
+        "failed_count": len(failed_uploads),
+        "documents": uploaded_documents,
+        "errors": failed_uploads if failed_uploads else None,
+    }
 
 
 @router.get("/{document_id}", response_model=DocumentResponse)
