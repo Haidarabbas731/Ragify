@@ -46,6 +46,7 @@ class Settings(BaseSettings):
 
     # File Upload
     MAX_FILE_SIZE_MB: int = 50
+    MAX_UPLOAD_BATCH: int = 10  # Maximum number of files per bulk upload
     ALLOWED_FILE_TYPES: str = "pdf,docx,txt,md"
 
     @property
