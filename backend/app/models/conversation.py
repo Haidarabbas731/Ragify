@@ -15,6 +15,9 @@ class Conversation(SQLModel, table=True):
     )
     user_id: str = Field(foreign_key="users.user_id", index=True)
 
+    # Conversation title (auto-generated from first user message)
+    title: str | None = Field(default=None, max_length=200)
+
     # Messages stored as JSONB array
     # Format: [{"role": "user"|"assistant", "content": "...", "timestamp": "...", "sources": [...]}, ...]
     messages: list[dict] = Field(default_factory=list, sa_column=Column(JSON))

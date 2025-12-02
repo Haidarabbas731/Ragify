@@ -257,6 +257,7 @@ async def auth_headers(test_engine: AsyncEngine) -> dict:
     across different session scopes (for use with client fixture).
     """
     import uuid
+
     from app.core.security import create_access_token, hash_password
 
     # Generate UUID for the user

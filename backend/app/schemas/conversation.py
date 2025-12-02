@@ -19,6 +19,7 @@ class ConversationResponse(BaseModel):
 
     conversation_id: str
     user_id: str
+    title: str | None = None
     messages: list[Message]
     message_count: int
     created_at: datetime
@@ -32,6 +33,7 @@ class ConversationListItem(BaseModel):
 
     conversation_id: str
     user_id: str
+    title: str | None = None
     message_count: int
     created_at: datetime
     updated_at: datetime
