@@ -3,7 +3,7 @@
 Handles document upload, processing status, listing, and management.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from arq import ArqRedis
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -31,7 +31,9 @@ from app.utils.validators import validate_uuid
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
-@router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED
+)
 async def upload_document(
     file: UploadFile = File(..., description="Document file (PDF, DOCX, TXT, MD)"),
     collection_id: str | None = Form(
@@ -79,7 +81,9 @@ async def upload_document(
     """
     # Validate file type
     if not file.filename:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Filename is required"
+        )
 
     file_extension = file.filename.split(".")[-1].lower()
     if file_extension not in settings.allowed_file_types_list:
@@ -130,7 +134,8 @@ async def upload_document(
         # Check if collection exists and belongs to user
         result = await db.exec(
             select(Collection).where(
-                Collection.collection_id == collection_id, Collection.user_id == current_user.user_id
+                Collection.collection_id == collection_id,
+                Collection.user_id == current_user.user_id,
             )
         )
         collection = result.first()
@@ -210,7 +215,9 @@ async def get_document(
     document = result.one_or_none()
 
     if not document:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
 
     return document
 
@@ -263,7 +270,9 @@ async def list_documents(
 
     # Validate and apply sorting
     allowed_sort_fields = {"uploaded_at", "filename", "size_bytes", "processed_at"}
-    sort_field = params.sort_by if params.sort_by in allowed_sort_fields else "uploaded_at"
+    sort_field = (
+        params.sort_by if params.sort_by in allowed_sort_fields else "uploaded_at"
+    )
     sort_order = params.order if params.order in {"asc", "desc"} else "desc"
 
     # Get sort column
@@ -272,9 +281,13 @@ async def list_documents(
     # Paginate with dynamic sorting
     offset = (params.page - 1) * params.limit
     if sort_order == "asc":
-        query = query.offset(offset).limit(params.limit).order_by(sort_column.asc())  # type:ignore
+        query = (
+            query.offset(offset).limit(params.limit).order_by(sort_column.asc())
+        )  # type:ignore
     else:
-        query = query.offset(offset).limit(params.limit).order_by(sort_column.desc())  # type:ignore
+        query = (
+            query.offset(offset).limit(params.limit).order_by(sort_column.desc())
+        )  # type:ignore
 
     result = await db.exec(query)
     documents = result.all()
@@ -328,7 +341,7 @@ async def search_documents(
         Document.user_id == current_user.user_id,
         # Search in filename, category, or tags
         (
-            Document.filename.ilike(search_pattern)
+            Document.filename.ilike(search_pattern)  # type: ignore
             | Document.doc_metadata["category"].astext.ilike(search_pattern)
             | Document.doc_metadata["tags"].astext.ilike(search_pattern)
         ),
@@ -339,7 +352,7 @@ async def search_documents(
         Document.status != DocumentStatus.DELETED.value,
         Document.user_id == current_user.user_id,
         (
-            Document.filename.ilike(search_pattern)
+            Document.filename.ilike(search_pattern)  # type: ignore
             | Document.doc_metadata["category"].astext.ilike(search_pattern)
             | Document.doc_metadata["tags"].astext.ilike(search_pattern)
         ),
@@ -352,9 +365,9 @@ async def search_documents(
     # Simple relevance: filename matches rank higher
     query = query.order_by(
         # Filename exact match (case-insensitive) ranks first
-        Document.filename.ilike(search_pattern).desc(),
+        Document.filename.ilike(search_pattern).desc(),  # type: ignore
         # Then by most recent
-        Document.uploaded_at.desc(),
+        Document.uploaded_at.desc(),  # type: ignore
     )
 
     # Paginate
@@ -404,7 +417,9 @@ async def delete_document(
     document = result.one_or_none()
 
     if not document:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
 
     # Soft delete
     document.status = DocumentStatus.DELETED.value
@@ -484,7 +499,9 @@ async def batch_delete_documents(
 
             # Enqueue cleanup job
             try:
-                await arq.enqueue_job("cleanup_deleted_document", document_id=document_id)
+                await arq.enqueue_job(
+                    "cleanup_deleted_document", document_id=document_id
+                )
             except Exception as e:
                 print(f"Warning: Failed to enqueue cleanup job for {document_id}: {e}")
 
@@ -653,9 +670,13 @@ async def delete_all_my_documents(
 
             # Enqueue cleanup job
             try:
-                await arq.enqueue_job("cleanup_deleted_document", document_id=document.document_id)
+                await arq.enqueue_job(
+                    "cleanup_deleted_document", document_id=document.document_id
+                )
             except Exception as e:
-                print(f"Warning: Failed to enqueue cleanup job for {document.document_id}: {e}")
+                print(
+                    f"Warning: Failed to enqueue cleanup job for {document.document_id}: {e}"
+                )
 
             deleted_count += 1
 
@@ -673,6 +694,90 @@ async def delete_all_my_documents(
 
     return {
         "deleted_count": deleted_count,
+        "failed_count": failed_count,
+        "errors": errors if errors else None,
+    }
+
+
+@router.post("/retry-failed")
+async def retry_all_failed_documents(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    arq: ArqRedis = Depends(get_arq_redis),
+) -> dict:
+    """
+    Retry processing all failed documents for the current user.
+
+    Finds all documents in ERROR status or stuck in PROCESSING (>30 min)
+    and requeues them for processing.
+
+    Args:
+        current_user: Authenticated user
+        db: Database session
+        arq: ARQ Redis connection
+
+    Returns:
+        Count of documents retried and any errors
+
+    Example Response:
+        {
+            "retried_count": 5,
+            "failed_count": 1,
+            "errors": [{"document_id": "...", "error": "..."}]
+        }
+    """
+    retried_count = 0
+    failed_count = 0
+    errors = []
+
+    # Find all ERROR documents
+    error_docs_result = await db.exec(
+        select(Document).where(
+            Document.user_id == current_user.user_id,
+            Document.status == DocumentStatus.ERROR.value,
+        )
+    )
+    error_docs = error_docs_result.all()
+
+    # Find stuck PROCESSING documents (>30 minutes)
+    stuck_threshold = datetime.now(UTC) - timedelta(minutes=30)
+    stuck_docs_result = await db.exec(
+        select(Document).where(
+            Document.user_id == current_user.user_id,
+            Document.status == DocumentStatus.PROCESSING.value,
+            Document.uploaded_at < stuck_threshold,
+        )
+    )
+    stuck_docs = stuck_docs_result.all()
+
+    # Combine all documents to retry
+    documents_to_retry = list(error_docs) + list(stuck_docs)
+
+    for document in documents_to_retry:
+        try:
+            # Reset status
+            document.status = DocumentStatus.PROCESSING.value
+            document.error_message = None
+            db.add(document)
+
+            # Re-enqueue processing job
+            await arq.enqueue_job(
+                "process_document",
+                document_id=document.document_id,
+                user_id=current_user.user_id,
+            )
+
+            retried_count += 1
+
+        except Exception as e:
+            failed_count += 1
+            errors.append({"document_id": document.document_id, "error": str(e)})
+
+    # Commit all status updates
+    await db.commit()
+
+    return {
+        "retried_count": retried_count,
         "failed_count": failed_count,
         "errors": errors if errors else None,
     }
@@ -709,7 +814,9 @@ async def retry_failed_document(
     document = result.one_or_none()
 
     if not document:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
 
     # Allow retry for ERROR or stuck PROCESSING documents (> 30 min)
     if document.status == DocumentStatus.ERROR.value:
@@ -786,7 +893,9 @@ async def update_document_metadata(
     document = result.one_or_none()
 
     if not document:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
 
     # Update fields
     if collection_id is not None:
