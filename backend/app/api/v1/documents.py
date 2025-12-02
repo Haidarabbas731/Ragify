@@ -259,11 +259,20 @@ async def list_documents(
     total_result = await db.exec(count_query)
     total = len(total_result.all())
 
-    # Paginate
+    # Validate and apply sorting
+    allowed_sort_fields = {"uploaded_at", "filename", "size_bytes", "processed_at"}
+    sort_field = params.sort_by if params.sort_by in allowed_sort_fields else "uploaded_at"
+    sort_order = params.order if params.order in {"asc", "desc"} else "desc"
+
+    # Get sort column
+    sort_column = getattr(Document, sort_field)
+
+    # Paginate with dynamic sorting
     offset = (params.page - 1) * params.limit
-    query = (
-        query.offset(offset).limit(params.limit).order_by(Document.uploaded_at.desc())  # type:ignore
-    )  # type:ignore
+    if sort_order == "asc":
+        query = query.offset(offset).limit(params.limit).order_by(sort_column.asc())  # type:ignore
+    else:
+        query = query.offset(offset).limit(params.limit).order_by(sort_column.desc())  # type:ignore
 
     result = await db.exec(query)
     documents = result.all()
