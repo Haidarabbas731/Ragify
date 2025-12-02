@@ -79,3 +79,29 @@ class PasswordResetConfirm(BaseModel):
 
     token: str = Field(min_length=1)
     new_password: str = Field(min_length=8, max_length=128)
+
+
+class UserUpdateRequest(BaseModel):
+    """Schema for updating user profile."""
+
+    email: EmailStr | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    """Schema for changing password while logged in."""
+
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class UserStatsResponse(BaseModel):
+    """Schema for user dashboard statistics."""
+
+    total_documents: int
+    total_chunks: int
+    storage_used_mb: float
+    storage_limit_mb: float
+    storage_percentage: float
+    collections_count: int
+    conversations_count: int
+    documents_by_status: dict[str, int]

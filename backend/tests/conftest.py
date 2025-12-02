@@ -78,22 +78,56 @@ async def cleanup_test_data(test_engine: AsyncEngine):
 
     async with test_engine.begin() as conn:
         # Delete in correct order to respect foreign key constraints
-        await conn.execute(text("DELETE FROM conversations WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
-        await conn.execute(text("DELETE FROM documents WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
-        await conn.execute(text("DELETE FROM collections WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
+        await conn.execute(
+            text(
+                "DELETE FROM conversations WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"
+            ),
+            {"emails": test_emails},
+        )
+        await conn.execute(
+            text(
+                "DELETE FROM documents WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"
+            ),
+            {"emails": test_emails},
+        )
+        await conn.execute(
+            text(
+                "DELETE FROM collections WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"
+            ),
+            {"emails": test_emails},
+        )
         for email in test_emails:
-            await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
+            await conn.execute(
+                text("DELETE FROM users WHERE email = :email"), {"email": email}
+            )
         await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
 
     yield
 
     async with test_engine.begin() as conn:
         # Delete in correct order to respect foreign key constraints
-        await conn.execute(text("DELETE FROM conversations WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
-        await conn.execute(text("DELETE FROM documents WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
-        await conn.execute(text("DELETE FROM collections WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"), {"emails": test_emails})
+        await conn.execute(
+            text(
+                "DELETE FROM conversations WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"
+            ),
+            {"emails": test_emails},
+        )
+        await conn.execute(
+            text(
+                "DELETE FROM documents WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"
+            ),
+            {"emails": test_emails},
+        )
+        await conn.execute(
+            text(
+                "DELETE FROM collections WHERE user_id IN (SELECT user_id FROM users WHERE email = ANY(:emails))"
+            ),
+            {"emails": test_emails},
+        )
         for email in test_emails:
-            await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
+            await conn.execute(
+                text("DELETE FROM users WHERE email = :email"), {"email": email}
+            )
         await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
 
 
@@ -211,3 +245,12 @@ async def client(test_engine: AsyncEngine) -> AsyncGenerator[AsyncClient, None]:
         pass  # Ignore cleanup errors
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def auth_headers(sample_user: User) -> dict:
+    """Create auth headers with valid JWT token for sample user."""
+    from app.core.security import create_access_token
+
+    token = create_access_token({"sub": sample_user.user_id})
+    return {"Authorization": f"Bearer {token}"}

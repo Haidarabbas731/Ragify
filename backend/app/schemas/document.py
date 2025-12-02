@@ -88,3 +88,6 @@ class DocumentListParams(BaseModel):
     limit: int = Field(50, ge=1, le=100, description="Items per page")
     collection_id: str | None = Field(None, description="Filter by collection ID")
     status_filter: str | None = Field(None, description="Filter by status (processing, active, error)")
+    sort_by: str = Field("uploaded_at", description="Sort field (uploaded_at, filename, size_bytes, processed_at)")
+    order: str = Field("desc", description="Sort order (asc, desc)")
+
