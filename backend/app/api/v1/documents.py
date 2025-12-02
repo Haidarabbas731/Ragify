@@ -288,6 +288,91 @@ async def list_documents(
     }
 
 
+@router.get("/search", response_model=DocumentsListResponse)
+async def search_documents(
+    q: str,
+    page: int = 1,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Search user's documents by text query.
+
+    Performs case-insensitive search on filename, category, and tags.
+    Only returns documents owned by the current user.
+
+    Args:
+        q: Search query string
+        page: Page number (1-indexed)
+        limit: Items per page (max 100)
+        current_user: Authenticated user
+        db: Database session
+
+    Returns:
+        Paginated search results
+
+    Example:
+        GET /api/v1/documents/search?q=refund
+        Returns documents with "refund" in filename, category, or tags
+    """
+    # Validate pagination
+    page = max(1, page)
+    limit = min(max(1, limit), 100)
+
+    # Build search query - case-insensitive ILIKE
+    search_pattern = f"%{q}%"
+
+    query = select(Document).where(
+        Document.status != DocumentStatus.DELETED.value,
+        Document.user_id == current_user.user_id,
+        # Search in filename, category, or tags
+        (
+            Document.filename.ilike(search_pattern)
+            | Document.doc_metadata["category"].astext.ilike(search_pattern)
+            | Document.doc_metadata["tags"].astext.ilike(search_pattern)
+        ),
+    )
+
+    # Count total matching documents
+    count_query = select(Document.document_id).where(
+        Document.status != DocumentStatus.DELETED.value,
+        Document.user_id == current_user.user_id,
+        (
+            Document.filename.ilike(search_pattern)
+            | Document.doc_metadata["category"].astext.ilike(search_pattern)
+            | Document.doc_metadata["tags"].astext.ilike(search_pattern)
+        ),
+    )
+
+    total_result = await db.exec(count_query)
+    total = len(total_result.all())
+
+    # Order by relevance (filename match first), then by upload date
+    # Simple relevance: filename matches rank higher
+    query = query.order_by(
+        # Filename exact match (case-insensitive) ranks first
+        Document.filename.ilike(search_pattern).desc(),
+        # Then by most recent
+        Document.uploaded_at.desc(),
+    )
+
+    # Paginate
+    offset = (page - 1) * limit
+    query = query.offset(offset).limit(limit)
+
+    result = await db.exec(query)
+    documents = result.all()
+
+    return {
+        "documents": list(documents),
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit,
+    }
+
+
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     document_id: str,
