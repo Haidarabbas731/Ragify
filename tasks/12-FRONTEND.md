@@ -3037,28 +3037,21 @@ PUT /api/v1/documents/{document_id}
 
 **Priority:** LOW - Future enhancements
 
-- [ ] **Search Endpoint for Documents**
-  - `GET /api/v1/documents/search?q={query}&mode={text|semantic}`
-  - **Implementation Options:**
-    
-    **Option A: Text Search (Recommended for MVP)**
+- [x] **Search Endpoint for Documents** ✅ **COMPLETED** (Commit: 0241eff)
+  - **IMPLEMENTED:** `GET /api/v1/documents/search?q={query}&page={page}&limit={limit}`
+  - **UPDATE:** Implemented text search approach (MVP)
     - PostgreSQL `ILIKE` search on filename, category, tags
-    - Fast, no API quota usage
-    - Example: Search "refund" finds "refund_policy.pdf"
-    
-    **Option B: Semantic Search (Future Enhancement)**
-    - Embed query using Gemini API
-    - Search Milvus vector database for similar chunks
-    - Return documents containing semantically similar content
-    - Example: Search "how to get money back" finds "refund_policy.pdf"
-    
-    **Recommended Approach:**
-    - **MVP:** Implement text search only (simple, fast)
-    - **Future:** Add `mode` parameter to toggle between text/semantic
-    - Frontend can offer "Quick Search" (text) and "Smart Search" (semantic)
-  
+    - Fast, no API quota usage, simple implementation
+    - Pagination support with page and limit parameters
+    - Relevance ranking (filename matches prioritized)
+    - Returns DocumentsListResponse with total count
+  - **Implementation Details:**
+    - Code: `backend/app/api/v1/documents.py` (lines 291-373)
+    - User-isolated: only searches current user's documents
+    - Excludes DELETED documents
+    - Orders by filename match relevance, then upload date
+  - **Future Enhancement:** Add semantic search mode using Milvus + Gemini embeddings
   - Used by DashboardPage.tsx search bar (line 93)
-  - **Estimated Time:** 1 hour (text), 3 hours (semantic)
 
 - [ ] **Document Tags Management**
   - Document model has doc_metadata field (JSON)
@@ -3070,15 +3063,31 @@ PUT /api/v1/documents/{document_id}
   - Store UI preferences (dark mode, default sort order, items per page)
   - Persist across sessions
 
-- [ ] **Conversation Title/Summary**
-  - Add title field to Conversation model
-  - Auto-generate from first user message
+- [x] **Conversation Title/Summary** ✅ **COMPLETED** (Commit: f25b103)
+  - **IMPLEMENTED:** Added title field to Conversation model
+  - **UPDATE:** Auto-generates title from first user message
+  - **Implementation Details:**
+    - Added title field (VARCHAR(200), nullable) to conversations table
+    - Database migration: 45e479aa17a6_add_title_field_to_conversations
+    - Auto-generates on first user message in conversation
+    - Intelligently truncates at word boundary if >200 chars
+    - Updated ConversationResponse and ConversationListItem schemas
+    - Code: `backend/app/services/conversation_service.py` (lines 115-127)
+  - **Tests:** All conversation service tests passing (20/20)
   - Used by chat history sidebar
 
-- [ ] **Document Processing Retry Bulk**
-  - `POST /api/v1/documents/retry-failed`
-  - Retry all failed documents at once
-  - Admin or user endpoint
+- [x] **Document Processing Retry Bulk** ✅ **COMPLETED** (Commit: a2eb739)
+  - **IMPLEMENTED:** `POST /api/v1/documents/retry-failed`
+  - **UPDATE:** Retries all failed documents for current user
+  - **Implementation Details:**
+    - Finds all ERROR status documents
+    - Finds stuck PROCESSING documents (>30 minutes old)
+    - Resets status to PROCESSING and clears error messages
+    - Enqueues documents back to ARQ for processing
+    - Returns counts: retried_count, failed_count, errors[]
+    - User-isolated: only retries current user's documents
+    - Code: `backend/app/api/v1/documents.py` (lines 702-783)
+  - Used by DashboardPage.tsx for bulk retry functionality
 
 ---
 
