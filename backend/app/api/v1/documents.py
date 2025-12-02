@@ -18,6 +18,8 @@ from app.models.user import User
 from app.schemas.document import (
     BatchDeleteRequest,
     BatchDeleteResponse,
+    BatchUpdateRequest,
+    BatchUpdateResponse,
     DocumentListParams,
     DocumentResponse,
     DocumentsListResponse,
@@ -417,6 +419,98 @@ async def batch_delete_documents(
 
     return {
         "deleted_count": deleted_count,
+        "failed_count": failed_count,
+        "errors": errors if errors else None,
+    }
+
+
+@router.post("/batch-update", response_model=BatchUpdateResponse)
+async def batch_update_documents(
+    request: BatchUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Batch update document collection assignments.
+
+    Allows moving multiple documents to a collection or removing them from collections.
+    Validates that all documents belong to the current user and that the target collection exists.
+
+    Args:
+        request: Batch update request with document IDs and new collection ID
+        current_user: Authenticated user
+        db: Database session
+
+    Returns:
+        Update result with counts and errors
+
+    Examples:
+        - Move to collection: {"document_ids": [...], "collection_id": "uuid"}
+        - Remove from collection: {"document_ids": [...], "collection_id": ""}
+        - Leave unchanged: {"document_ids": [...], "collection_id": null}
+    """
+    updated_count = 0
+    failed_count = 0
+    errors = []
+
+    # Validate collection exists if specified (not null and not empty string)
+    if request.collection_id and request.collection_id != "":
+        result = await db.exec(
+            select(Collection).where(
+                Collection.collection_id == request.collection_id,
+                Collection.user_id == current_user.user_id,
+            )
+        )
+        collection = result.one_or_none()
+        if not collection:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Collection {request.collection_id} not found or not owned by user",
+            )
+
+    # Process each document
+    for document_id in request.document_ids:
+        try:
+            # Get document
+            result = await db.exec(
+                select(Document).where(
+                    Document.document_id == document_id,
+                    Document.user_id == current_user.user_id,
+                )
+            )
+            document = result.one_or_none()
+
+            if not document:
+                failed_count += 1
+                errors.append(
+                    {
+                        "document_id": document_id,
+                        "error": "Document not found or not owned by user",
+                    }
+                )
+                continue
+
+            # Update collection assignment
+            if request.collection_id == "":
+                # Empty string means remove from collection
+                document.collection_id = None
+            elif request.collection_id is not None:
+                # Set to specified collection
+                document.collection_id = request.collection_id
+            # If null, leave unchanged
+
+            db.add(document)
+            updated_count += 1
+
+        except Exception as e:
+            failed_count += 1
+            errors.append({"document_id": document_id, "error": str(e)})
+
+    # Commit all changes
+    await db.commit()
+
+    return {
+        "updated_count": updated_count,
         "failed_count": failed_count,
         "errors": errors if errors else None,
     }

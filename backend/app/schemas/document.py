@@ -81,6 +81,37 @@ class BatchDeleteResponse(BaseModel):
     errors: list[dict] | None = None
 
 
+class BatchUpdateRequest(BaseModel):
+    """Schema for batch document update request."""
+
+    document_ids: list[str] = Field(..., min_length=1, max_length=100, description="List of document IDs to update (max 100)")
+    collection_id: str | None = Field(None, description="New collection ID (set to empty string to remove from collection)")
+
+    @field_validator("document_ids")
+    @classmethod
+    def validate_document_ids(cls, v: list[str]) -> list[str]:
+        """Validate that all document_ids are valid UUIDs."""
+        for doc_id in v:
+            validate_uuid(doc_id, "document_id")
+        return v
+
+    @field_validator("collection_id")
+    @classmethod
+    def validate_collection_id(cls, v: str | None) -> str | None:
+        """Validate collection_id if provided (allow empty string for removal)."""
+        if v is not None and v != "":
+            validate_uuid(v, "collection_id")
+        return v
+
+
+class BatchUpdateResponse(BaseModel):
+    """Schema for batch update response."""
+
+    updated_count: int
+    failed_count: int
+    errors: list[dict] | None = None
+
+
 class DocumentListParams(BaseModel):
     """Query parameters for listing documents."""
 
