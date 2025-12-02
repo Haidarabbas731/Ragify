@@ -460,31 +460,34 @@ Example: feat(docs): implement document processing pipeline
 
 ---
 
-## 4.9.2 Multiple File Upload Support (FUTURE ENHANCEMENT)
+## 4.9.2 Multiple File Upload Support ✅ COMPLETED
 
-**Status:** Deferred to future phase - Not part of Phase 4 completion
+**Status:** ✅ Implemented - 2024-12-02
 
-**Purpose:** Allow users to upload multiple files at once (currently single file only)
+**Purpose:** Allow users to upload multiple files at once (previously single file only)
+
+**UPDATE:** Full implementation of bulk upload endpoint
 
 ### Requirements
-- [ ] Modify `POST /api/v1/documents/upload` to accept multiple files
-- [ ] Change signature: `file: UploadFile` → `files: list[UploadFile]`
-- [ ] Add validation: Maximum 5 files per request
-- [ ] Validate each file individually (type, size)
-- [ ] Calculate total storage needed for valid files only
-- [ ] Check user storage quota once for total valid files size
-- [ ] Partial success handling: Upload valid files, skip invalid ones
-- [ ] If total storage quota insufficient, reject ALL files
+- [x] Create new endpoint `POST /api/v1/documents/bulk-upload` (keeps single upload endpoint unchanged)
+- [x] Accept `files: list[UploadFile]` parameter
+- [x] Add validation: Maximum batch size from `MAX_UPLOAD_BATCH` config
+- [x] Validate each file individually (type, size)
+- [x] Calculate total storage needed for valid files only
+- [x] Check user storage quota once for total valid files size
+- [x] Partial success handling: Upload valid files, skip invalid ones
+- [x] If total storage quota insufficient, reject ALL files
 
 ### Implementation Details
-- [ ] Create `BatchUploadResponse` schema in `backend/app/schemas/document.py`
+- [x] Created `BulkUploadResponse` schema in `backend/app/schemas/document.py`
   - `uploaded_count: int`
   - `failed_count: int`
   - `documents: list[DocumentResponse]`
-  - `failures: list[dict]` with filename and error message
-- [ ] Update upload endpoint to loop through files
-- [ ] Use database savepoints for transaction safety
-- [ ] Maintain backward compatibility (single file still works)
+  - `errors: list[dict] | None` with filename and error message
+- [x] Implemented new endpoint at `POST /api/v1/documents/bulk-upload` in `backend/app/api/v1/documents.py:190-380`
+- [x] Two-pass validation: First pass validates all files, second pass uploads only valid files
+- [x] Transaction safety with proper commit/rollback handling
+- [x] Maintains backward compatibility (single file upload endpoint unchanged at `/upload`)
 
 ### Validation Flow
 ```

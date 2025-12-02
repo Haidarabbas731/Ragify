@@ -122,3 +122,12 @@ class DocumentListParams(BaseModel):
     sort_by: str = Field("uploaded_at", description="Sort field (uploaded_at, filename, size_bytes, processed_at)")
     order: str = Field("desc", description="Sort order (asc, desc)")
 
+
+class BulkUploadResponse(BaseModel):
+    """Schema for bulk upload response."""
+
+    uploaded_count: int
+    failed_count: int
+    documents: list[DocumentResponse]
+    errors: list[dict] | None = None
+
