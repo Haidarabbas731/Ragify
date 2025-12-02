@@ -67,6 +67,8 @@ async def cleanup_test_data(test_engine: AsyncEngine):
         "weakpass@example.com",
         "create@example.com",
         "newuser@example.com",
+        "newemail@example.com",
+        "other@example.com",
         "logintest@example.com",
         "wrongpass@example.com",
         "refreshtest@example.com",
@@ -248,9 +250,41 @@ async def client(test_engine: AsyncEngine) -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.fixture
-async def auth_headers(sample_user: User) -> dict:
-    """Create auth headers with valid JWT token for sample user."""
-    from app.core.security import create_access_token
+async def auth_headers(test_engine: AsyncEngine) -> dict:
+    """Create auth headers with valid JWT token for sample user.
 
-    token = create_access_token({"sub": sample_user.user_id})
+    Creates a user directly in the test database so it's available
+    across different session scopes (for use with client fixture).
+    """
+    import uuid
+    from app.core.security import create_access_token, hash_password
+
+    # Generate UUID for the user
+    user_id = str(uuid.uuid4())
+
+    # Create user directly in database (committed transaction)
+    async with test_engine.begin() as conn:
+        await conn.execute(
+            text("""
+                INSERT INTO users (user_id, email, password_hash, role, storage_used_bytes, storage_limit_bytes, status, is_active)
+                VALUES (:user_id, :email, :password_hash, :role, :storage_used, :storage_limit, :status, :is_active)
+                ON CONFLICT (email) DO UPDATE SET
+                    password_hash = EXCLUDED.password_hash,
+                    user_id = EXCLUDED.user_id,
+                    storage_used_bytes = EXCLUDED.storage_used_bytes,
+                    is_active = EXCLUDED.is_active
+            """),
+            {
+                "user_id": user_id,
+                "email": "test@example.com",
+                "password_hash": hash_password("TestPassword123!"),
+                "role": "user",
+                "storage_used": 0,
+                "storage_limit": 1073741824,  # 1GB default
+                "status": "active",
+                "is_active": True,
+            }
+        )
+
+    token = create_access_token({"sub": user_id})
     return {"Authorization": f"Bearer {token}"}
