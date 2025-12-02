@@ -188,16 +188,24 @@ async def upload_document(
 
 
 @router.post(
-    "/bulk-upload", response_model=BulkUploadResponse, status_code=status.HTTP_201_CREATED
+    "/bulk-upload",
+    response_model=BulkUploadResponse,
+    status_code=status.HTTP_201_CREATED,
 )
 async def bulk_upload_documents(
-    files: list[UploadFile] = File(..., description="Multiple document files (PDF, DOCX, TXT, MD)"),
+    files: list[UploadFile] = File(
+        ..., description="Multiple document files (PDF, DOCX, TXT, MD)"
+    ),
     collection_id: str | None = Form(
         None,
         description="Optional collection ID for all documents",
     ),
-    category: str | None = Form(None, description="Optional category tag for all documents"),
-    tags: str | None = Form(None, description="Optional comma-separated tags for all documents"),
+    category: str | None = Form(
+        None, description="Optional category tag for all documents"
+    ),
+    tags: str | None = Form(
+        None, description="Optional comma-separated tags for all documents"
+    ),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     arq: ArqRedis = Depends(get_arq_redis),
@@ -229,7 +237,7 @@ async def bulk_upload_documents(
         HTTPException: 400 if validation fails, 413 if quota exceeded
     """
     # Enforce max batch size
-    max_batch = settings.MAX_UPLOAD_BATCH
+    max_batch = settings.MAX_UPLOAD_BATCH  # type:ignore
     if len(files) > max_batch:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -265,7 +273,9 @@ async def bulk_upload_documents(
     # First pass: validate all files and calculate total size
     for file in files:
         if not file.filename:
-            failed_uploads.append({"filename": "unknown", "error": "Filename is required"})
+            failed_uploads.append(
+                {"filename": "unknown", "error": "Filename is required"}
+            )
             continue
 
         file_extension = file.filename.split(".")[-1].lower()
@@ -352,7 +362,9 @@ async def bulk_upload_documents(
                     user_id=current_user.user_id,
                 )
             except Exception as e:
-                print(f"Warning: Failed to enqueue processing job for {document_id}: {e}")
+                print(
+                    f"Warning: Failed to enqueue processing job for {document_id}: {e}"
+                )
 
             uploaded_documents.append(document)
 
