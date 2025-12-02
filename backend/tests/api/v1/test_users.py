@@ -2,9 +2,6 @@
 
 import pytest
 from httpx import AsyncClient
-from sqlmodel.ext.asyncio.session import AsyncSession
-
-from app.models.user import User
 
 
 @pytest.mark.asyncio
@@ -63,11 +60,12 @@ async def test_update_user_email_already_exists(
     client: AsyncClient, auth_headers: dict, test_engine
 ):
     """Test PATCH /api/v1/users/me - update to existing email fails."""
-    from app.core.security import hash_password
-    from sqlalchemy import text
-
     # Create another user directly in database
     import uuid as uuid_module
+
+    from sqlalchemy import text
+
+    from app.core.security import hash_password
     async with test_engine.begin() as conn:
         await conn.execute(
             text("""

@@ -112,6 +112,20 @@ async def add_message(
     conversation.message_count += 1
     conversation.updated_at = datetime.now(UTC)
 
+    # Auto-generate title from first user message if not set
+    if role == "user" and not conversation.title and conversation.message_count == 1:
+        # Truncate to 200 chars max, try to break at word boundary
+        if len(content) <= 200:
+            conversation.title = content
+        else:
+            # Find last space before 200 chars
+            truncated = content[:200]
+            last_space = truncated.rfind(" ")
+            if last_space > 0:
+                conversation.title = truncated[:last_space] + "..."
+            else:
+                conversation.title = truncated + "..."
+
     # Use flag_modified to ensure JSONB update is detected
     from sqlalchemy.orm import attributes
 
