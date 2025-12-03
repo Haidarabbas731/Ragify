@@ -397,9 +397,9 @@ async def get_document(
     document_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> Document:
+) -> dict:
     """
-    Get document by ID.
+    Get document by ID with chunks.
 
     Args:
         document_id: Document ID
@@ -407,7 +407,7 @@ async def get_document(
         db: Database session
 
     Returns:
-        Document record
+        Document record with chunks from Milvus
 
     Raises:
         HTTPException: 404 if document not found or not owned by user
@@ -425,7 +425,38 @@ async def get_document(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
 
-    return document
+    # Fetch chunks from Milvus if document is active and has chunks
+    chunks_data = None
+    if document.status == DocumentStatus.ACTIVE.value and document.chunks_count > 0:
+        try:
+            from app.services.milvus_service import get_milvus_service
+
+            milvus = await get_milvus_service()
+            raw_chunks = await milvus.get_document_chunks(
+                document.document_id, current_user.user_id
+            )
+
+            # Transform to match DocumentChunk schema
+            chunks_data = [
+                {
+                    "chunk_id": chunk["chunk_id"],
+                    "content": chunk["chunk_text"],
+                    "chunk_index": chunk["chunk_index"],
+                }
+                for chunk in raw_chunks
+            ]
+        except Exception as e:
+            # Log error but don't fail the request
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to fetch chunks for document {document_id}: {e}")
+
+    # Convert document to dict and add chunks
+    doc_dict = document.model_dump()
+    doc_dict["chunks"] = chunks_data
+
+    return doc_dict
 
 
 @router.get("", response_model=DocumentsListResponse)

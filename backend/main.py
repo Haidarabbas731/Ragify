@@ -209,7 +209,7 @@ app.include_router(invite_codes.router, prefix="/api/v1/admin")
 async def root():
     """Root endpoint."""
     return {
-        "message": "AI Knowledge Base API",
+        "message": "Ragify API",
         "docs": "/docs",
         "health": "/api/v1/health",
     }

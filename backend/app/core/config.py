@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     # Application
-    APP_NAME: str = "AI Knowledge Base"
+    APP_NAME: str = "Ragify"
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
@@ -59,7 +59,9 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 200
 
     # RAG Chat
-    CONVERSATION_HISTORY_LIMIT: int = 5  # Number of previous messages to include for context
+    CONVERSATION_HISTORY_LIMIT: int = (
+        5  # Number of previous messages to include for context
+    )
 
     # Storage Quotas
     STORAGE_QUOTA_DEFAULT: int = 1073741824  # 1GB in bytes
@@ -76,7 +78,7 @@ class Settings(BaseSettings):
     # Email (Resend)
     RESEND_API_KEY: str
     EMAIL_FROM_ADDRESS: str
-    EMAIL_FROM_NAME: str = "AI Knowledge Base"
+    EMAIL_FROM_NAME: str = "Ragify"
     PASSWORD_RESET_TOKEN_EXPIRY: int = 900  # 15 minutes in seconds
 
     model_config = SettingsConfigDict(

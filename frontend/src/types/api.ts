@@ -115,7 +115,7 @@ export interface Document {
   collection_id: string | null;
   collection_name: string | null;
   category: string | null;
-  tags: string[];
+  tags: string[] | null;
   chunks_count: number;
   uploaded_at: string;
   processed_at: string | null;
