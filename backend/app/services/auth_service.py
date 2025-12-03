@@ -101,8 +101,12 @@ async def authenticate_user(
     if await is_user_sessions_revoked(user.user_id):
         return False, "Session expired, please login again", None
 
-    access_token = create_access_token({"sub": user.user_id, "role": user.role})
-    refresh_token = create_refresh_token({"sub": user.user_id, "role": user.role})
+    access_token = create_access_token(
+        {"sub": user.user_id, "email": user.email, "role": user.role}
+    )
+    refresh_token = create_refresh_token(
+        {"sub": user.user_id, "email": user.email, "role": user.role}
+    )
 
     # Store token pair mapping for automatic refresh token lookup on logout
     access_payload = decode_token(access_token)
@@ -158,12 +162,13 @@ async def refresh_access_token_from_details(
         refresh_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
         await add_jti_to_blocklist(old_jti, refresh_ttl)
 
-    # Get user role (should be in token or fetch from DB)
+    # Get user role and email (should be in token or fetch from DB)
     role = token_details.get("role", "user")
+    email = token_details.get("email")
 
     # Generate new tokens
-    access_token = create_access_token({"sub": user_id, "role": role})
-    refresh_token = create_refresh_token({"sub": user_id, "role": role})
+    access_token = create_access_token({"sub": user_id, "email": email, "role": role})
+    refresh_token = create_refresh_token({"sub": user_id, "email": email, "role": role})
 
     # Store token pair mapping for automatic refresh token lookup on logout
     access_payload = decode_token(access_token)
@@ -218,7 +223,11 @@ async def logout_user(
 
         max_ttl = max(
             access_ttl,
-            refresh_ttl if refresh_ttl else settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+            (
+                refresh_ttl
+                if refresh_ttl
+                else settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+            ),
         )
         await revoke_all_user_sessions(user_id, max_ttl)
 

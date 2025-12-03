@@ -42,64 +42,15 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { useDarkMode } from "../hooks/useDarkMode";
+import {
+  useDeleteDocument,
+  useDocument,
+  useRetryDocument,
+  useUpdateDocument,
+} from "../hooks/useDocuments";
 import { useAuthStore } from "../store/authStore";
 
-// Mock document data (will be replaced with API)
-const mockDocument = {
-  document_id: "6cf04fa0-8a2e-4d91-b8a3-1f2e3d4c5b6a",
-  filename: "quarterly-report-2024-q3.pdf",
-  original_filename: "Quarterly_Report_2024_Q3_Final_v2.pdf",
-  size_bytes: 2457600,
-  mime_type: "application/pdf",
-  status: "active" as const,
-  uploaded_at: "2024-03-15T14:32:00Z",
-  processed_at: "2024-03-15T14:33:45Z",
-  chunks_count: 47,
-  collection_id: "research-papers",
-  collection_name: "Research Papers",
-  category: "financial",
-  tags: ["quarterly", "2024", "analysis"],
-  error_message: null,
-  chunks: [
-    {
-      chunk_id: "chunk-1",
-      content:
-        "Executive Summary\n\nThis quarterly report presents a comprehensive analysis of our company's performance during Q3 2024. Key highlights include: revenue growth of 23% year-over-year, successful product launches in three new markets, and strategic partnerships with leading industry players.",
-      chunk_index: 0,
-      metadata: { page: 1, section: "executive-summary" },
-    },
-    {
-      chunk_id: "chunk-2",
-      content:
-        "Revenue Analysis\n\nTotal revenue for Q3 2024 reached $45.2M, representing a 23% increase compared to Q3 2023 ($36.7M). This growth was primarily driven by increased adoption in enterprise segments and expansion into new geographical markets.",
-      chunk_index: 1,
-      metadata: { page: 2, section: "revenue" },
-    },
-    {
-      chunk_id: "chunk-3",
-      content:
-        "Market Expansion\n\nDuring Q3, we successfully entered three new markets: Southeast Asia, Eastern Europe, and South America. Initial customer acquisition costs were within projected ranges, with promising early adoption metrics.",
-      chunk_index: 2,
-      metadata: { page: 3, section: "market-expansion" },
-    },
-    {
-      chunk_id: "chunk-4",
-      content:
-        "Product Development\n\nOur engineering team delivered two major product releases this quarter. The new analytics dashboard received exceptional feedback from beta testers, with 92% reporting improved workflow efficiency.",
-      chunk_index: 3,
-      metadata: { page: 4, section: "product" },
-    },
-    {
-      chunk_id: "chunk-5",
-      content:
-        "Strategic Partnerships\n\nWe formalized partnerships with three industry leaders: TechCorp International, DataSystems Global, and CloudSolutions Inc. These partnerships are expected to drive significant revenue growth in Q4 and beyond.",
-      chunk_index: 4,
-      metadata: { page: 5, section: "partnerships" },
-    },
-  ],
-};
-
-// Mock collections for edit modal
+// Mock collections for edit modal - TODO: Replace with collections API
 const mockCollections = [
   { collection_id: "research-papers", name: "Research Papers" },
   { collection_id: "meeting-notes", name: "Meeting Notes" },
@@ -112,16 +63,23 @@ export function DocumentDetailPage() {
   const { user, logout } = useAuthStore();
   const { darkMode, toggleDarkMode } = useDarkMode();
 
+  // Fetch document data
+  const { data: document, isLoading, error } = useDocument(documentId);
+
+  // API mutations
+  const deleteDocumentMutation = useDeleteDocument();
+  const retryDocumentMutation = useRetryDocument();
+  const updateDocumentMutation = useUpdateDocument();
+
   const [showAllChunks, setShowAllChunks] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
 
-  // Edit form state
+  // Edit form state - initialize from document data
   const [editForm, setEditForm] = useState({
-    collection_id: mockDocument.collection_id,
-    category: mockDocument.category,
-    tags: mockDocument.tags.join(", "),
+    collection_id: document?.collection_id || "",
+    category: document?.category || "",
+    tags: document?.tags.join(", ") || "",
   });
 
   const handleLogout = () => {
@@ -130,21 +88,29 @@ export function DocumentDetailPage() {
   };
 
   const handleRetry = async () => {
-    setIsRetrying(true);
-    // TODO: Call API to retry document processing
-    console.log("Retrying document:", documentId);
-    setTimeout(() => setIsRetrying(false), 2000);
+    if (!documentId) return;
+    await retryDocumentMutation.mutateAsync(documentId);
   };
 
   const handleDelete = async () => {
-    // TODO: Call API to delete document
-    console.log("Deleting document:", documentId);
+    if (!documentId) return;
+    await deleteDocumentMutation.mutateAsync(documentId);
     navigate("/documents");
   };
 
   const handleSaveMetadata = async () => {
-    // TODO: Call API to update metadata
-    console.log("Saving metadata:", editForm);
+    if (!documentId) return;
+    await updateDocumentMutation.mutateAsync({
+      documentId,
+      updates: {
+        collection_id: editForm.collection_id || null,
+        category: editForm.category || null,
+        tags: editForm.tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
+      },
+    });
     setIsEditModalOpen(false);
   };
 
@@ -200,12 +166,47 @@ export function DocumentDetailPage() {
     }
   };
 
-  const statusConfig = getStatusConfig(mockDocument.status);
+  const statusConfig = getStatusConfig(document?.status || "unknown");
   const StatusIcon = statusConfig.icon;
 
   const chunksToShow = showAllChunks
-    ? mockDocument.chunks
-    : mockDocument.chunks.slice(0, 5);
+    ? document?.chunks || []
+    : (document?.chunks || []).slice(0, 5);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-cyan-600 dark:text-cyan-400 mx-auto" />
+          <p className="text-slate-600 dark:text-slate-400 font-mono">
+            Loading document data...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !document) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <AlertCircle className="w-12 h-12 text-red-600 dark:text-red-400 mx-auto" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+            Document Not Found
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 font-mono">
+            Failed to load document. It may have been deleted.
+          </p>
+          <Button onClick={() => navigate("/documents")} className="mt-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Documents
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 relative overflow-x-hidden">
@@ -312,11 +313,11 @@ export function DocumentDetailPage() {
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="w-5 h-5 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
                 <h1 className="text-2xl font-bold font-['IBM_Plex_Sans_Condensed'] text-cyan-900 dark:text-cyan-100 tracking-tight break-words">
-                  {mockDocument.filename}
+                  {document.filename}
                 </h1>
               </div>
               <p className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70">
-                ID: {mockDocument.document_id}
+                ID: {document.document_id}
               </p>
             </div>
 
@@ -328,7 +329,7 @@ export function DocumentDetailPage() {
               >
                 <StatusIcon
                   className={`w-4 h-4 ${statusConfig.color} ${
-                    mockDocument.status === "processing" ? "animate-spin" : ""
+                    document.status === "processing" ? "animate-spin" : ""
                   }`}
                 />
                 <span
@@ -350,19 +351,19 @@ export function DocumentDetailPage() {
               </Button>
 
               {/* Retry Button (for error status) */}
-              {mockDocument.status === "error" && (
+              {document.status === "error" && (
                 <Button
                   onClick={handleRetry}
-                  disabled={isRetrying}
+                  disabled={retryDocumentMutation.isPending}
                   variant="outline"
                   size="sm"
                   className="gap-2 border-blue-500/30 dark:border-blue-500/30 border-blue-600/40 text-blue-400 dark:text-blue-400 text-blue-600 hover:bg-blue-500/10 dark:hover:bg-blue-500/10 hover:bg-blue-50 hover:border-blue-500/50 dark:hover:border-blue-500/50 hover:border-blue-600/70 disabled:opacity-50 font-['IBM_Plex_Sans_Condensed'] font-semibold"
                 >
                   <RefreshCw
-                    className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`}
+                    className={`w-4 h-4 ${retryDocumentMutation.isPending ? "animate-spin" : ""}`}
                   />
                   <span className="hidden sm:inline">
-                    {isRetrying ? "RETRYING..." : "RETRY"}
+                    {retryDocumentMutation.isPending ? "RETRYING..." : "RETRY"}
                   </span>
                 </Button>
               )}
@@ -392,10 +393,10 @@ export function DocumentDetailPage() {
               </span>
             </div>
             <p className="text-lg font-mono font-bold text-cyan-900 dark:text-cyan-100">
-              {formatFileSize(mockDocument.size_bytes)}
+              {formatFileSize(document.size_bytes)}
             </p>
             <p className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70 mt-1">
-              {mockDocument.size_bytes.toLocaleString()} bytes
+              {document.size_bytes.toLocaleString()} bytes
             </p>
           </div>
 
@@ -408,7 +409,7 @@ export function DocumentDetailPage() {
               </span>
             </div>
             <p className="text-lg font-mono font-bold text-cyan-900 dark:text-cyan-100">
-              {mockDocument.chunks_count}
+              {document.chunks_count}
             </p>
             <p className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70 mt-1">
               Vector segments
@@ -420,14 +421,14 @@ export function DocumentDetailPage() {
             <div className="flex items-center gap-2 mb-2">
               <Hash className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
               <span className="text-xs font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-700 dark:text-cyan-500 tracking-wide">
-                MIME TYPE
+                FILE TYPE
               </span>
             </div>
             <p className="text-lg font-mono font-bold text-cyan-900 dark:text-cyan-100">
-              {mockDocument.mime_type.split("/")[1].toUpperCase()}
+              {document.file_type.split("/")[1].toUpperCase()}
             </p>
             <p className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70 mt-1">
-              {mockDocument.mime_type}
+              {document.file_type}
             </p>
           </div>
 
@@ -440,7 +441,7 @@ export function DocumentDetailPage() {
               </span>
             </div>
             <p className="text-sm font-mono font-bold text-cyan-900 dark:text-cyan-100">
-              {formatDate(mockDocument.uploaded_at)}
+              {formatDate(document.uploaded_at)}
             </p>
           </div>
 
@@ -453,8 +454,8 @@ export function DocumentDetailPage() {
               </span>
             </div>
             <p className="text-sm font-mono font-bold text-cyan-900 dark:text-cyan-100">
-              {mockDocument.processed_at
-                ? formatDate(mockDocument.processed_at)
+              {document.processed_at
+                ? formatDate(document.processed_at)
                 : "N/A"}
             </p>
           </div>
@@ -468,7 +469,7 @@ export function DocumentDetailPage() {
               </span>
             </div>
             <p className="text-sm font-mono font-bold text-cyan-900 dark:text-cyan-100">
-              {mockDocument.collection_name || "None"}
+              {document.collection_name || "None"}
             </p>
           </div>
         </div>
@@ -486,7 +487,7 @@ export function DocumentDetailPage() {
               </div>
               <div className="inline-block px-3 py-1.5 rounded-lg bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-600/40 dark:border-cyan-500/30">
                 <span className="text-sm font-mono font-semibold text-cyan-800 dark:text-cyan-300">
-                  {mockDocument.category || "uncategorized"}
+                  {document.category || "uncategorized"}
                 </span>
               </div>
             </div>
@@ -500,8 +501,8 @@ export function DocumentDetailPage() {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {mockDocument.tags.length > 0 ? (
-                  mockDocument.tags.map((tag) => (
+                {document.tags.length > 0 ? (
+                  document.tags.map((tag) => (
                     <span
                       key={tag}
                       className="px-3 py-1.5 rounded-lg bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-600/40 dark:border-cyan-500/30 text-sm font-mono font-semibold text-cyan-800 dark:text-cyan-300"
@@ -520,92 +521,96 @@ export function DocumentDetailPage() {
         </div>
 
         {/* Chunks Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Layers className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-              <h2 className="text-xl font-bold font-['IBM_Plex_Sans_Condensed'] text-cyan-900 dark:text-cyan-100 tracking-tight">
-                CONTENT CHUNKS
-              </h2>
-              <span className="px-2 py-1 rounded bg-cyan-100 dark:bg-cyan-500/20 border border-cyan-600/40 dark:border-cyan-500/30 text-xs font-mono font-bold text-cyan-800 dark:text-cyan-300">
-                {mockDocument.chunks_count}
-              </span>
+        {document.chunks && document.chunks.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Layers className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                <h2 className="text-xl font-bold font-['IBM_Plex_Sans_Condensed'] text-cyan-900 dark:text-cyan-100 tracking-tight">
+                  CONTENT CHUNKS
+                </h2>
+                <span className="px-2 py-1 rounded bg-cyan-100 dark:bg-cyan-500/20 border border-cyan-600/40 dark:border-cyan-500/30 text-xs font-mono font-bold text-cyan-800 dark:text-cyan-300">
+                  {document.chunks_count}
+                </span>
+              </div>
+
+              {/* Show All Toggle */}
+              {document.chunks.length > 5 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllChunks(!showAllChunks)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20 hover:border-cyan-600/60 dark:hover:border-cyan-500/40 hover:bg-cyan-50/50 dark:hover:bg-slate-800/70 transition-all duration-300"
+                >
+                  <span className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-600 dark:text-cyan-400">
+                    {showAllChunks ? "SHOW LESS" : "SHOW ALL"}
+                  </span>
+                  {showAllChunks ? (
+                    <ChevronUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  )}
+                </button>
+              )}
             </div>
 
-            {/* Show All Toggle */}
-            {mockDocument.chunks.length > 5 && (
-              <button
-                type="button"
-                onClick={() => setShowAllChunks(!showAllChunks)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20 hover:border-cyan-600/60 dark:hover:border-cyan-500/40 hover:bg-cyan-50/50 dark:hover:bg-slate-800/70 transition-all duration-300"
-              >
-                <span className="text-sm font-['IBM_Plex_Sans_Condensed'] font-semibold text-cyan-600 dark:text-cyan-400">
-                  {showAllChunks ? "SHOW LESS" : "SHOW ALL"}
-                </span>
-                {showAllChunks ? (
-                  <ChevronUp className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                )}
-              </button>
-            )}
-          </div>
-
-          {/* Chunks List */}
-          <div className="space-y-4">
-            {chunksToShow.map((chunk, index) => (
-              <div
-                key={chunk.chunk_id}
-                className="p-4 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20 hover:border-cyan-600/60 dark:hover:border-cyan-500/40 transition-all duration-300"
-                style={{
-                  animation: `fadeSlideIn 0.3s ease-out ${index * 0.05}s both`,
-                }}
-              >
-                {/* Chunk Header */}
-                <div className="flex items-center justify-between mb-3 pb-3 border-b border-cyan-600/30 dark:border-cyan-500/20">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded bg-cyan-100 dark:bg-cyan-500/20 border border-cyan-600/40 dark:border-cyan-500/30 flex items-center justify-center">
-                      <span className="text-xs font-mono font-bold text-cyan-800 dark:text-cyan-300">
-                        {chunk.chunk_index + 1}
+            {/* Chunks List */}
+            <div className="space-y-4">
+              {chunksToShow.map((chunk, index) => (
+                <div
+                  key={chunk.chunk_id}
+                  className="p-4 rounded-lg bg-white dark:bg-slate-800/50 border border-cyan-600/30 dark:border-cyan-500/20 hover:border-cyan-600/60 dark:hover:border-cyan-500/40 transition-all duration-300"
+                  style={{
+                    animation: `fadeSlideIn 0.3s ease-out ${index * 0.05}s both`,
+                  }}
+                >
+                  {/* Chunk Header */}
+                  <div className="flex items-center justify-between mb-3 pb-3 border-b border-cyan-600/30 dark:border-cyan-500/20">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded bg-cyan-100 dark:bg-cyan-500/20 border border-cyan-600/40 dark:border-cyan-500/30 flex items-center justify-center">
+                        <span className="text-xs font-mono font-bold text-cyan-800 dark:text-cyan-300">
+                          {chunk.chunk_index + 1}
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70">
+                        Chunk ID: {chunk.chunk_id}
                       </span>
                     </div>
-                    <span className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70">
-                      Chunk ID: {chunk.chunk_id}
-                    </span>
+                    {chunk.metadata && (
+                      <div className="flex items-center gap-2">
+                        {typeof chunk.metadata === "object" &&
+                          "page" in chunk.metadata && (
+                            <span className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70">
+                              Page {String(chunk.metadata.page)}
+                            </span>
+                          )}
+                        {typeof chunk.metadata === "object" &&
+                          "section" in chunk.metadata && (
+                            <span className="px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-600/30 dark:border-cyan-500/20 text-xs font-mono text-cyan-700 dark:text-cyan-400">
+                              {String(chunk.metadata.section)}
+                            </span>
+                          )}
+                      </div>
+                    )}
                   </div>
-                  {chunk.metadata && (
-                    <div className="flex items-center gap-2">
-                      {chunk.metadata.page && (
-                        <span className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70">
-                          Page {chunk.metadata.page}
-                        </span>
-                      )}
-                      {chunk.metadata.section && (
-                        <span className="px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-600/30 dark:border-cyan-500/20 text-xs font-mono text-cyan-700 dark:text-cyan-400">
-                          {chunk.metadata.section}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
 
-                {/* Chunk Content */}
-                <div className="font-['Courier_New'] text-sm text-cyan-100/90 dark:text-cyan-100/90 text-cyan-900 leading-relaxed whitespace-pre-wrap">
-                  {chunk.content}
+                  {/* Chunk Content */}
+                  <div className="font-['Courier_New'] text-sm text-cyan-100/90 dark:text-cyan-100/90 text-cyan-900 leading-relaxed whitespace-pre-wrap">
+                    {chunk.content}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Show More Indicator */}
-          {!showAllChunks && mockDocument.chunks.length > 5 && (
-            <div className="mt-4 text-center">
-              <p className="text-sm font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70">
-                Showing 5 of {mockDocument.chunks_count} chunks
-              </p>
+              ))}
             </div>
-          )}
-        </div>
+
+            {/* Show More Indicator */}
+            {!showAllChunks && document.chunks.length > 5 && (
+              <div className="mt-4 text-center">
+                <p className="text-sm font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70">
+                  Showing 5 of {document.chunks_count} chunks
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Edit Metadata Modal */}
@@ -746,11 +751,11 @@ export function DocumentDetailPage() {
             {/* Document Info */}
             <div className="mb-6 p-3 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-600/30 dark:border-red-500/20">
               <p className="text-sm font-mono text-red-900 dark:text-red-100 break-words">
-                {mockDocument.filename}
+                {document.filename}
               </p>
               <p className="text-xs font-mono text-red-700/70 dark:text-red-400/60 mt-1">
-                {mockDocument.chunks_count} chunks •{" "}
-                {formatFileSize(mockDocument.size_bytes)}
+                {document.chunks_count} chunks •{" "}
+                {formatFileSize(document.size_bytes)}
               </p>
             </div>
 
