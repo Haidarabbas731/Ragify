@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
+import { useBulkUploadDocuments } from "../../hooks/useDocuments";
 import { Button } from "../ui/button";
 
 interface UploadedFile {
@@ -44,6 +45,9 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 export function UploadZone({ onUploadComplete }: UploadZoneProps) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [selectedCollection, setSelectedCollection] = useState<string>("");
+
+  // Use the real bulk upload mutation
+  const bulkUploadMutation = useBulkUploadDocuments();
 
   const onDrop = (
     acceptedFiles: File[],
@@ -95,83 +99,65 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
       return;
     }
 
-    for (const fileItem of pendingFiles) {
-      try {
-        // Update status to uploading
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileItem.id
-              ? { ...f, status: "uploading", progress: 0 }
-              : f,
-          ),
-        );
+    // Set all pending files to uploading status
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.status === "pending" ? { ...f, status: "uploading", progress: 0 } : f,
+      ),
+    );
 
-        // Create FormData
-        const formData = new FormData();
-        formData.append("file", fileItem.file);
-        if (selectedCollection) {
-          formData.append("collection_id", selectedCollection);
-        }
+    try {
+      // Call the real API with bulk upload
+      const filesToUpload = pendingFiles.map((f) => f.file);
+      const result = await bulkUploadMutation.mutateAsync({
+        files: filesToUpload,
+        collectionId: selectedCollection || undefined,
+      });
 
-        // Simulate upload with progress (replace with actual API call)
-        await simulateUpload(fileItem.id, (progress) => {
-          setFiles((prev) =>
-            prev.map((f) => (f.id === fileItem.id ? { ...f, progress } : f)),
+      // Update successful uploads
+      setFiles((prev) =>
+        prev.map((f) => {
+          const uploaded = result.documents?.find(
+            (doc) => doc.filename === f.file.name,
           );
-        });
+          if (uploaded) {
+            return {
+              ...f,
+              status: "success",
+              progress: 100,
+              chunks: uploaded.chunk_count || 0,
+            };
+          }
+          // Check if file failed
+          const failed = result.failed_uploads?.find(
+            (fail) => fail.filename === f.file.name,
+          );
+          if (failed) {
+            return {
+              ...f,
+              status: "error",
+              error: failed.error,
+            };
+          }
+          return f;
+        }),
+      );
 
-        // Success
-        const mockChunks = Math.floor(Math.random() * 50) + 10; // Mock chunk count
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileItem.id
-              ? { ...f, status: "success", progress: 100, chunks: mockChunks }
-              : f,
-          ),
-        );
-
-        toast.success(
-          `${fileItem.file.name} uploaded successfully (${mockChunks} chunks)`,
-        );
-      } catch (error) {
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileItem.id
-              ? {
-                  ...f,
-                  status: "error",
-                  error:
-                    error instanceof Error ? error.message : "Upload failed",
-                }
-              : f,
-          ),
-        );
-        toast.error(`Failed to upload ${fileItem.file.name}`);
-      }
+      onUploadComplete?.();
+    } catch (error) {
+      // Mark all uploading files as error
+      setFiles((prev) =>
+        prev.map((f) =>
+          f.status === "uploading"
+            ? {
+                ...f,
+                status: "error",
+                error: error instanceof Error ? error.message : "Upload failed",
+              }
+            : f,
+        ),
+      );
     }
-
-    onUploadComplete?.();
-  };
-
-  // Mock upload simulation (replace with actual API call)
-  const simulateUpload = (
-    _id: string,
-    onProgress: (progress: number) => void,
-  ): Promise<void> => {
-    return new Promise((resolve) => {
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.random() * 30;
-        if (progress >= 100) {
-          progress = 100;
-          clearInterval(interval);
-          onProgress(100);
-          setTimeout(resolve, 200);
-        } else {
-          onProgress(progress);
-        }
-      }, 300);
-    });
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -273,9 +259,10 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
             className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-['Inter'] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
           >
             <option value="">All Documents</option>
-            <option value="collection-1">Work Documents</option>
+            {/* TODO: Replace with real collections from API */}
+            {/* <option value="collection-1">Work Documents</option>
             <option value="collection-2">Personal Notes</option>
-            <option value="collection-3">Research Papers</option>
+            <option value="collection-3">Research Papers</option> */}
           </select>
         </div>
       )}
@@ -352,17 +339,14 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
                       )}
                     </div>
 
-                    {/* Progress Bar */}
+                    {/* Progress Bar - Indeterminate loading */}
                     {fileItem.status === "uploading" && (
                       <div className="mt-2">
                         <div className="h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300"
-                            style={{ width: `${fileItem.progress}%` }}
-                          />
+                          <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse w-full" />
                         </div>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-['Fira_Code']">
-                          {Math.round(fileItem.progress)}%
+                          Uploading...
                         </p>
                       </div>
                     )}

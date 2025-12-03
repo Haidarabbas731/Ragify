@@ -8,6 +8,7 @@ import {
   Camera,
   FileText,
   HardDrive,
+  Loader2,
   Lock,
   LogOut,
   Mail,
@@ -24,47 +25,64 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useDarkMode } from "../contexts/DarkModeContext";
+import { useUserProfile } from "../hooks/useUserProfile";
 import { useAuthStore } from "../store/authStore";
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { logout } = useAuthStore();
   const { darkMode, toggleDarkMode } = useDarkMode();
   const [activeTab, setActiveTab] = useState<
     "profile" | "security" | "usage" | "preferences"
   >("profile");
 
-  // Mock user data (will be replaced with real API data)
-  const userData = {
-    email: user?.email || "user@example.com",
-    name: "John Doe",
-    avatar: null,
-    created_at: new Date("2024-01-01"),
-    role: user?.role || "user",
-  };
-
-  // Mock usage stats (will be replaced with real API data)
-  const usageStats = {
-    documents: 42,
-    documentsLimit: 1000,
-    storage: 523, // MB
-    storageLimit: 1024, // MB
-    apiCalls: 1247,
-    apiCallsLimit: 10000,
-  };
+  // Fetch user profile from API
+  const { data: profile, isLoading, error } = useUserProfile();
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
-  // Calculate percentages
-  const documentsPercentage =
-    (usageStats.documents / usageStats.documentsLimit) * 100;
-  const storagePercentage =
-    (usageStats.storage / usageStats.storageLimit) * 100;
-  const apiCallsPercentage =
-    (usageStats.apiCalls / usageStats.apiCallsLimit) * 100;
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400 font-['Inter']">
+            Loading profile...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !profile) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 dark:text-red-400 font-['Inter'] mb-4">
+            Failed to load profile
+          </p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Extract data from profile
+  const userData = {
+    email: profile.email,
+    name: profile.email.split("@")[0], // Use email username as display name
+    avatar: null,
+    created_at: new Date(profile.created_at),
+    role: profile.role,
+  };
+
+  // Storage stats from profile
+  const storagePercentage = profile.storage_percentage;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -347,84 +365,35 @@ export function ProfilePage() {
                     Usage Statistics
                   </h2>
 
-                  {/* Circular Progress Indicators */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Documents */}
-                    <div className="text-center">
-                      <div className="relative inline-block">
-                        <svg
-                          className="w-32 h-32 transform -rotate-90"
-                          role="img"
-                          aria-label="Documents usage progress"
-                        >
-                          <circle
-                            cx="64"
-                            cy="64"
-                            r="56"
-                            stroke="currentColor"
-                            strokeWidth="8"
-                            fill="none"
-                            className="text-slate-200 dark:text-slate-800"
-                          />
-                          <circle
-                            cx="64"
-                            cy="64"
-                            r="56"
-                            stroke="currentColor"
-                            strokeWidth="8"
-                            fill="none"
-                            strokeDasharray={`${2 * Math.PI * 56}`}
-                            strokeDashoffset={`${
-                              2 * Math.PI * 56 * (1 - documentsPercentage / 100)
-                            }`}
-                            className="text-blue-500 transition-all duration-1000"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center flex-col">
-                          <span className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['Fira_Code']">
-                            {usageStats.documents}
-                          </span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
-                            of {usageStats.documentsLimit}
-                          </span>
-                        </div>
-                      </div>
-                      <h3 className="mt-4 font-semibold text-slate-900 dark:text-slate-100 font-['Space_Grotesk']">
-                        Documents
-                      </h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 font-['Inter']">
-                        {documentsPercentage.toFixed(1)}% used
-                      </p>
-                    </div>
-
+                  {/* Storage Usage - Only available metric from profile */}
+                  <div className="flex justify-center">
                     {/* Storage */}
                     <div className="text-center">
                       <div className="relative inline-block">
                         <svg
-                          className="w-32 h-32 transform -rotate-90"
+                          className="w-40 h-40 transform -rotate-90"
                           role="img"
                           aria-label="Storage usage progress"
                         >
                           <circle
-                            cx="64"
-                            cy="64"
-                            r="56"
+                            cx="80"
+                            cy="80"
+                            r="70"
                             stroke="currentColor"
-                            strokeWidth="8"
+                            strokeWidth="10"
                             fill="none"
                             className="text-slate-200 dark:text-slate-800"
                           />
                           <circle
-                            cx="64"
-                            cy="64"
-                            r="56"
+                            cx="80"
+                            cy="80"
+                            r="70"
                             stroke="currentColor"
-                            strokeWidth="8"
+                            strokeWidth="10"
                             fill="none"
-                            strokeDasharray={`${2 * Math.PI * 56}`}
+                            strokeDasharray={`${2 * Math.PI * 70}`}
                             strokeDashoffset={`${
-                              2 * Math.PI * 56 * (1 - storagePercentage / 100)
+                              2 * Math.PI * 70 * (1 - storagePercentage / 100)
                             }`}
                             className={`transition-all duration-1000 ${
                               storagePercentage >= 90
@@ -437,71 +406,82 @@ export function ProfilePage() {
                           />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center flex-col">
-                          <span className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['Fira_Code']">
-                            {usageStats.storage}
+                          <span className="text-3xl font-bold text-slate-900 dark:text-slate-100 font-['Fira_Code']">
+                            {profile.storage_used_mb.toFixed(1)}
                           </span>
                           <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
                             MB
                           </span>
                         </div>
                       </div>
-                      <h3 className="mt-4 font-semibold text-slate-900 dark:text-slate-100 font-['Space_Grotesk']">
-                        Storage
+                      <h3 className="mt-6 text-xl font-semibold text-slate-900 dark:text-slate-100 font-['Space_Grotesk']">
+                        Storage Used
                       </h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 font-['Inter']">
+                      <p className="text-sm text-slate-500 dark:text-slate-400 font-['Inter'] mt-2">
                         {storagePercentage.toFixed(1)}% of{" "}
-                        {usageStats.storageLimit} MB
+                        {profile.storage_limit_mb.toFixed(0)} MB
+                      </p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 font-['Fira_Code'] mt-1">
+                        {(
+                          profile.storage_limit_mb - profile.storage_used_mb
+                        ).toFixed(1)}{" "}
+                        MB remaining
                       </p>
                     </div>
+                  </div>
 
-                    {/* API Calls */}
-                    <div className="text-center">
-                      <div className="relative inline-block">
-                        <svg
-                          className="w-32 h-32 transform -rotate-90"
-                          role="img"
-                          aria-label="API usage progress"
-                        >
-                          <circle
-                            cx="64"
-                            cy="64"
-                            r="56"
-                            stroke="currentColor"
-                            strokeWidth="8"
-                            fill="none"
-                            className="text-slate-200 dark:text-slate-800"
-                          />
-                          <circle
-                            cx="64"
-                            cy="64"
-                            r="56"
-                            stroke="currentColor"
-                            strokeWidth="8"
-                            fill="none"
-                            strokeDasharray={`${2 * Math.PI * 56}`}
-                            strokeDashoffset={`${
-                              2 * Math.PI * 56 * (1 - apiCallsPercentage / 100)
-                            }`}
-                            className="text-purple-500 transition-all duration-1000"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center flex-col">
-                          <span className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['Fira_Code']">
-                            {usageStats.apiCalls.toLocaleString()}
-                          </span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
-                            calls
-                          </span>
-                        </div>
+                  {/* Storage Details */}
+                  <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 font-['Space_Grotesk']">
+                      Storage Details
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-['Inter']">
+                          Used
+                        </p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['Fira_Code'] mt-1">
+                          {profile.storage_used_mb.toFixed(2)} MB
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-500 font-['Fira_Code'] mt-1">
+                          {(
+                            profile.storage_used_bytes /
+                            (1024 * 1024 * 1024)
+                          ).toFixed(4)}{" "}
+                          GB
+                        </p>
                       </div>
-                      <h3 className="mt-4 font-semibold text-slate-900 dark:text-slate-100 font-['Space_Grotesk']">
-                        API Usage
-                      </h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 font-['Inter']">
-                        {apiCallsPercentage.toFixed(1)}% of monthly limit
-                      </p>
+                      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-['Inter']">
+                          Limit
+                        </p>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-['Fira_Code'] mt-1">
+                          {profile.storage_limit_mb.toFixed(0)} MB
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-500 font-['Fira_Code'] mt-1">
+                          {(
+                            profile.storage_limit_bytes /
+                            (1024 * 1024 * 1024)
+                          ).toFixed(2)}{" "}
+                          GB
+                        </p>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Note about document stats */}
+                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-sm text-blue-900 dark:text-blue-300 font-['Inter']">
+                      <strong>Note:</strong> For detailed document statistics,
+                      visit the{" "}
+                      <Link
+                        to="/dashboard"
+                        className="underline hover:text-blue-600 dark:hover:text-blue-400"
+                      >
+                        Dashboard page
+                      </Link>
+                      .
+                    </p>
                   </div>
                 </div>
               </div>

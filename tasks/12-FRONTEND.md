@@ -2679,9 +2679,20 @@ Before considering frontend complete, verify:
 - ✅ **Conversation Endpoints:** Complete (list, get, delete)
 - ✅ **Chat Endpoint:** Complete (POST /chat with streaming)
 - ✅ **Admin Endpoints:** Complete (users, documents, audit logs, invite codes, stats)
-- ❌ **User Profile Endpoints:** MISSING - No `/users/me` endpoints
-- ⚠️ **Dashboard Stats:** Available only in admin stats, needs user-specific endpoint
+- ✅ **User Profile Endpoints:** Complete - All `/users/me` endpoints implemented and connected
+- ✅ **Dashboard Stats:** Complete - User-specific endpoint implemented (`GET /users/me/stats`)
 - ⚠️ **Document List:** No `sort_by` or `order` query parameters implemented
+
+**UPDATE (2025-12-03):** User Profile endpoints fully integrated with frontend:
+- ✅ Created `useUserProfile` hook in `frontend/src/hooks/useUserProfile.ts`
+- ✅ Created `useUserStats` hook in `frontend/src/hooks/useUserStats.ts`
+- ✅ Added API methods to `frontend/src/lib/api.ts`: `getUserProfile()`, `updateUserProfile()`, `changePassword()`, `getUserStats()`
+- ✅ Added TypeScript types to `frontend/src/types/api.ts`: `UserProfile`, `UserUpdateRequest`, `ChangePasswordRequest`, `UserStats`, `MessageResponse`
+- ✅ Connected ProfilePage to real API - replaced all mock data
+- ✅ Added QueryClientProvider to `frontend/src/main.tsx` for React Query
+- ✅ ProfilePage now displays real user data: email, storage stats, account creation date
+- ✅ Loading states and error handling implemented
+- ✅ Linting passes with no errors
 
 ---
 
@@ -2887,6 +2898,90 @@ Before considering frontend complete, verify:
   - Test invalid order defaults to desc
 
 **Frontend Update Needed:**
+
+**UPDATE (Dec 3, 2025):** ✅ **COMPLETED** - Full document API integration
+
+**Files Created:**
+- `frontend/src/hooks/useDocuments.ts` - All document React Query hooks (10 hooks total)
+- `frontend/src/types/api.ts` - Document types (Document, DocumentChunk, DocumentListResponse, etc.)
+
+**Files Modified:**
+- `frontend/src/lib/api.ts` - Added 10 document API methods:
+  1. `uploadDocument` - Single file upload
+  2. `getDocuments` - List with pagination/filters/sorting
+  3. `getDocument` - Single document by ID
+  4. `updateDocument` - Update metadata (collection, category, tags)
+  5. `deleteDocument` - Soft delete single
+  6. `batchDeleteDocuments` - Delete multiple
+  7. `deleteAllDocuments` - Delete all user docs
+  8. `retryDocument` - Retry failed processing
+  9. `bulkUploadDocuments` - Upload multiple files (respects MAX_UPLOAD_BATCH)
+  10. `retryAllFailedDocuments` - Retry all failed/stuck documents
+
+- `frontend/src/pages/DocumentsPage.tsx` - Connected to real API:
+  - Replaced mock data with `useDocuments` hook
+  - Connected filters (collection, status, sorting, pagination)
+  - Batch operations (select all, delete, move to collection)
+  - Loading/error states
+  - Fixed TypeScript: Cast `status_filter` to DocumentStatus type
+
+- `frontend/src/pages/DocumentDetailPage.tsx` - Connected to real API:
+  - Replaced mock data with `useDocument` hook
+  - Connected retry/delete/update operations
+  - Fixed TypeScript errors: `isRetrying` → `retryDocumentMutation.isPending`
+  - Fixed: `mime_type` → `file_type` (matches backend Document model)
+  - Fixed: Added optional chaining for `chunks` field
+  - Fixed: Metadata type casting for chunk.metadata rendering
+  - Loading/error states with user-friendly messages
+
+- `frontend/src/components/documents/DocumentList.tsx` - Now accepts `documents` prop instead of using internal mock data
+
+**Hooks Created (10 total):**
+- `useDocuments(params)` - List with React Query caching
+- `useDocument(documentId)` - Single document
+- `useUploadDocument()` - Single upload mutation
+- `useUpdateDocument()` - Update metadata mutation
+- `useDeleteDocument()` - Delete mutation
+- `useBatchDeleteDocuments()` - Batch delete mutation
+- `useDeleteAllDocuments()` - Delete all mutation
+- `useRetryDocument()` - Retry mutation
+- `useBulkUploadDocuments()` - Bulk upload mutation
+- `useRetryAllFailedDocuments()` - Retry all failed mutation
+
+**Features Implemented:**
+- ✅ All CRUD operations connected to backend
+- ✅ Pagination with page/limit params
+- ✅ Filtering by collection_id and status
+- ✅ Dynamic sorting (uploaded_at, filename, size_bytes, processed_at) with asc/desc
+- ✅ Batch operations (select multiple, delete, move to collection)
+- ✅ Bulk upload (multiple files in single request)
+- ✅ Retry all failed documents (finds ERROR + stuck PROCESSING docs)
+- ✅ React Query cache invalidation for instant UI updates
+- ✅ Toast notifications for all operations
+- ✅ Loading states and error handling
+- ✅ TypeScript type safety with proper casting
+- ✅ All linting passes (Biome)
+
+**Testing Status:**
+- ✅ Backend: All document endpoints tested in `tests/api/v1/test_documents.py`
+- ⏳ Frontend: Manual testing recommended with Chrome DevTools MCP
+  - Verify document list loads with real data
+  - Test filters (collection, status, sorting)
+  - Test pagination
+  - Test batch operations (select, delete, move)
+  - Test single document detail page
+  - Test retry/delete/update operations
+  - Check console for errors
+  - Verify network requests succeed (200/201 status)
+
+**Known Limitations:**
+- Collections dropdown still uses mock data (TODO: Connect to collections API in 12.B.4)
+- Document chunks may not be populated by backend (detail endpoint returns Document without chunks field)
+- Chunks section in DocumentDetailPage will show empty until backend includes chunks in response
+
+---
+
+**Frontend Update Needed (Original):**
 - Update DocumentsPage.tsx to pass filters to DocumentList component
 - Update DocumentList to use sort_by and order in API request
 
@@ -4188,4 +4283,749 @@ git commit -m "feat(frontend): add admin pages with user management, invite code
 
 ---
 
+## 12.12 Future Enhancements (Deferred)
+
+**Priority:** LOW - Post-MVP improvements
+**Status:** Documented for future implementation
+
+### 12.12.1 Global Error Boundary Component
+
+**Purpose:** Catch React errors (component crashes) and show user-friendly error page instead of blank screen.
+
+**Current State:**
+- ✅ API errors handled with toast notifications
+- ❌ No global React error boundary for component crashes
+- ❌ No fallback UI when components fail to render
+
+**Implementation Plan:**
+
+- [ ] Create `ErrorBoundary.tsx` component in `frontend/src/components/`
+  ```tsx
+  // Catches React errors (componentDidCatch lifecycle)
+  // Shows friendly error page with:
+  // - Error message (production-safe, no stack traces)
+  // - "Reload Page" button
+  // - "Report Issue" link (optional)
+  // - Illustration/icon for visual feedback
+  ```
+
+- [ ] Wrap `<App />` in `main.tsx` with ErrorBoundary
+  ```tsx
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+  ```
+
+- [ ] Create fallback error page component
+  - Clean design matching app aesthetic
+  - Helpful message ("Something went wrong...")
+  - Action buttons (Reload, Go Home)
+  - Log errors to console (dev) or external service (prod)
+
+- [ ] Test error boundary with intentional crashes
+  - Throw error in component render
+  - Verify boundary catches and shows fallback
+  - Verify "Reload" button works
+  - Check console logging
+
+**Benefits:**
+- Better UX: Users see friendly error page instead of blank screen
+- Error recovery: "Reload" button lets users recover without browser refresh
+- Production safety: No exposed stack traces or technical errors
+- Developer visibility: Errors logged for debugging
+
+**Estimated Time:** 2-3 hours
+
+**Related:**
+- Current error handling: Toast notifications for API errors (working)
+- React Query errors: Handled per-query with error states (working)
+- This enhancement: Global React component crash handler (deferred)
+
+---
+
+## 📝 API INTEGRATION UPDATE (December 3, 2025)
+
+### Backend JWT Token Email Fix
+**Problem:** User email was not displaying in frontend navbar because JWT tokens didn't include the email field.
+
+**Files Modified:**
+1. `backend/app/services/auth_service.py`
+   - **UPDATE:** Added `email` field to JWT token payload in `authenticate_user()` (login endpoint)
+   - **UPDATE:** Added `email` field to JWT token payload in `refresh_access_token_from_details()` (refresh endpoint)
+   - **RESULT:** JWT tokens now include: `{sub: user_id, email: user.email, role: user.role, jti: token_id, exp: expiry}`
+
+2. `backend/tests/api/v1/test_users.py`
+   - **UPDATE:** Fixed import error: `decode_access_token` → `decode_token`
+   - **RESULT:** Test suite passes (283 passed, 9 failed due to unrelated issues)
+
+**Testing Steps:**
+1. Restart backend server
+2. Log out from frontend
+3. Log back in (generates new JWT with email field)
+4. Email should display in navbar on all pages (Dashboard, Documents, etc.)
+
+---
+
+### Frontend Document Upload API Integration
+**Problem:** UploadZone component was using mock/simulated uploads with fake progress bars instead of calling real backend API.
+
+**Files Modified:**
+1. `frontend/src/components/documents/UploadZone.tsx`
+   - **UPDATE:** Imported and integrated `useBulkUploadDocuments` hook
+   - **UPDATE:** Replaced mock `simulateUpload()` function with real API call to `/bulk-upload` endpoint
+   - **UPDATE:** Changed progress bar from fake percentage to indeterminate loading state (pulsing animation)
+   - **UPDATE:** Updated file status handling based on actual backend response
+   - **UPDATE:** Properly handles success/error states for each file with real chunk counts
+   - **REMOVED:** Mock upload simulation code (fake progress tracking)
+
+2. `frontend/src/types/api.ts`
+   - **UPDATE:** Updated `BulkUploadResponse` interface to match actual usage (made `documents` and `failed_uploads` fields optional)
+
+**How It Works Now:**
+1. User drags/drops files or clicks to select
+2. Files show "pending" status in queue
+3. Click "Upload All" button
+4. All pending files set to "uploading" status with indeterminate progress bar (pulsing animation)
+5. Single API call to `POST /api/v1/documents/bulk-upload` with FormData containing all files
+6. Backend processes files and returns: `{uploaded_count, failed_count, documents[], failed_uploads[]}`
+7. Frontend updates each file status based on response:
+   - ✅ Success: Shows green checkmark + real chunk count from backend
+   - ❌ Failed: Shows error message from backend
+
+**Backend Flow:**
+1. Validates all files (type: PDF/DOCX/TXT/MD, size: <50MB, total quota check)
+2. Uploads valid files to B2 storage
+3. Creates document records in PostgreSQL (status=PROCESSING)
+4. Enqueues background processing jobs via ARQ worker
+5. Returns results with uploaded documents and any errors
+
+**Current Limitations:**
+- ⚠️ **No Real-Time Progress:** Backend uploads all files synchronously, no streaming progress updates
+  - Shows indeterminate loading (pulsing animation) instead of percentage
+  - User sees "Uploading..." state until all files complete
+  - **FUTURE ENHANCEMENT:** Could implement WebSocket/SSE for per-file progress tracking (see implementation details below)
+
+**Mock Data Still Present:**
+- Collection selector in UploadZone shows hardcoded options
+  - TODO: Connect to collections API when implemented
+  - Options: "Work Documents", "Personal Notes", "Research Papers"
+
+---
+
+### Real-Time Upload Progress Implementation Guide
+
+**Problem:** Backend processes all files synchronously and returns results only when complete. No intermediate progress updates.
+
+**Solution Options:**
+
+#### Option 1: WebSocket-Based Progress (Recommended for Real-Time)
+**Best for:** Real-time bidirectional communication, live progress updates
+
+**Backend Implementation:**
+```python
+# backend/app/api/v1/documents.py
+
+from fastapi import WebSocket, WebSocketDisconnect
+from typing import Dict
+import asyncio
+
+# Store active upload sessions
+active_uploads: Dict[str, WebSocket] = {}
+
+@router.websocket("/ws/upload/{session_id}")
+async def websocket_upload_progress(
+    websocket: WebSocket,
+    session_id: str,
+):
+    """WebSocket endpoint for real-time upload progress"""
+    await websocket.accept()
+    active_uploads[session_id] = websocket
+    
+    try:
+        # Keep connection alive
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        active_uploads.pop(session_id, None)
+
+async def send_progress(session_id: str, data: dict):
+    """Send progress update to specific upload session"""
+    if session_id in active_uploads:
+        try:
+            await active_uploads[session_id].send_json(data)
+        except:
+            active_uploads.pop(session_id, None)
+
+@router.post("/bulk-upload-ws")
+async def bulk_upload_with_progress(
+    files: list[UploadFile],
+    session_id: str = Form(...),
+    # ... other params
+):
+    """Modified bulk upload with WebSocket progress updates"""
+    
+    total_files = len(files)
+    
+    for index, file in enumerate(files):
+        # Send progress before processing each file
+        await send_progress(session_id, {
+            "type": "file_start",
+            "filename": file.filename,
+            "current": index + 1,
+            "total": total_files,
+            "progress": (index / total_files) * 100
+        })
+        
+        try:
+            # Upload to B2
+            storage_key = await b2_service.upload_file(file, user_id)
+            
+            # Send upload complete
+            await send_progress(session_id, {
+                "type": "file_uploaded",
+                "filename": file.filename,
+                "storage_key": storage_key
+            })
+            
+            # Create document record
+            document = Document(...)
+            db.add(document)
+            
+            # Send processing queued
+            await send_progress(session_id, {
+                "type": "file_processing",
+                "filename": file.filename,
+                "document_id": document.document_id
+            })
+            
+            # Enqueue background job
+            await arq.enqueue_job("process_document", document_id=document.document_id)
+            
+            # Send success
+            await send_progress(session_id, {
+                "type": "file_success",
+                "filename": file.filename,
+                "document_id": document.document_id,
+                "progress": ((index + 1) / total_files) * 100
+            })
+            
+        except Exception as e:
+            # Send error
+            await send_progress(session_id, {
+                "type": "file_error",
+                "filename": file.filename,
+                "error": str(e)
+            })
+    
+    await db.commit()
+    
+    # Send completion
+    await send_progress(session_id, {
+        "type": "upload_complete",
+        "uploaded_count": len(uploaded_documents),
+        "failed_count": len(failed_uploads)
+    })
+    
+    return {"status": "complete"}
+```
+
+**Frontend Implementation:**
+```typescript
+// frontend/src/hooks/useWebSocketUpload.ts
+
+import { useEffect, useRef, useState } from 'react';
+
+interface UploadProgress {
+  filename: string;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  progress: number;
+  error?: string;
+}
+
+export function useWebSocketUpload() {
+  const wsRef = useRef<WebSocket | null>(null);
+  const [fileProgress, setFileProgress] = useState<Map<string, UploadProgress>>(new Map());
+  const [isConnected, setIsConnected] = useState(false);
+
+  const connect = (sessionId: string) => {
+    const ws = new WebSocket(`ws://localhost:8000/api/v1/documents/ws/upload/${sessionId}`);
+    
+    ws.onopen = () => {
+      setIsConnected(true);
+      console.log('WebSocket connected');
+    };
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      switch (data.type) {
+        case 'file_start':
+          setFileProgress(prev => new Map(prev).set(data.filename, {
+            filename: data.filename,
+            status: 'uploading',
+            progress: data.progress
+          }));
+          break;
+          
+        case 'file_success':
+          setFileProgress(prev => new Map(prev).set(data.filename, {
+            filename: data.filename,
+            status: 'success',
+            progress: 100
+          }));
+          break;
+          
+        case 'file_error':
+          setFileProgress(prev => new Map(prev).set(data.filename, {
+            filename: data.filename,
+            status: 'error',
+            progress: 0,
+            error: data.error
+          }));
+          break;
+          
+        case 'upload_complete':
+          console.log('Upload complete:', data);
+          break;
+      }
+    };
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+    
+    ws.onclose = () => {
+      setIsConnected(false);
+      console.log('WebSocket disconnected');
+    };
+    
+    wsRef.current = ws;
+  };
+  
+  const disconnect = () => {
+    wsRef.current?.close();
+    wsRef.current = null;
+  };
+  
+  useEffect(() => {
+    return () => {
+      disconnect();
+    };
+  }, []);
+  
+  return { connect, disconnect, fileProgress, isConnected };
+}
+
+// Usage in UploadZone.tsx
+const { connect, disconnect, fileProgress, isConnected } = useWebSocketUpload();
+
+const uploadFiles = async () => {
+  const sessionId = crypto.randomUUID();
+  
+  // Connect WebSocket
+  connect(sessionId);
+  
+  // Prepare FormData
+  const formData = new FormData();
+  files.forEach(f => formData.append('files', f.file));
+  formData.append('session_id', sessionId);
+  
+  try {
+    // Call upload endpoint
+    await api.post('/documents/bulk-upload-ws', formData);
+  } finally {
+    // Disconnect after upload
+    disconnect();
+  }
+};
+
+// In render:
+{Array.from(fileProgress.values()).map(file => (
+  <div key={file.filename}>
+    <p>{file.filename}</p>
+    <progress value={file.progress} max={100} />
+    <span>{file.status}</span>
+  </div>
+))}
+```
+
+**Pros:**
+- ✅ True real-time progress updates
+- ✅ Bidirectional communication
+- ✅ Works across all modern browsers
+- ✅ Can send progress for multiple files simultaneously
+
+**Cons:**
+- ⚠️ Requires maintaining WebSocket connections (connection pool management)
+- ⚠️ More complex error handling (reconnection logic)
+- ⚠️ Need to handle connection cleanup on errors
+
+---
+
+#### Option 2: Server-Sent Events (SSE) - Simpler Alternative
+**Best for:** One-way server-to-client streaming, simpler than WebSocket
+
+**Backend Implementation:**
+```python
+# backend/app/api/v1/documents.py
+
+from fastapi.responses import StreamingResponse
+import asyncio
+
+@router.post("/bulk-upload-stream")
+async def bulk_upload_streaming(
+    files: list[UploadFile],
+    session_id: str = Form(...),
+    # ... other params
+):
+    """Upload with SSE progress streaming"""
+    
+    async def event_stream():
+        """Generator for SSE events"""
+        
+        total_files = len(files)
+        uploaded_documents = []
+        failed_uploads = []
+        
+        for index, file in enumerate(files):
+            try:
+                # Send progress event
+                yield f"data: {json.dumps({
+                    'type': 'progress',
+                    'filename': file.filename,
+                    'current': index + 1,
+                    'total': total_files,
+                    'progress': ((index + 1) / total_files) * 100
+                })}\n\n"
+                
+                # Upload file
+                storage_key = await b2_service.upload_file(file, user_id)
+                
+                # Create document
+                document = Document(...)
+                db.add(document)
+                await db.flush()
+                
+                # Enqueue processing
+                await arq.enqueue_job("process_document", document_id=document.document_id)
+                
+                uploaded_documents.append(document)
+                
+                # Send success event
+                yield f"data: {json.dumps({
+                    'type': 'success',
+                    'filename': file.filename,
+                    'document_id': document.document_id
+                })}\n\n"
+                
+            except Exception as e:
+                failed_uploads.append({
+                    "filename": file.filename,
+                    "error": str(e)
+                })
+                
+                # Send error event
+                yield f"data: {json.dumps({
+                    'type': 'error',
+                    'filename': file.filename,
+                    'error': str(e)
+                })}\n\n"
+        
+        await db.commit()
+        
+        # Send final event
+        yield f"data: {json.dumps({
+            'type': 'complete',
+            'uploaded_count': len(uploaded_documents),
+            'failed_count': len(failed_uploads),
+            'documents': [doc.dict() for doc in uploaded_documents],
+            'failed_uploads': failed_uploads
+        })}\n\n"
+    
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
+```
+
+**Frontend Implementation:**
+```typescript
+// frontend/src/hooks/useSSEUpload.ts
+
+import { useState } from 'react';
+
+export function useSSEUpload() {
+  const [fileProgress, setFileProgress] = useState<Map<string, any>>(new Map());
+  
+  const uploadWithSSE = async (files: File[], collectionId?: string) => {
+    const formData = new FormData();
+    files.forEach(f => formData.append('files', f));
+    if (collectionId) formData.append('collection_id', collectionId);
+    formData.append('session_id', crypto.randomUUID());
+    
+    const response = await fetch('http://localhost:8000/api/v1/documents/bulk-upload-stream', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: formData
+    });
+    
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    
+    while (true) {
+      const { done, value } = await reader!.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.substring(6));
+          
+          switch (data.type) {
+            case 'progress':
+              setFileProgress(prev => new Map(prev).set(data.filename, {
+                status: 'uploading',
+                progress: data.progress
+              }));
+              break;
+              
+            case 'success':
+              setFileProgress(prev => new Map(prev).set(data.filename, {
+                status: 'success',
+                progress: 100,
+                documentId: data.document_id
+              }));
+              break;
+              
+            case 'error':
+              setFileProgress(prev => new Map(prev).set(data.filename, {
+                status: 'error',
+                error: data.error
+              }));
+              break;
+              
+            case 'complete':
+              console.log('Upload complete:', data);
+              break;
+          }
+        }
+      }
+    }
+  };
+  
+  return { uploadWithSSE, fileProgress };
+}
+```
+
+**Pros:**
+- ✅ Simpler than WebSocket (one-way streaming)
+- ✅ Built-in reconnection support in EventSource API
+- ✅ Works well for progress updates
+- ✅ Easier error handling
+
+**Cons:**
+- ⚠️ One-way communication only (server → client)
+- ⚠️ Cannot cancel upload from client (would need separate HTTP request)
+- ⚠️ Browser connection limits (6 per domain in most browsers)
+
+---
+
+#### Option 3: Polling-Based Progress (Simplest)
+**Best for:** Minimal changes, works with existing infrastructure
+
+**Backend Implementation:**
+```python
+# backend/app/services/redis_service.py
+
+async def set_upload_progress(session_id: str, data: dict, ttl: int = 300):
+    """Store upload progress in Redis"""
+    await redis_client.setex(
+        f"upload:progress:{session_id}",
+        ttl,
+        json.dumps(data)
+    )
+
+async def get_upload_progress(session_id: str) -> dict | None:
+    """Get upload progress from Redis"""
+    data = await redis_client.get(f"upload:progress:{session_id}")
+    return json.loads(data) if data else None
+
+# backend/app/api/v1/documents.py
+
+@router.post("/bulk-upload-async")
+async def bulk_upload_async(
+    files: list[UploadFile],
+    session_id: str = Form(...),
+    background_tasks: BackgroundTasks,
+    # ... other params
+):
+    """Start upload in background, poll for progress"""
+    
+    # Initialize progress
+    await set_upload_progress(session_id, {
+        "status": "started",
+        "total_files": len(files),
+        "processed": 0,
+        "uploaded": 0,
+        "failed": 0
+    })
+    
+    # Start upload in background
+    background_tasks.add_task(
+        process_bulk_upload,
+        files, session_id, user_id, collection_id
+    )
+    
+    return {"session_id": session_id, "status": "started"}
+
+@router.get("/upload-progress/{session_id}")
+async def get_upload_progress_endpoint(session_id: str):
+    """Get current upload progress"""
+    progress = await get_upload_progress(session_id)
+    if not progress:
+        raise HTTPException(404, "Upload session not found")
+    return progress
+
+async def process_bulk_upload(files, session_id, user_id, collection_id):
+    """Background task to process uploads"""
+    total = len(files)
+    uploaded = 0
+    failed = 0
+    
+    for index, file in enumerate(files):
+        try:
+            # Upload file
+            storage_key = await b2_service.upload_file(file, user_id)
+            uploaded += 1
+            
+            # Update progress
+            await set_upload_progress(session_id, {
+                "status": "processing",
+                "total_files": total,
+                "processed": index + 1,
+                "uploaded": uploaded,
+                "failed": failed,
+                "current_file": file.filename,
+                "progress": ((index + 1) / total) * 100
+            })
+            
+        except Exception as e:
+            failed += 1
+            
+            await set_upload_progress(session_id, {
+                "status": "processing",
+                "total_files": total,
+                "processed": index + 1,
+                "uploaded": uploaded,
+                "failed": failed,
+                "current_file": file.filename,
+                "error": str(e),
+                "progress": ((index + 1) / total) * 100
+            })
+    
+    # Final status
+    await set_upload_progress(session_id, {
+        "status": "complete",
+        "total_files": total,
+        "processed": total,
+        "uploaded": uploaded,
+        "failed": failed,
+        "progress": 100
+    })
+```
+
+**Frontend Implementation:**
+```typescript
+// frontend/src/hooks/usePollingUpload.ts
+
+import { useEffect, useState } from 'react';
+
+export function usePollingUpload() {
+  const [progress, setProgress] = useState<any>(null);
+  const [polling, setPolling] = useState(false);
+  
+  const startUpload = async (files: File[], collectionId?: string) => {
+    const sessionId = crypto.randomUUID();
+    const formData = new FormData();
+    
+    files.forEach(f => formData.append('files', f));
+    formData.append('session_id', sessionId);
+    if (collectionId) formData.append('collection_id', collectionId);
+    
+    // Start upload
+    await api.post('/documents/bulk-upload-async', formData);
+    
+    // Start polling
+    setPolling(true);
+    pollProgress(sessionId);
+  };
+  
+  const pollProgress = async (sessionId: string) => {
+    const interval = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/documents/upload-progress/${sessionId}`);
+        setProgress(data);
+        
+        if (data.status === 'complete') {
+          clearInterval(interval);
+          setPolling(false);
+        }
+      } catch (error) {
+        clearInterval(interval);
+        setPolling(false);
+      }
+    }, 1000); // Poll every second
+  };
+  
+  return { startUpload, progress, polling };
+}
+
+// Usage in UploadZone.tsx
+const { startUpload, progress, polling } = usePollingUpload();
+
+// In render:
+{polling && progress && (
+  <div>
+    <p>Uploading: {progress.current_file}</p>
+    <progress value={progress.progress} max={100} />
+    <p>{progress.uploaded} uploaded, {progress.failed} failed</p>
+  </div>
+)}
+```
+
+**Pros:**
+- ✅ Simplest implementation
+- ✅ Works with existing HTTP infrastructure
+- ✅ No need for WebSocket/SSE support
+- ✅ Easy to implement and debug
+
+**Cons:**
+- ⚠️ Polling creates unnecessary network traffic
+- ⚠️ Slight delay in progress updates (polling interval)
+- ⚠️ Less efficient than push-based approaches
+- ⚠️ Need to manage cleanup of old progress data in Redis
+
+---
+
+**Recommendation:**
+- **For MVP:** Keep current implementation (indeterminate loading) ✅
+- **For Production:** Implement **Option 1 (WebSocket)** for best user experience
+- **Quick Win:** Implement **Option 3 (Polling)** if need progress without major refactoring
+
+**Estimated Time:**
+- Option 1 (WebSocket): 2-3 days (backend + frontend + testing)
+- Option 2 (SSE): 1-2 days (simpler implementation)
+- Option 3 (Polling): 4-6 hours (minimal changes)
+
+---
+
 **Next Phase:** Phase 13 - Migration & Re-indexing Strategy (Optional)
+

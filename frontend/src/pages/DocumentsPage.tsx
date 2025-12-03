@@ -9,6 +9,7 @@ import {
   FileText,
   FolderOpen,
   HardDrive,
+  Loader2,
   LogOut,
   Menu,
   MessageSquare,
@@ -28,21 +29,57 @@ import {
 } from "../components/documents/SearchFilter";
 import { Button } from "../components/ui/button";
 import { useDarkMode } from "../contexts/DarkModeContext";
+import {
+  useBatchDeleteDocuments,
+  useDeleteAllDocuments,
+  useDeleteDocument,
+  useDocuments,
+  useRetryDocument,
+  useUpdateDocument,
+} from "../hooks/useDocuments";
 import { useAuthStore } from "../store/authStore";
 
 export function DocumentsPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [_filters, setFilters] = useState<FilterState>({
+  const [filters, setFilters] = useState<FilterState>({
     searchTerm: "",
     collectionId: null,
     statusFilter: null,
     sortBy: "created_at",
     order: "desc",
   });
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Mock collections data - TODO: Replace with actual API call
+  // Fetch documents with filters
+  const {
+    data: documentsData,
+    isLoading,
+    error,
+  } = useDocuments({
+    page: currentPage,
+    limit: 50,
+    collection_id: filters.collectionId || undefined,
+    status_filter:
+      (filters.statusFilter as
+        | "processing"
+        | "active"
+        | "error"
+        | "deleted"
+        | undefined) || undefined,
+    sort_by: filters.sortBy,
+    order: filters.order,
+  });
+
+  // API mutations
+  const deleteDocumentMutation = useDeleteDocument();
+  const retryDocumentMutation = useRetryDocument();
+  const batchDeleteMutation = useBatchDeleteDocuments();
+  const deleteAllMutation = useDeleteAllDocuments();
+  const updateDocumentMutation = useUpdateDocument();
+
+  // Mock collections data - TODO: Replace with actual collections API call
   const mockCollections = [
     { collection_id: "coll_1", name: "Research Papers" },
     { collection_id: "coll_2", name: "Meeting Notes" },
@@ -51,8 +88,7 @@ export function DocumentsPage() {
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
-    // TODO: Apply filters to document list API call
-    console.log("Filters updated:", newFilters);
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
   // Batch operations state
@@ -61,8 +97,7 @@ export function DocumentsPage() {
   );
   const [batchDeleteDialog, setBatchDeleteDialog] = useState(false);
 
-  // Mock total documents count - TODO: Get from API
-  const totalDocuments = 5;
+  const totalDocuments = documentsData?.total || 0;
 
   const handleSelectionChange = (documentId: string, selected: boolean) => {
     setSelectedDocuments((prev) => {
@@ -77,15 +112,10 @@ export function DocumentsPage() {
   };
 
   const handleSelectAll = () => {
-    // TODO: Get all document IDs from API or current filtered list
-    const allDocIds = [
-      "doc_1a2b3c4d",
-      "doc_5e6f7g8h",
-      "doc_9i0j1k2l",
-      "doc_3m4n5o6p",
-      "doc_7q8r9s0t",
-    ];
-    setSelectedDocuments(new Set(allDocIds));
+    if (documentsData?.documents) {
+      const allDocIds = documentsData.documents.map((doc) => doc.document_id);
+      setSelectedDocuments(new Set(allDocIds));
+    }
   };
 
   const handleDeselectAll = () => {
@@ -96,30 +126,33 @@ export function DocumentsPage() {
     setBatchDeleteDialog(true);
   };
 
-  const handleConfirmBatchDelete = () => {
+  const handleConfirmBatchDelete = async () => {
     const isAllSelected = selectedDocuments.size === totalDocuments;
 
     if (isAllSelected) {
       // All documents selected - use delete-all endpoint
-      console.log("Delete ALL documents - using /documents/delete-all-mine");
-      // TODO: await api.post('/documents/delete-all-mine');
+      await deleteAllMutation.mutateAsync();
     } else {
       // Partial selection - use batch-delete endpoint
-      console.log("Batch delete:", Array.from(selectedDocuments));
-      // TODO: await api.post('/documents/batch-delete', { document_ids: Array.from(selectedDocuments) });
+      await batchDeleteMutation.mutateAsync({
+        document_ids: Array.from(selectedDocuments),
+      });
     }
 
     setSelectedDocuments(new Set());
     setBatchDeleteDialog(false);
   };
 
-  const handleMoveToCollection = (collectionId: string) => {
-    console.log(
-      "Move to collection:",
-      collectionId,
-      Array.from(selectedDocuments),
+  const handleMoveToCollection = async (collectionId: string) => {
+    // Update all selected documents to new collection
+    const updatePromises = Array.from(selectedDocuments).map((documentId) =>
+      updateDocumentMutation.mutateAsync({
+        documentId,
+        updates: { collection_id: collectionId },
+      }),
     );
-    // TODO: Call bulk move API
+
+    await Promise.all(updatePromises);
     setSelectedDocuments(new Set());
   };
 
@@ -377,19 +410,32 @@ export function DocumentsPage() {
           )}
 
           {/* Document List */}
-          <DocumentList
-            onDocumentClick={(docId) => {
-              navigate(`/documents/${docId}`);
-            }}
-            onDeleteDocument={(docId) => {
-              console.log("Delete document:", docId);
-            }}
-            onRetryDocument={(docId) => {
-              console.log("Retry document:", docId);
-            }}
-            selectedDocuments={selectedDocuments}
-            onSelectionChange={handleSelectionChange}
-          />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-emerald-600 dark:text-emerald-400" />
+            </div>
+          ) : error ? (
+            <div className="rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 p-6 text-center">
+              <p className="text-red-600 dark:text-red-400 font-mono">
+                Failed to load documents. Please try again.
+              </p>
+            </div>
+          ) : (
+            <DocumentList
+              documents={documentsData?.documents || []}
+              onDocumentClick={(docId) => {
+                navigate(`/documents/${docId}`);
+              }}
+              onDeleteDocument={(docId) => {
+                deleteDocumentMutation.mutate(docId);
+              }}
+              onRetryDocument={(docId) => {
+                retryDocumentMutation.mutate(docId);
+              }}
+              selectedDocuments={selectedDocuments}
+              onSelectionChange={handleSelectionChange}
+            />
+          )}
         </main>
       </div>
 

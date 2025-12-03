@@ -8,6 +8,7 @@ import {
   FileText,
   FolderOpen,
   HardDrive,
+  Loader2,
   LogOut,
   Menu,
   MessageSquare,
@@ -25,6 +26,8 @@ import { UploadZone } from "../components/documents/UploadZone";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { useDarkMode } from "../contexts/DarkModeContext";
+import { useDocuments } from "../hooks/useDocuments";
+import { useUserStats } from "../hooks/useUserStats";
 import { useAuthStore } from "../store/authStore";
 
 export function DashboardPage() {
@@ -41,15 +44,54 @@ export function DashboardPage() {
     navigate("/login");
   };
 
-  // Mock stats (will be replaced with real API data)
+  // Fetch user stats from API
+  const { data: statsData, isLoading, error } = useUserStats();
+
+  // Fetch recent documents (5 most recent)
+  const { data: recentDocumentsData } = useDocuments({
+    page: 1,
+    limit: 5,
+    sort_by: "uploaded_at",
+    order: "desc",
+  });
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400 font-['Inter']">
+            Loading dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !statsData) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 dark:text-red-400 font-['Inter'] mb-4">
+            Failed to load dashboard stats
+          </p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Map API data to stats object for backward compatibility
   const stats = {
-    totalDocuments: 42,
-    totalChunks: 1247,
-    storageUsed: 523, // MB
-    storageLimit: 1024, // MB (1GB)
+    totalDocuments: statsData.total_documents,
+    totalChunks: statsData.total_chunks,
+    storageUsed: statsData.storage_used_mb,
+    storageLimit: statsData.storage_limit_mb,
   };
 
-  const storagePercentage = (stats.storageUsed / stats.storageLimit) * 100;
+  const storagePercentage = statsData.storage_percentage;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -455,7 +497,8 @@ export function DashboardPage() {
 
             {/* Document List */}
             <DocumentList
-              onDocumentClick={(id) => console.log("Clicked document:", id)}
+              documents={recentDocumentsData?.documents || []}
+              onDocumentClick={(id) => navigate(`/documents/${id}`)}
               onDeleteDocument={(id) => console.log("Delete document:", id)}
               onRetryDocument={(id) => console.log("Retry document:", id)}
             />

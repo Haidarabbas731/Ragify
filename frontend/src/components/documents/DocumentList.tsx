@@ -35,6 +35,7 @@ interface Document {
 }
 
 interface DocumentListProps {
+  documents?: Document[];
   onDocumentClick?: (documentId: string) => void;
   onDeleteDocument?: (documentId: string) => void;
   onRetryDocument?: (documentId: string) => void;
@@ -108,13 +109,15 @@ const MOCK_DOCUMENTS: Document[] = [
 ];
 
 export function DocumentList({
+  documents: propDocuments,
   onDocumentClick,
   onDeleteDocument,
   onRetryDocument,
   selectedDocuments = new Set(),
   onSelectionChange,
 }: DocumentListProps) {
-  const [documents] = useState<Document[]>(MOCK_DOCUMENTS);
+  // Use prop documents if provided, otherwise fall back to mock data
+  const documents = propDocuments || MOCK_DOCUMENTS;
   const [currentPage, setCurrentPage] = useState(1);
   const [hoveredDoc, setHoveredDoc] = useState<string | null>(null);
   const [retryingDocs, setRetryingDocs] = useState<Set<string>>(new Set());

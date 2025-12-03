@@ -144,3 +144,211 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+// ============================================================================
+// API Methods
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// User Profile & Stats
+// ----------------------------------------------------------------------------
+
+/**
+ * Get current user profile
+ * @returns User profile with storage statistics
+ */
+export const getUserProfile = async () => {
+  const { data } = await api.get("/users/me");
+  return data;
+};
+
+/**
+ * Update current user profile
+ * @param userData - User update data (currently only email)
+ * @returns Updated user profile
+ */
+export const updateUserProfile = async (userData: { email?: string }) => {
+  const { data } = await api.patch("/users/me", userData);
+  return data;
+};
+
+/**
+ * Change current user password
+ * @param passwords - Current and new password
+ * @returns Success message
+ */
+export const changePassword = async (passwords: {
+  current_password: string;
+  new_password: string;
+}) => {
+  const { data } = await api.post("/users/me/change-password", passwords);
+  return data;
+};
+
+/**
+ * Get current user dashboard statistics
+ * @returns User stats including document counts, storage, collections, conversations
+ */
+export const getUserStats = async () => {
+  const { data } = await api.get("/users/me/stats");
+  return data;
+};
+
+// ----------------------------------------------------------------------------
+// Documents
+// ----------------------------------------------------------------------------
+
+/**
+ * Upload a document
+ * @param file - File to upload
+ * @param collectionId - Optional collection ID to assign document to
+ * @returns Uploaded document data
+ */
+export const uploadDocument = async (
+  file: File,
+  collectionId?: string,
+): Promise<{ document_id: string; filename: string; status: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (collectionId) {
+    formData.append("collection_id", collectionId);
+  }
+
+  const { data } = await api.post("/documents/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return data;
+};
+
+/**
+ * Get list of documents with pagination and filters
+ * @param params - Query parameters (page, limit, filters, sorting)
+ * @returns Paginated document list
+ */
+export const getDocuments = async (params?: {
+  page?: number;
+  limit?: number;
+  collection_id?: string;
+  status_filter?: string;
+  sort_by?: string;
+  order?: string;
+}) => {
+  const { data } = await api.get("/documents", { params });
+  return data;
+};
+
+/**
+ * Get single document by ID
+ * @param documentId - Document ID
+ * @returns Document details
+ */
+export const getDocument = async (documentId: string) => {
+  const { data } = await api.get(`/documents/${documentId}`);
+  return data;
+};
+
+/**
+ * Update document metadata
+ * @param documentId - Document ID
+ * @param updates - Fields to update (collection_id, category, tags)
+ * @returns Updated document
+ */
+export const updateDocument = async (
+  documentId: string,
+  updates: {
+    collection_id?: string | null;
+    category?: string | null;
+    tags?: string[];
+  },
+) => {
+  const { data } = await api.put(`/documents/${documentId}`, updates);
+  return data;
+};
+
+/**
+ * Delete a document (soft delete)
+ * @param documentId - Document ID
+ * @returns Success message
+ */
+export const deleteDocument = async (documentId: string) => {
+  const { data } = await api.delete(`/documents/${documentId}`);
+  return data;
+};
+
+/**
+ * Batch delete documents
+ * @param documentIds - Array of document IDs
+ * @returns Success message with count
+ */
+export const batchDeleteDocuments = async (documentIds: string[]) => {
+  const { data } = await api.post("/documents/batch-delete", {
+    document_ids: documentIds,
+  });
+  return data;
+};
+
+/**
+ * Delete all user documents
+ * @returns Success message with count
+ */
+export const deleteAllDocuments = async () => {
+  const { data } = await api.post("/documents/delete-all-mine");
+  return data;
+};
+
+/**
+ * Retry processing a failed document
+ * @param documentId - Document ID
+ * @returns Success message
+ */
+export const retryDocument = async (documentId: string) => {
+  const { data } = await api.post(`/documents/${documentId}/retry`);
+  return data;
+};
+
+/**
+ * Bulk upload multiple documents
+ * @param files - Array of files to upload
+ * @param collectionId - Optional collection ID for all documents
+ * @param category - Optional category for all documents
+ * @param tags - Optional comma-separated tags for all documents
+ * @returns Bulk upload response with success/failure counts
+ */
+export const bulkUploadDocuments = async (
+  files: File[],
+  collectionId?: string,
+  category?: string,
+  tags?: string,
+): Promise<unknown> => {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append("files", file);
+  }
+  if (collectionId) {
+    formData.append("collection_id", collectionId);
+  }
+  if (category) {
+    formData.append("category", category);
+  }
+  if (tags) {
+    formData.append("tags", tags);
+  }
+
+  const { data } = await api.post("/documents/bulk-upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return data;
+};
+
+/**
+ * Retry all failed documents
+ * @returns Retry all response with counts
+ */
+export const retryAllFailedDocuments = async () => {
+  const { data } = await api.post("/documents/retry-failed");
+  return data;
+};
