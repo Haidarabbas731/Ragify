@@ -501,71 +501,68 @@ headers={"Authorization": f"Bearer {access_token}"}
 
 ### ⚠️ CRITICAL DESIGN ISSUE: Session Revocation Pattern
 
-**Problem with Current Implementation:**
+**✅ RESOLVED (2024-12-03)** - Implemented timestamp-based token validation
 
-The current `revoke_all_user_sessions()` + `clear_user_session_revocation()` pattern has a fundamental design flaw:
+**Problem with Old Implementation:**
 
-**How It Works:**
-1. `revoke_all_user_sessions(user_id, ttl=604800)` → Sets Redis flag `user_revoked:{user_id}` = "1" (7 days)
-2. This flag blocks **ALL** authentication attempts (old tokens + new logins)
-3. `clear_user_session_revocation(user_id)` → Deletes the flag immediately
-4. Now user can login with new password
+The `revoke_all_user_sessions()` + `clear_user_session_revocation()` pattern had a fundamental design flaw:
+- Function blocked entire user account, not just old tokens
+- Required immediate clearing of flag (defeating the purpose)
+- Any future password endpoint would break if developer forgot to call `clear_user_session_revocation()`
+- Race conditions where old tokens might still work briefly
 
-**The Problem:**
-- The function name suggests it revokes "sessions" but it actually blocks the entire user account
-- We have to immediately clear the flag, which defeats the purpose of setting it
-- Old tokens issued before password change might still work briefly (race condition)
-- Any future password-related endpoint will break if developer forgets to call `clear_user_session_revocation()`
+**Solution Implemented:**
 
-**Where This Pattern Is Used:**
-- `POST /api/v1/auth/password-reset/confirm` (password reset flow)
-- `POST /api/v1/users/me/change-password` (password change flow)
-- Any future password update endpoints will need this pattern
+Timestamp-based token validation that invalidates old tokens without blocking new logins.
 
-**Better Solution (TODO - Future Improvement):**
+**Implementation Details:**
 
-Instead of blocking the entire user account, implement timestamp-based token validation:
-
-1. **Store password change timestamp:**
+1. **Added `iat` (issued at) to all tokens** (`backend/app/core/security.py`):
    ```python
-   await redis.setex(f"password_changed:{user_id}", 604800, str(datetime.now().timestamp()))
+   to_encode["iat"] = int(now.timestamp())  # Issued at timestamp
    ```
 
-2. **Add `iat` (issued at) to all tokens:**
-   ```python
-   to_encode["iat"] = datetime.now(UTC).timestamp()
-   ```
+2. **New Redis functions** (`backend/app/services/redis_service.py`):
+   - `store_password_change_timestamp(user_id, ttl)` - Store when password changed
+   - `get_password_change_timestamp(user_id)` - Retrieve timestamp
+   - `is_token_issued_before_password_change(user_id, token_iat)` - Validate token
 
-3. **Check if token was issued before password change:**
-   ```python
-   async def is_token_invalidated_by_password_change(user_id: str, token_iat: float) -> bool:
-       password_changed_at = await redis.get(f"password_changed:{user_id}")
-       if not password_changed_at:
-           return False
-       return token_iat < float(password_changed_at)
-   ```
+3. **Updated token validation** (6 locations):
+   - `backend/app/api/dependencies.py` - `get_current_user()` and `get_current_user_optional()`
+   - `backend/app/services/auth_service.py` - `authenticate_user()` and `refresh_access_token_from_details()`
+   - `backend/app/api/v1/auth.py` - Password reset endpoint
+   - `backend/app/api/v1/users.py` - Change password endpoint
 
-4. **Update token validation in `dependencies.py` and `auth_service.py`:**
-   - Check `is_token_invalidated_by_password_change()` instead of `is_user_sessions_revoked()`
-   - Reject tokens issued before password change
-   - Allow new logins automatically (no need to clear flag)
+4. **Deprecated old functions**:
+   - `revoke_all_user_sessions()` - Now only for admin actions (suspend/delete)
+   - `is_user_sessions_revoked()` - Deprecated in favor of timestamp check
+   - `clear_user_session_revocation()` - No longer needed
 
 **Benefits:**
 - ✅ More intuitive: invalidates old tokens without blocking new logins
-- ✅ No need for `clear_user_session_revocation()` workaround
+- ✅ No need for `clear_user_session_revocation()` workaround  
 - ✅ Prevents race conditions
 - ✅ Future-proof: any password endpoint automatically works correctly
-- ✅ Better developer experience: harder to forget the "clear" step
+- ✅ Better developer experience: impossible to forget the "clear" step
 
-**Implementation Priority:** Medium (current workaround is functional but fragile)
+**Admin Actions:**
+- `revoke_all_user_sessions()` still used for admin suspend/delete operations
+- This is correct: admin actions SHOULD block the entire account
 
-**Files to Update:**
-- `backend/app/services/redis_service.py` - Add timestamp-based functions
-- `backend/app/core/security.py` - Add `iat` to token creation
-- `backend/app/api/dependencies.py` - Update token validation
-- `backend/app/services/auth_service.py` - Update authentication checks
-- `backend/app/api/v1/auth.py` - Remove `clear_user_session_revocation()` calls
-- `backend/app/api/v1/users.py` - Remove `clear_user_session_revocation()` calls
+**Files Modified:**
+- ✅ `backend/app/core/security.py` - Added `iat` to tokens
+- ✅ `backend/app/services/redis_service.py` - New timestamp functions
+- ✅ `backend/app/api/dependencies.py` - Updated validation
+- ✅ `backend/app/services/auth_service.py` - Updated validation
+- ✅ `backend/app/api/v1/auth.py` - Updated password reset
+- ✅ `backend/app/api/v1/users.py` - Updated change password
+
+**Where This Pattern Is Used:**
+- `POST /api/v1/auth/password-reset/confirm` (password reset flow) ✅
+- `POST /api/v1/users/me/change-password` (password change flow) ✅
+- Any future password update endpoints automatically work correctly ✅
+
+**Implementation Status:** ✅ Complete (2024-12-03)
 
 ### Email Template Design
 
