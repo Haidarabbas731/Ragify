@@ -219,6 +219,102 @@ async def get_current_admin(
     return current_user
 
 
+async def get_current_user_sse(
+    request: Request,
+    session: AsyncSession = Depends(get_db),  # noqa: B008
+) -> User:
+    """
+    Get current authenticated user for SSE connections.
+
+    EventSource doesn't support custom headers, so we accept token from:
+    1. Query parameter: ?token=xxx (for EventSource compatibility)
+    2. Authorization header: Bearer xxx (fallback)
+
+    Args:
+        request: FastAPI request object
+        session: Database session
+
+    Returns:
+        Authenticated user
+
+    Raises:
+        HTTPException: 401/403 if authentication fails
+    """
+    # Try query parameter first (EventSource compatibility)
+    token = request.query_params.get("token")
+
+    # Fallback to Authorization header
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.removeprefix("Bearer ")
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authentication token",
+        )
+
+    # Decode and validate token
+    try:
+        token_data = decode_token(token)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        ) from e
+
+    # Check token type
+    token_type = token_data.get("token_type")
+    if token_type != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type. Access token required.",
+        )
+
+    # Check if token is blocklisted
+    jti = token_data.get("jti")
+    if jti and await is_jti_blocklisted(jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+        )
+
+    # Get user from token
+    user_id = token_data.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+
+    # Check if token was issued before password change
+    token_iat = token_data.get("iat")
+    if token_iat and await is_token_issued_before_password_change(user_id, token_iat):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired due to password change. Please login again.",
+        )
+
+    # Fetch user from database
+    result = await session.exec(select(User).where(User.user_id == user_id))
+    user = result.one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is suspended",
+        )
+
+    return user
+
+
 async def get_current_user_optional(
     token_details: dict | None = Depends(TokenBearer(auto_error=False)),  # noqa: B008
     session: AsyncSession = Depends(get_db),  # noqa: B008
