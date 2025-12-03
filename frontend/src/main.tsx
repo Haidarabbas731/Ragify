@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { Toaster } from "sonner";
 import "./index.css";
 import App from "./App.tsx";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Create a query client instance
 const queryClient = new QueryClient({
@@ -21,9 +22,11 @@ if (!rootElement) throw new Error("Failed to find the root element");
 
 createRoot(rootElement).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <Toaster position="top-right" richColors closeButton theme="system" />
-      <App />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Toaster position="top-right" richColors closeButton theme="system" />
+        <App />
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

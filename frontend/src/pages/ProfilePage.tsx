@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ChangePasswordForm } from "../components/profile/ChangePasswordForm";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -281,45 +282,7 @@ export function ProfilePage() {
             {activeTab === "security" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6 font-['Space_Grotesk']">
-                    Change Password
-                  </h2>
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
-                        Current Password
-                      </Label>
-                      <Input
-                        type="password"
-                        className="mt-1 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                    <div>
-                      <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
-                        New Password
-                      </Label>
-                      <Input
-                        type="password"
-                        className="mt-1 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                    <div>
-                      <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
-                        Confirm New Password
-                      </Label>
-                      <Input
-                        type="password"
-                        className="mt-1 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                        placeholder="••••••••"
-                      />
-                    </div>
-                    <Button className="gap-2 font-['Inter'] font-medium bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 border-0">
-                      <Lock className="w-4 h-4" />
-                      Update Password
-                    </Button>
-                  </div>
+                  <ChangePasswordForm />
                 </div>
 
                 {/* API Key Section */}
