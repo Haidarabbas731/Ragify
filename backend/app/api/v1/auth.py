@@ -32,11 +32,10 @@ from app.services.email_service import send_password_reset_email, send_welcome_e
 from app.services.redis_service import (
     add_jti_to_blocklist,
     check_email_rate_limit,
-    clear_user_session_revocation,
     delete_password_reset_token,
     get_refresh_jti_from_access_jti,
     get_user_id_from_reset_token,
-    revoke_all_user_sessions,
+    store_password_change_timestamp,
     store_password_reset_token,
 )
 from app.services.user_service import get_user_by_email, update_user_password
@@ -253,12 +252,9 @@ async def confirm_password_reset(
 
     await delete_password_reset_token(data.token)
 
-    # Revoke all existing sessions for security
+    # Store password change timestamp to invalidate old tokens
     refresh_ttl = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
-    await revoke_all_user_sessions(user_id, refresh_ttl)
-
-    # Clear revocation flag to allow user to login with new password
-    await clear_user_session_revocation(user_id)
+    await store_password_change_timestamp(user_id, refresh_ttl)
 
     return JSONResponse(
         content={"message": "Password reset successfully"},

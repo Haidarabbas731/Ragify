@@ -83,9 +83,13 @@ async def is_token_blocklisted(token: str) -> bool:
 
 async def revoke_all_user_sessions(user_id: str, ttl: int = 604800) -> None:
     """
-    Revoke all sessions for a user by adding user_id to blocklist.
+    DEPRECATED: Use store_password_change_timestamp() for password changes instead.
 
-    This is used when user changes password or admin suspends account.
+    Revoke all sessions for a user by blocking the entire account.
+
+    This should ONLY be used for admin actions (suspend/delete user).
+    For password changes, use store_password_change_timestamp() which invalidates
+    old tokens without blocking new logins.
 
     Args:
         user_id: User ID
@@ -100,7 +104,11 @@ async def revoke_all_user_sessions(user_id: str, ttl: int = 604800) -> None:
 
 async def is_user_sessions_revoked(user_id: str) -> bool:
     """
-    Check if all user sessions have been revoked.
+    DEPRECATED: Use is_token_issued_before_password_change() instead.
+
+    Check if all user sessions have been revoked (account-level block).
+
+    This checks for admin-imposed account blocks, not password changes.
 
     Args:
         user_id: User ID
@@ -118,9 +126,12 @@ async def is_user_sessions_revoked(user_id: str) -> bool:
 
 async def clear_user_session_revocation(user_id: str) -> None:
     """
+    DEPRECATED: No longer needed with timestamp-based approach.
+
     Clear user session revocation flag to allow new logins.
 
-    This is used after password reset to allow the user to login with new password.
+    This was needed to fix the revoke+clear pattern. With timestamp-based
+    validation, this function is no longer necessary.
 
     Args:
         user_id: User ID
@@ -284,3 +295,61 @@ async def check_email_rate_limit(email: str) -> tuple[bool, int]:
         return True, count + 1
     finally:
         await redis.aclose()
+
+
+async def store_password_change_timestamp(user_id: str, ttl: int = 604800) -> None:
+    """
+    Store timestamp when user changed password.
+
+    This invalidates all tokens issued before this time without blocking new logins.
+
+    Args:
+        user_id: User ID
+        ttl: Time to live in seconds (default 7 days to match refresh token expiry)
+    """
+    from datetime import UTC, datetime
+
+    redis = await get_redis()
+    try:
+        timestamp = datetime.now(UTC).timestamp()
+        await redis.setex(f"password_changed:{user_id}", ttl, str(timestamp))
+    finally:
+        await redis.aclose()
+
+
+async def get_password_change_timestamp(user_id: str) -> float | None:
+    """
+    Get timestamp when user last changed password.
+
+    Args:
+        user_id: User ID
+
+    Returns:
+        Timestamp if found, None otherwise
+    """
+    redis = await get_redis()
+    try:
+        result = await redis.get(f"password_changed:{user_id}")
+        return float(result) if result else None
+    finally:
+        await redis.aclose()
+
+
+async def is_token_issued_before_password_change(
+    user_id: str, token_iat: float
+) -> bool:
+    """
+    Check if token was issued before user's last password change.
+
+    Args:
+        user_id: User ID
+        token_iat: Token issued at timestamp (from 'iat' claim)
+
+    Returns:
+        True if token should be rejected (issued before password change), False if valid
+    """
+    password_changed_at = await get_password_change_timestamp(user_id)
+    if not password_changed_at:
+        return False  # No password change recorded, token is valid
+
+    return token_iat < password_changed_at
