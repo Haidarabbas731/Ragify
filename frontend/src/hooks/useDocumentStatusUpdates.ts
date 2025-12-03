@@ -72,23 +72,26 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
       );
 
       // Invalidate documents list to refresh (will show new status)
+      console.log("[SSE] Invalidating documents query");
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       
       // Invalidate user stats to update counts and storage
+      console.log("[SSE] Invalidating userStats query");
       queryClient.invalidateQueries({ queryKey: ["userStats"] });
 
       // Show toast notification
+      console.log("[SSE] Showing toast for status:", update.status);
       if (update.status === "active") {
         toast.success(`✅ ${update.filename} processed successfully`, {
           description: `${update.chunks_count} chunks created`,
         });
+        console.log("[SSE] Success toast triggered");
       } else if (update.status === "error") {
         toast.error(`❌ ${update.filename} processing failed`, {
           description: update.error_message || "Unknown error",
         });
-      }
-
-      setLastUpdate(update);
+        console.log("[SSE] Error toast triggered");
+      }      setLastUpdate(update);
     },
     [queryClient],
   );
@@ -101,6 +104,7 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
 
     const token = localStorage.getItem("access_token");
     if (!token) {
+      console.warn("[SSE] No access token found");
       setConnectionState("disconnected");
       return;
     }
@@ -108,10 +112,12 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
     try {
       // EventSource doesn't support custom headers, so we pass token as query param
       const url = `${SSE_ENDPOINT}?token=${token}`;
+      console.log("[SSE] Connecting to:", SSE_ENDPOINT);
       const eventSource = new EventSource(url);
 
       eventSource.onopen = () => {
         if (isUnmountedRef.current) return;
+        console.log("[SSE] Connection opened successfully");
         setConnectionState("connected");
         reconnectAttemptsRef.current = 0; // Reset on successful connection
       };
@@ -139,9 +145,11 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
         }
       };
 
-      eventSource.onerror = () => {
+      eventSource.onerror = (error) => {
         if (isUnmountedRef.current) return;
 
+        console.error("[SSE] Connection error:", error);
+        console.log("[SSE] EventSource readyState:", eventSource.readyState);
         eventSource.close();
         setConnectionState("disconnected");
 
