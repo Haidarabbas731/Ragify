@@ -3,14 +3,17 @@
 Handles document upload, processing status, listing, and management.
 """
 
+import asyncio
+import json
 from datetime import UTC, datetime, timedelta
 
 from arq import ArqRedis
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.dependencies import get_current_user, get_db
+from app.api.dependencies import get_current_user, get_current_user_sse, get_db
 from app.core.config import settings
 from app.models.collection import Collection
 from app.models.document import Document, DocumentStatus
@@ -26,6 +29,7 @@ from app.schemas.document import (
     DocumentsListResponse,
 )
 from app.services.b2_service import get_b2_service
+from app.services.redis_service import get_redis
 from app.tasks.worker import get_arq_redis
 from app.utils.validators import validate_uuid
 
@@ -457,6 +461,96 @@ async def get_document(
     doc_dict["chunks"] = chunks_data
 
     return doc_dict
+
+
+@router.get("/status-stream")
+async def stream_document_status(
+    current_user: User = Depends(get_current_user_sse),
+) -> StreamingResponse:
+    """
+    Stream real-time document status updates via Server-Sent Events (SSE).
+
+    Subscribes to Redis pub/sub pattern: document:status:{user_id}:*
+    Receives updates when documents finish processing (ACTIVE or ERROR status).
+
+    SSE Format:
+        data: {"document_id": "...", "status": "active", "chunks_count": 5, ...}\\n\\n
+
+    Connection Management:
+        - 5-minute timeout (auto-closes if no activity)
+        - Sends keepalive comments every 30s
+        - Client should reconnect with exponential backoff
+
+    Args:
+        current_user: Authenticated user
+
+    Returns:
+        StreamingResponse with text/event-stream media type
+
+    Raises:
+        HTTPException: 401 if not authenticated
+    """
+
+    async def event_generator():
+        redis = await get_redis()
+        pubsub = redis.pubsub()
+        timeout_seconds = 300  # 5 minutes
+        keepalive_interval = 30  # 30 seconds
+        last_message_time = asyncio.get_event_loop().time()
+
+        try:
+            # Subscribe to user-specific document status updates
+            pattern = f"document:status:{current_user.user_id}:*"
+            await pubsub.psubscribe(pattern)
+
+            while True:
+                current_time = asyncio.get_event_loop().time()
+
+                # Check for timeout
+                if current_time - last_message_time > timeout_seconds:
+                    yield ": timeout\n\n"
+                    break
+
+                # Send keepalive comment to prevent connection timeout
+                if current_time - last_message_time > keepalive_interval:
+                    yield ": keepalive\n\n"
+                    last_message_time = current_time
+
+                # Check for new messages (non-blocking with timeout)
+                try:
+                    message = await asyncio.wait_for(
+                        pubsub.get_message(ignore_subscribe_messages=True), timeout=1.0
+                    )
+
+                    if message and message["type"] == "pmessage":
+                        # Forward message to client as SSE event
+                        data = message["data"]
+                        yield f"data: {data}\n\n"
+                        last_message_time = current_time
+
+                except TimeoutError:
+                    # No message received, continue loop
+                    continue
+
+        except Exception as e:
+            # Send error and close connection
+            error_data = json.dumps({"error": str(e)})
+            yield f"data: {error_data}\n\n"
+
+        finally:
+            await pubsub.punsubscribe()
+            await pubsub.aclose()
+            await redis.aclose()
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 @router.get("", response_model=DocumentsListResponse)

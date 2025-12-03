@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { DocumentStatusProvider } from "./components/providers/DocumentStatusProvider";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
 import { AdminAuditLogs } from "./pages/admin/AdminAuditLogs";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
@@ -81,7 +82,9 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <DocumentStatusProvider>
+                  <DashboardPage />
+                </DocumentStatusProvider>
               </ProtectedRoute>
             }
           />
@@ -89,7 +92,9 @@ function App() {
             path="/chat"
             element={
               <ProtectedRoute>
-                <ChatPage />
+                <DocumentStatusProvider>
+                  <ChatPage />
+                </DocumentStatusProvider>
               </ProtectedRoute>
             }
           />
@@ -97,7 +102,9 @@ function App() {
             path="/profile"
             element={
               <ProtectedRoute>
-                <ProfilePage />
+                <DocumentStatusProvider>
+                  <ProfilePage />
+                </DocumentStatusProvider>
               </ProtectedRoute>
             }
           />
@@ -105,7 +112,9 @@ function App() {
             path="/collections"
             element={
               <ProtectedRoute>
-                <CollectionsPage />
+                <DocumentStatusProvider>
+                  <CollectionsPage />
+                </DocumentStatusProvider>
               </ProtectedRoute>
             }
           />
@@ -113,7 +122,9 @@ function App() {
             path="/documents"
             element={
               <ProtectedRoute>
-                <DocumentsPage />
+                <DocumentStatusProvider>
+                  <DocumentsPage />
+                </DocumentStatusProvider>
               </ProtectedRoute>
             }
           />
@@ -121,7 +132,9 @@ function App() {
             path="/documents/:documentId"
             element={
               <ProtectedRoute>
-                <DocumentDetailPage />
+                <DocumentStatusProvider>
+                  <DocumentDetailPage />
+                </DocumentStatusProvider>
               </ProtectedRoute>
             }
           />
@@ -132,7 +145,9 @@ function App() {
             path="/admin"
             element={
               <AdminRoute>
-                <AdminLayout />
+                <DocumentStatusProvider>
+                  <AdminLayout />
+                </DocumentStatusProvider>
               </AdminRoute>
             }
           >

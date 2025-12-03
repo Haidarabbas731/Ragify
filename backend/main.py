@@ -75,6 +75,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.APP_NAME,
+    description="AI-powered knowledge base chat system with RAG. Upload documents, organize collections, and chat with your data using Google Gemini.",
+    version="1.0.0",
     debug=settings.DEBUG,
     lifespan=lifespan,
 )
@@ -159,7 +161,9 @@ async def health_check():
             token=settings.MILVUS_TOKEN,  # type: ignore
         )
         # Check if collection exists as a health check
-        utility.has_collection(settings.MILVUS_COLLECTION, using="health_check")
+        utility.has_collection(
+            settings.MILVUS_COLLECTION, using="health_check"
+        )  # type:ignore
         services["milvus"] = "up"
         connections.disconnect(alias="health_check")
     except Exception:

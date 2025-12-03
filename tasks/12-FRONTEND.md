@@ -1507,6 +1507,572 @@ const handleRetry = async () => {
 
 ---
 
+### Phase 5: Real-Time Document Status Updates (Hybrid SSE + Polling) → **PLANNED**
+
+**Priority:** HIGH - Fixes UX bug where documents stuck on "processing" until manual refresh
+**Estimated Time:** 2-3 days (backend + frontend implementation)
+**Dependencies:** Redis, ARQ worker, existing document processing pipeline
+
+**Problem Statement:**
+Currently, after document upload, the frontend shows "Processing..." status but doesn't automatically update when processing completes. Users must manually refresh the page to see the updated status (active/error). This creates poor UX and confusion.
+
+**Solution Architecture: Progressive Enhancement Strategy**
+
+Implement a **Hybrid SSE + Polling Fallback** approach:
+1. **Primary:** Server-Sent Events (SSE) for real-time status push from backend
+2. **Fallback:** Polling (5-second interval) if SSE fails (firewall/proxy issues)
+3. **Smart Reconnection:** Exponential backoff SSE retry while polling continues
+
+---
+
+#### Implementation Plan
+
+##### Backend Changes
+
+**File 1:** `backend/app/tasks/document_processing.py`
+- [ ] Add Redis pub/sub broadcast after status update (lines 185-192)
+- [ ] After document status changes to `ACTIVE` or `ERROR`, publish to Redis channel
+- [ ] Use existing `get_redis()` from `redis_service.py`
+- [ ] Channel pattern: `document:status:{user_id}:{document_id}`
+- [ ] Message payload: `{"document_id": "...", "status": "active", "chunks_count": 45, "filename": "..."}`
+
+```python
+# After line 192 in document_processing.py
+from app.services.redis_service import get_redis
+
+# Broadcast status update via Redis pub/sub
+redis = await get_redis()
+try:
+    await redis.publish(
+        f"document:status:{user_id}:{document_id}",
+        json.dumps({
+            "document_id": document_id,
+            "status": document.status,
+            "chunks_count": document.chunks_count,
+            "filename": document.filename,
+            "processed_at": document.processed_at.isoformat() if document.processed_at else None,
+        })
+    )
+finally:
+    await redis.aclose()
+```
+
+**File 2:** `backend/app/api/v1/documents.py`
+- [ ] Create new SSE endpoint: `GET /api/v1/documents/status-stream`
+- [ ] Subscribe to Redis pub/sub pattern: `document:status:{user_id}:*` (all user's documents)
+- [ ] Stream events to frontend in SSE format: `data: {...}\n\n`
+- [ ] Auto-close connection after 5 minutes (timeout) or when client disconnects
+- [ ] Follow same pattern as `chat.py` streaming (lines 74-100)
+
+```python
+@router.get("/status-stream")
+async def document_status_stream(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Server-Sent Events stream for real-time document status updates.
+    
+    Subscribes to Redis pub/sub for all user's document status changes.
+    Broadcasts updates when ARQ worker completes processing.
+    
+    Response format: SSE (text/event-stream)
+    - data: {"document_id": "...", "status": "active", ...}
+    """
+    
+    async def event_generator():
+        redis = await get_redis()
+        pubsub = redis.pubsub()
+        
+        try:
+            # Subscribe to all documents for this user (pattern matching)
+            pattern = f"document:status:{current_user.user_id}:*"
+            await pubsub.psubscribe(pattern)
+            
+            # Timeout after 5 minutes
+            timeout = time.time() + 300
+            
+            while time.time() < timeout:
+                try:
+                    message = await asyncio.wait_for(
+                        pubsub.get_message(ignore_subscribe_messages=True),
+                        timeout=1.0
+                    )
+                    
+                    if message and message['type'] == 'pmessage':
+                        # Extract document_id from channel
+                        channel = message['channel']
+                        document_id = channel.split(':')[-1]
+                        
+                        # Parse message data
+                        data = json.loads(message['data'])
+                        
+                        # Send SSE event
+                        yield f"data: {json.dumps(data)}\n\n"
+                        
+                        # If document reached terminal state, client may close
+                        if data.get('status') in ['active', 'error']:
+                            pass  # Continue listening for other documents
+                            
+                except asyncio.TimeoutError:
+                    # Send keepalive comment every second
+                    yield ": keepalive\n\n"
+                    
+        except Exception as e:
+            logger.error(f"SSE stream error: {e}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            
+        finally:
+            await pubsub.unsubscribe()
+            await redis.aclose()
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )
+```
+
+##### Frontend Changes
+
+**File 1:** `frontend/src/hooks/useDocumentStatusUpdates.ts` (NEW FILE)
+- [ ] Create hybrid hook that tries SSE first, falls back to polling
+- [ ] Use `EventSource` API for SSE connection
+- [ ] Implement exponential backoff reconnection: 1s → 3s → 9s → 10s (repeat)
+- [ ] Start polling immediately when SSE fails (5-second interval)
+- [ ] Stop polling when SSE reconnects successfully
+- [ ] Update React Query cache on status changes
+- [ ] Show toast notifications when documents complete/fail
+- [ ] Return connection status: `'connected' | 'failed' | 'retrying'`
+
+```typescript
+/**
+ * Hybrid SSE + Polling hook for real-time document status updates
+ * 
+ * Strategy:
+ * 1. Try SSE connection first (instant updates)
+ * 2. If SSE fails, start polling (5s interval) as safety net
+ * 3. Background retry SSE with exponential backoff (1s, 3s, 9s, 10s)
+ * 4. When SSE reconnects, stop polling automatically
+ */
+export function useDocumentStatusUpdates() {
+  const [sseStatus, setSSEStatus] = useState<'connected' | 'failed' | 'retrying'>('failed');
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const queryClient = useQueryClient();
+  const { token } = useAuthStore();
+
+  useEffect(() => {
+    let eventSource: EventSource | null = null;
+    let pollingInterval: NodeJS.Timeout | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+
+    const connectSSE = () => {
+      try {
+        // EventSource doesn't support custom headers, use token in query param
+        const url = `${api.defaults.baseURL}/documents/status-stream?token=${token}`;
+        eventSource = new EventSource(url);
+        
+        eventSource.onopen = () => {
+          console.log('✅ SSE Connected - Real-time updates active');
+          setSSEStatus('connected');
+          setReconnectAttempt(0);
+          
+          // Stop polling when SSE works
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            
+            // Skip keepalive comments
+            if (!data.document_id) return;
+            
+            // Update React Query cache for this document
+            queryClient.setQueryData(
+              ['document', data.document_id],
+              (old: any) => ({
+                ...old,
+                status: data.status,
+                chunks_count: data.chunks_count,
+                processed_at: data.processed_at,
+              })
+            );
+            
+            // Invalidate documents list to refresh
+            queryClient.invalidateQueries({ queryKey: ['documents'] });
+            
+            // Show toast notification
+            if (data.status === 'active') {
+              toast.success(`✓ ${data.filename} processed successfully!`, {
+                description: `${data.chunks_count} chunks created`,
+              });
+            } else if (data.status === 'error') {
+              toast.error(`✗ ${data.filename} processing failed`, {
+                description: data.error_message || 'Unknown error',
+              });
+            }
+          } catch (error) {
+            console.error('Failed to parse SSE message:', error);
+          }
+        };
+
+        eventSource.onerror = () => {
+          console.warn('❌ SSE Connection failed, falling back to polling');
+          eventSource?.close();
+          setSSEStatus('failed');
+          
+          // Start polling immediately as safety net
+          startPolling();
+          
+          // Schedule SSE reconnection attempt
+          scheduleReconnect();
+        };
+
+      } catch (error) {
+        console.error('SSE Connection Error:', error);
+        setSSEStatus('failed');
+        startPolling();
+        scheduleReconnect();
+      }
+    };
+
+    const startPolling = () => {
+      if (pollingInterval) return; // Already polling
+      
+      console.log('🔄 Starting polling fallback (5s interval)');
+      pollingInterval = setInterval(() => {
+        // Refetch documents data
+        queryClient.invalidateQueries({ queryKey: ['documents'] });
+      }, 5000);
+    };
+
+    const scheduleReconnect = () => {
+      if (reconnectTimeout) return; // Already scheduled
+      
+      // Exponential backoff: 1s, 3s, 9s, then every 10s
+      const delays = [1000, 3000, 9000];
+      const delay = delays[reconnectAttempt] || 10000;
+      
+      console.log(`🔄 Will retry SSE in ${delay/1000}s (attempt ${reconnectAttempt + 1})`);
+      setSSEStatus('retrying');
+      
+      reconnectTimeout = setTimeout(() => {
+        setReconnectAttempt(prev => prev + 1);
+        reconnectTimeout = null;
+        connectSSE();
+      }, delay);
+    };
+
+    // Initial connection attempt
+    connectSSE();
+
+    // Cleanup
+    return () => {
+      eventSource?.close();
+      if (pollingInterval) clearInterval(pollingInterval);
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    };
+  }, [queryClient, token, reconnectAttempt]);
+
+  return { sseStatus };
+}
+```
+
+**File 2:** `frontend/src/hooks/useDocuments.ts`
+- [ ] Add conditional `refetchInterval` to `useDocuments` hook
+- [ ] Check if any document has `processing` status
+- [ ] If yes and SSE not available, poll every 5 seconds
+- [ ] If all documents are `active`/`error`, return `false` (stop polling)
+
+```typescript
+export const useDocuments = (params?: DocumentListParams) => {
+  return useQuery<DocumentListResponse>({
+    queryKey: ["documents", params],
+    queryFn: () => getDocuments(params),
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    // Conditional polling: only if documents are processing AND SSE not connected
+    refetchInterval: (data) => {
+      const hasProcessing = data?.documents?.some(
+        (doc) => doc.status === "processing"
+      );
+      // Poll every 5s if processing documents exist (SSE fallback)
+      return hasProcessing ? 5000 : false;
+    },
+  });
+};
+
+export const useDocument = (documentId: string | undefined) => {
+  return useQuery<Document>({
+    queryKey: ["document", documentId],
+    queryFn: () => getDocument(documentId as string),
+    enabled: !!documentId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    // Conditional polling for single document
+    refetchInterval: (data) => {
+      return data?.status === "processing" ? 5000 : false;
+    },
+  });
+};
+```
+
+**File 3:** `frontend/src/components/documents/UploadZone.tsx`
+- [ ] After successful bulk upload, change file status from `success` → `processing`
+- [ ] Trigger React Query cache invalidation to start SSE/polling
+- [ ] Remove simulated chunk count (backend determines actual chunks)
+
+```typescript
+// After bulkUploadMutation.mutateAsync succeeds (line ~120)
+setFiles((prev) =>
+  prev.map((f) => {
+    const uploaded = result.documents?.find(
+      (doc) => doc.filename === f.file.name,
+    );
+    if (uploaded) {
+      return {
+        ...f,
+        status: "processing", // Changed from "success"
+        progress: 100,
+        documentId: uploaded.document_id,
+      };
+    }
+    return f;
+  }),
+);
+
+// Invalidate queries to trigger SSE/polling
+queryClient.invalidateQueries({ queryKey: ['documents'] });
+```
+
+**File 4:** `frontend/src/pages/DocumentDetailPage.tsx`
+- [ ] Use `useDocumentStatusUpdates` hook to enable real-time updates
+- [ ] Add visual processing indicator when status is `processing`
+- [ ] Show connection status indicator (green dot for SSE, yellow for polling)
+
+```tsx
+// Add to component
+const { sseStatus } = useDocumentStatusUpdates();
+
+// Visual indicator
+{document.status === 'processing' && (
+  <div className="flex items-center gap-2">
+    <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+    <span className="text-sm text-slate-600 dark:text-slate-400">
+      Processing document...
+    </span>
+    {sseStatus === 'connected' && (
+      <div className="flex items-center gap-1 text-xs text-green-600">
+        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+        Live updates
+      </div>
+    )}
+    {sseStatus === 'retrying' && (
+      <div className="flex items-center gap-1 text-xs text-yellow-600">
+        <Loader2 className="w-3 h-3 animate-spin" />
+        Reconnecting...
+      </div>
+    )}
+  </div>
+)}
+```
+
+**File 5:** `frontend/src/pages/DocumentsPage.tsx`, `frontend/src/pages/Dashboard.tsx`
+- [ ] Add `useDocumentStatusUpdates` hook to enable real-time updates
+- [ ] Status badges automatically update via React Query cache invalidation
+- [ ] Show processing count in header: "X documents processing"
+
+```tsx
+// Add to both components
+const { sseStatus } = useDocumentStatusUpdates();
+
+// Processing count indicator
+{documents?.documents?.filter(d => d.status === 'processing').length > 0 && (
+  <div className="flex items-center gap-2 text-sm">
+    <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+    <span>
+      {documents.documents.filter(d => d.status === 'processing').length} processing
+    </span>
+  </div>
+)}
+```
+
+**File 6:** `frontend/src/pages/admin/AdminDocuments.tsx`
+- [ ] Add `useDocumentStatusUpdates` for admin monitoring
+- [ ] Show system-wide processing status in header
+- [ ] Admin sees all users' document status updates
+
+---
+
+#### Connection Status UI Components
+
+Create visual indicators for SSE connection state:
+
+```tsx
+// Connection status badge component
+export function ConnectionStatus({ status }: { status: 'connected' | 'failed' | 'retrying' }) {
+  if (status === 'connected') {
+    return (
+      <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+        <span>Live updates active</span>
+      </div>
+    );
+  }
+  
+  if (status === 'retrying') {
+    return (
+      <div className="flex items-center gap-2 text-xs text-yellow-600 dark:text-yellow-400">
+        <Loader2 className="w-3 h-3 animate-spin" />
+        <span>Reconnecting... (using polling)</span>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+      <RefreshCw className="w-3 h-3" />
+      <span>Auto-refresh every 5s</span>
+    </div>
+  );
+}
+```
+
+---
+
+#### Testing Checklist
+
+**Backend:**
+- [ ] Redis pub/sub message published after document processing completes
+- [ ] SSE endpoint streams messages correctly (test with curl/Postman)
+- [ ] SSE connection closes after timeout (5 minutes)
+- [ ] Multiple documents processing → multiple SSE events
+- [ ] Error handling when Redis connection fails
+
+**Frontend:**
+- [ ] SSE connection established on page load
+- [ ] Status updates received via SSE and cache updated
+- [ ] Toast notifications appear when processing completes
+- [ ] Polling starts when SSE fails (test by blocking EventSource)
+- [ ] SSE reconnection works with exponential backoff
+- [ ] Polling stops when SSE reconnects
+- [ ] Multiple pages using hook don't create duplicate connections
+- [ ] Connection status indicator shows correct state
+
+**Chrome DevTools Verification:**
+- [ ] Network tab shows SSE connection (`status-stream`)
+- [ ] EventStream messages visible in Network tab
+- [ ] Console shows connection status logs
+- [ ] No duplicate polling requests when SSE active
+- [ ] React Query cache updates reflected in React DevTools
+
+---
+
+#### Performance Considerations
+
+**Backend:**
+- **SSE Connection Limit:** 1 connection per user (not per document)
+- **Redis Pub/Sub Scaling:** Each SSE connection = 1 Redis pub/sub subscription
+- **Memory Usage:** Minimal - pub/sub pattern matching, no message storage
+- **Timeout:** 5-minute auto-close prevents orphaned connections
+
+**Frontend:**
+- **Single Hook Instance:** Use React Context to share SSE connection across components
+- **Polling Optimization:** Only polls when SSE unavailable + documents processing
+- **Cache Efficiency:** React Query deduplicates refetch requests
+- **Memory Leaks:** useEffect cleanup properly closes EventSource and intervals
+
+**Scaling Recommendation:**
+- **Current (Pub/Sub):** Good for <100 concurrent users
+- **Future (Redis Streams):** Upgrade when scaling beyond 100 concurrent users
+- **Why Streams:** Message persistence, consumer groups, better at-least-once delivery
+
+---
+
+#### Future Enhancement: Redis Streams Migration
+
+**Current Implementation:** Redis Pub/Sub
+- ✅ Simple to implement
+- ✅ Low latency
+- ❌ No message persistence (lost if SSE disconnected)
+- ❌ No message replay (can't retrieve missed updates)
+
+**Future Upgrade:** Redis Streams
+- ✅ Persistent message log (1-hour retention)
+- ✅ Consumer groups for multiple listeners
+- ✅ Message acknowledgment and replay
+- ✅ Better for high-traffic scenarios (>100 concurrent users)
+- ✅ At-least-once delivery guarantee
+
+**Migration Path (When Needed):**
+
+```python
+# Backend: Replace pub/sub with XADD
+redis = await get_redis()
+await redis.xadd(
+    f"document:stream:{user_id}",
+    {
+        "document_id": document_id,
+        "status": status,
+        "timestamp": time.time(),
+    },
+    maxlen=1000,  # Keep last 1000 messages per user
+)
+
+# SSE endpoint: Replace psubscribe with XREAD
+last_id = "0-0"  # Start from beginning or resume from last_id
+while True:
+    messages = await redis.xread(
+        {f"document:stream:{user_id}": last_id},
+        count=10,
+        block=1000,  # Block for 1 second
+    )
+    for stream, message_list in messages:
+        for message_id, data in message_list:
+            yield f"data: {json.dumps(data)}\n\n"
+            last_id = message_id
+```
+
+**When to Migrate:**
+- User reports of "missed status updates"
+- SSE disconnection errors in production logs
+- Scaling beyond 100 concurrent users with processing documents
+- Need for admin dashboard monitoring all users' processing status
+
+---
+
+#### Implementation Summary
+
+**Estimated Time Breakdown:**
+- Backend (Redis pub/sub + SSE endpoint): 4-6 hours
+- Frontend (hybrid hook + UI updates): 6-8 hours
+- Testing & debugging: 4-6 hours
+- **Total: 2-3 days**
+
+**Complexity:** MEDIUM-HIGH
+- Backend: Moderate (Redis pub/sub, SSE streaming)
+- Frontend: High (SSE + polling hybrid, reconnection logic)
+
+**Dependencies:**
+- Redis running and accessible
+- ARQ worker functional
+- React Query already implemented ✅
+- Toast notifications (sonner) already implemented ✅
+
+**Benefits:**
+- ✅ Instant status updates (sub-second with SSE)
+- ✅ Fallback ensures updates even if SSE blocked
+- ✅ Better UX - no manual refresh needed
+- ✅ Scales to multiple documents processing simultaneously
+- ✅ Progressive enhancement (works everywhere)
+
+---
+
 **NEXT STEP:** Should we proceed with **Phase 1: "View All Documents" Page**?
 
 ### Collections Management

@@ -24,6 +24,10 @@ import type {
 
 /**
  * Hook to fetch paginated list of documents with filters
+ *
+ * Features conditional polling: If any documents have "processing" status,
+ * polls every 5 seconds. Otherwise, relies on SSE updates from useDocumentStatusUpdates.
+ *
  * @param params - Query parameters (pagination, filters, sorting)
  * @returns React Query result with documents list
  */
@@ -32,11 +36,27 @@ export const useDocuments = (params?: DocumentListParams) => {
     queryKey: ["documents", params],
     queryFn: () => getDocuments(params),
     staleTime: 1000 * 60 * 2, // 2 minutes
+    // Poll every 5s if any documents are processing (fallback safety net)
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data) return false;
+
+      // Check if any documents are in processing status
+      const hasProcessing = data.documents?.some(
+        (doc) => doc.status === "processing",
+      );
+
+      return hasProcessing ? 5000 : false; // Poll every 5s if processing, else don't poll
+    },
   });
 };
 
 /**
  * Hook to fetch single document by ID
+ *
+ * Features conditional polling: If document has "processing" status,
+ * polls every 5 seconds. Otherwise, relies on SSE updates from useDocumentStatusUpdates.
+ *
  * @param documentId - Document ID
  * @returns React Query result with document details
  */
@@ -46,6 +66,13 @@ export const useDocument = (documentId: string | undefined) => {
     queryFn: () => getDocument(documentId as string),
     enabled: !!documentId,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    // Poll every 5s if document is processing (fallback safety net)
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data) return false;
+
+      return data.status === "processing" ? 5000 : false; // Poll every 5s if processing
+    },
   });
 };
 
