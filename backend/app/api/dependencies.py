@@ -264,9 +264,9 @@ async def get_current_user_sse(
             detail="Invalid token",
         ) from e
 
-    # Check token type
-    token_type = token_data.get("token_type")
-    if token_type != "access":
+    # Check token type (refresh field: False = access token, True = refresh token)
+    is_refresh = token_data.get("refresh", True)
+    if is_refresh:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token type. Access token required.",
