@@ -62,7 +62,7 @@ export const useAuthStore = create<AuthStore>()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true, // Start as true, will be set to false after initializeAuth completes
       error: null,
 
       // Actions
