@@ -28,9 +28,7 @@ async def test_get_current_user_profile_unauthorized(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_update_user_email_success(
-    client: AsyncClient, auth_headers: dict
-):
+async def test_update_user_email_success(client: AsyncClient, auth_headers: dict):
     """Test PATCH /api/v1/users/me - update email successfully."""
     new_email = "newemail@example.com"
     response = await client.patch(
@@ -66,12 +64,15 @@ async def test_update_user_email_already_exists(
     from sqlalchemy import text
 
     from app.core.security import hash_password
+
     async with test_engine.begin() as conn:
         await conn.execute(
-            text("""
+            text(
+                """
                 INSERT INTO users (user_id, email, password_hash, role, storage_used_bytes, storage_limit_bytes, status, is_active)
                 VALUES (:user_id, :email, :password_hash, :role, :storage_used, :storage_limit, :status, :is_active)
-            """),
+            """
+            ),
             {
                 "user_id": str(uuid_module.uuid4()),
                 "email": "other@example.com",
@@ -81,7 +82,7 @@ async def test_update_user_email_already_exists(
                 "storage_limit": 1073741824,
                 "status": "active",
                 "is_active": True,
-            }
+            },
         )
 
     # Try to update to other user's email
@@ -106,9 +107,7 @@ async def test_update_user_email_invalid_format(
 
 
 @pytest.mark.asyncio
-async def test_change_password_success(
-    client: AsyncClient, auth_headers: dict
-):
+async def test_change_password_success(client: AsyncClient, auth_headers: dict):
     """Test POST /api/v1/users/me/change-password - successful password change."""
     response = await client.post(
         "/api/v1/users/me/change-password",
@@ -174,62 +173,68 @@ async def test_change_password_weak_new_password(
 
 
 @pytest.mark.asyncio
-async def test_get_user_stats(
-    client: AsyncClient, auth_headers: dict, test_engine
-):
+async def test_get_user_stats(client: AsyncClient, auth_headers: dict, test_engine):
     """Test GET /api/v1/users/me/stats - get user statistics."""
     from sqlalchemy import text
 
     # Get user_id from auth_headers token
-    from app.core.security import decode_access_token
+    from app.core.security import decode_token
+
     token = auth_headers["Authorization"].replace("Bearer ", "")
-    payload = decode_access_token(token)
+    payload = decode_token(token)
     user_id = payload["sub"]
 
     # Create test data directly in database
     async with test_engine.begin() as conn:
         # Create collection
         result = await conn.execute(
-            text("""
+            text(
+                """
                 INSERT INTO collections (user_id, name, description)
                 VALUES (:user_id, :name, :description)
                 RETURNING collection_id
-            """),
+            """
+            ),
             {
                 "user_id": user_id,
                 "name": "Test Collection",
                 "description": "Test",
-            }
+            },
         )
         collection_id = result.scalar_one()
 
         # Create documents
         import uuid as uuid_module
+
         await conn.execute(
-            text("""
+            text(
+                """
                 INSERT INTO documents (document_id, user_id, collection_id, filename, file_type, size_bytes, storage_key, status, chunks_count)
                 VALUES
                     (:doc_id1, :user_id, :collection_id, 'test1.pdf', 'pdf', 1024, 'test/key1', 'ACTIVE', 10),
                     (:doc_id2, :user_id, NULL, 'test2.pdf', 'pdf', 2048, 'test/key2', 'PROCESSING', 5)
-            """),
+            """
+            ),
             {
                 "doc_id1": str(uuid_module.uuid4()),
                 "doc_id2": str(uuid_module.uuid4()),
                 "user_id": user_id,
                 "collection_id": collection_id,
-            }
+            },
         )
 
         # Create conversation
         await conn.execute(
-            text("""
+            text(
+                """
                 INSERT INTO conversations (user_id, messages, message_count)
                 VALUES (:user_id, :messages::jsonb, 1)
-            """),
+            """
+            ),
             {
                 "user_id": user_id,
                 "messages": '[{"role": "user", "content": "test"}]',
-            }
+            },
         )
 
     # Get stats
