@@ -1,7 +1,14 @@
 import { useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AdminLayout } from "./components/admin/AdminLayout";
+import { AdminRoute } from "./components/auth/AdminRoute";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
+import { AdminAuditLogs } from "./pages/admin/AdminAuditLogs";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { AdminDocuments } from "./pages/admin/AdminDocuments";
+import { AdminInviteCodes } from "./pages/admin/AdminInviteCodes";
+import { AdminUsers } from "./pages/admin/AdminUsers";
 import { ChatPage } from "./pages/ChatPage";
 import { CollectionsPage } from "./pages/CollectionsPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -117,6 +124,21 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Admin Routes - Protected by AdminRoute guard with persistent sidebar */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminLayout />
+              </AdminRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="documents" element={<AdminDocuments />} />
+            <Route path="invite-codes" element={<AdminInviteCodes />} />
+            <Route path="audit-logs" element={<AdminAuditLogs />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

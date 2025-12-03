@@ -8,13 +8,9 @@
  */
 
 import {
-  Check,
-  ChevronDown,
   FileText,
-  Filter,
   FolderOpen,
   HardDrive,
-  Layers,
   LogOut,
   Menu,
   MessageSquare,
@@ -111,7 +107,7 @@ const MOCK_MESSAGES: Message[] = [
 ];
 
 // Mock collections (will be replaced with real API data)
-const MOCK_COLLECTIONS: Collection[] = [
+const _MOCK_COLLECTIONS: Collection[] = [
   { collection_id: "coll_1", name: "Research Papers", document_count: 15 },
   { collection_id: "coll_2", name: "Meeting Notes", document_count: 8 },
   { collection_id: "coll_3", name: "Technical Docs", document_count: 23 },
@@ -128,11 +124,11 @@ export function ChatPage() {
   const [currentConversationId] = useState<string | null>(null);
 
   // Collection filter state
-  const [selectedCollectionId, setSelectedCollectionId] = useState<
+  const [_selectedCollectionId, _setSelectedCollectionId] = useState<
     string | null
   >(null);
-  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
-  const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const [_filterDropdownOpen, _setFilterDropdownOpen] = useState(false);
+  const _filterDropdownRef = useRef<HTMLDivElement>(null);
 
   // Ref for auto-scroll
   const messagesEndRef = useRef<HTMLDivElement>(null);

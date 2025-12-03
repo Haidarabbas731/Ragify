@@ -175,13 +175,17 @@ async def health_check():
     except Exception:
         pass
 
-    overall_status = "healthy" if all(s == "up" for s in services.values()) else "degraded"
+    overall_status = (
+        "healthy" if all(s == "up" for s in services.values()) else "degraded"
+    )
 
     return {
         "status": overall_status,
-        "app_name": settings.APP_NAME,
-        "environment": settings.ENVIRONMENT,
         "services": services,
+        "app_info": {
+            "app_name": settings.APP_NAME,
+            "environment": settings.ENVIRONMENT,
+        },
         "arq_worker": arq_stats,
     }
 
