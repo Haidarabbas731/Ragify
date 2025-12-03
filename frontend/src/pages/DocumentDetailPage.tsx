@@ -79,7 +79,7 @@ export function DocumentDetailPage() {
   const [editForm, setEditForm] = useState({
     collection_id: document?.collection_id || "",
     category: document?.category || "",
-    tags: document?.tags.join(", ") || "",
+    tags: document?.tags?.join(", ") || "",
   });
 
   const handleLogout = () => {
@@ -425,7 +425,8 @@ export function DocumentDetailPage() {
               </span>
             </div>
             <p className="text-lg font-mono font-bold text-cyan-900 dark:text-cyan-100">
-              {document.file_type.split("/")[1].toUpperCase()}
+              {document.file_type.split("/")[1]?.toUpperCase() ||
+                document.file_type.toUpperCase()}
             </p>
             <p className="text-xs font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70 mt-1">
               {document.file_type}
@@ -501,7 +502,7 @@ export function DocumentDetailPage() {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {document.tags.length > 0 ? (
+                {document.tags && document.tags.length > 0 ? (
                   document.tags.map((tag) => (
                     <span
                       key={tag}
@@ -535,7 +536,7 @@ export function DocumentDetailPage() {
               </div>
 
               {/* Show All Toggle */}
-              {document.chunks.length > 5 && (
+              {(document.chunks?.length ?? 0) > 5 && (
                 <button
                   type="button"
                   onClick={() => setShowAllChunks(!showAllChunks)}
@@ -602,7 +603,7 @@ export function DocumentDetailPage() {
             </div>
 
             {/* Show More Indicator */}
-            {!showAllChunks && document.chunks.length > 5 && (
+            {!showAllChunks && (document.chunks?.length ?? 0) > 5 && (
               <div className="mt-4 text-center">
                 <p className="text-sm font-mono text-cyan-500/60 dark:text-cyan-500/60 text-cyan-700/70">
                   Showing 5 of {document.chunks_count} chunks

@@ -1,4 +1,4 @@
-# AI Knowledge Base Chat System
+# Ragify
 
 A production-ready RAG (Retrieval-Augmented Generation) application that enables intelligent document interaction through AI-powered chat. Built with FastAPI, Milvus vector database, and Google Gemini LLM.
 

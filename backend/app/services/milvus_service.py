@@ -327,6 +327,43 @@ class MilvusService:
             logger.error(f"Milvus user deletion failed for user {user_id}: {e}")
             raise
 
+    async def get_document_chunks(
+        self, document_id: str, user_id: str
+    ) -> list[dict[str, Any]]:
+        """
+        Get all chunks for a document with their content and metadata.
+
+        Args:
+            document_id: Document ID
+            user_id: User ID for security isolation
+
+        Returns:
+            list[dict]: List of chunks with chunk_id, chunk_text, chunk_index
+
+        Raises:
+            Exception: If query fails
+        """
+        self._ensure_connected()
+
+        try:
+            filter_expr = f"document_id == '{document_id}' && user_id == '{user_id}'"
+            query_result = self.collection.query(  # type:ignore
+                expr=filter_expr,
+                output_fields=["chunk_id", "chunk_text", "chunk_index"],
+            )
+
+            # Sort by chunk_index to maintain order
+            chunks = sorted(
+                query_result, key=lambda x: x.get("chunk_index", 0)
+            )  # type:ignore
+
+            logger.info(f"Retrieved {len(chunks)} chunks for document {document_id}")
+            return chunks  # type:ignore
+
+        except Exception as e:
+            logger.error(f"Error retrieving chunks for document {document_id}: {e}")
+            return []
+
     async def get_document_chunk_count(self, document_id: str) -> int:
         """
         Get total number of chunks for a document.

@@ -4343,6 +4343,85 @@ git commit -m "feat(frontend): add admin pages with user management, invite code
 
 ---
 
+## 📝 CHUNKS DISPLAY UPDATE (December 3, 2025)
+
+### Issue: Document Chunks Not Showing in Detail Page
+
+**Problem:** Chunks were not displaying on the document detail page even though the UI had a chunks section. Investigation revealed:
+1. Chunks are stored in **Milvus** (vector database), not PostgreSQL
+2. Backend API `GET /documents/{document_id}` only returned document metadata from PostgreSQL
+3. No mechanism to fetch chunks from Milvus and include them in API response
+
+**Solution Implemented:**
+
+#### Backend Changes:
+
+1. **Added `get_document_chunks()` method to MilvusService** (`backend/app/services/milvus_service.py`)
+   ```python
+   async def get_document_chunks(
+       self, document_id: str, user_id: str
+   ) -> list[dict[str, Any]]:
+       """
+       Get all chunks for a document with their content and metadata.
+       - Queries Milvus with filter: document_id && user_id
+       - Returns: chunk_id, chunk_text, chunk_index
+       - Sorted by chunk_index to maintain order
+       """
+   ```
+
+2. **Added `DocumentChunk` schema** (`backend/app/schemas/document.py`)
+   ```python
+   class DocumentChunk(BaseModel):
+       chunk_id: str
+       content: str
+       chunk_index: int
+   ```
+
+3. **Updated `DocumentResponse` schema** to include optional chunks
+   ```python
+   class DocumentResponse(BaseModel):
+       # ... existing fields ...
+       chunks: list[DocumentChunk] | None = None
+   ```
+
+4. **Modified API endpoint** `GET /documents/{document_id}` (`backend/app/api/v1/documents.py`)
+   - Fetch document from PostgreSQL (as before)
+   - If document is ACTIVE and has chunks > 0:
+     * Call `milvus.get_document_chunks(document_id, user_id)`
+     * Transform raw chunks to `DocumentChunk` schema format
+     * Add chunks to response dictionary
+   - Error handling: Log failures but don't break the request
+
+#### Frontend Changes:
+
+1. **Fixed null-safety issues** in `DocumentDetailPage.tsx`:
+   - Line 82: `document?.tags?.join(", ")` (was causing error when tags is null)
+   - Line 428: `document.file_type.split("/")[1]?.toUpperCase() || document.file_type.toUpperCase()` (handle missing "/" in file_type)
+   - Line 504: `document.tags && document.tags.length > 0` (check tags exists before accessing)
+   - Line 538 & 605: `(document.chunks?.length ?? 0) > 5` (optional chaining on chunks)
+
+2. **Updated type definition** in `types/api.ts`:
+   - Changed `tags: string[]` → `tags: string[] | null`
+   - `DocumentChunk` interface already existed and matches backend schema
+
+**Testing Steps:**
+1. Backend restart required for changes to take effect
+2. Upload a document and wait for processing to complete (status = ACTIVE)
+3. Navigate to document detail page (e.g., `/documents/{document_id}`)
+4. Chunks should now appear in "Document Chunks" section
+5. Chunks are sorted by index and show original text content
+
+**Files Modified:**
+- `backend/app/services/milvus_service.py` - Added get_document_chunks method
+- `backend/app/schemas/document.py` - Added DocumentChunk schema, updated DocumentResponse
+- `backend/app/api/v1/documents.py` - Modified GET /documents/{document_id} endpoint
+- `frontend/src/pages/DocumentDetailPage.tsx` - Fixed null-safety issues
+- `frontend/src/types/api.ts` - Updated tags type to nullable
+
+**Status:** ✅ **COMPLETE** - Chunks now display in document detail page
+
+---
+
 ## 📝 API INTEGRATION UPDATE (December 3, 2025)
 
 ### Backend JWT Token Email Fix

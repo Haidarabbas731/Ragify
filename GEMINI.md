@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**AI Knowledge Base Chat System** - RAG application with FastAPI backend, SQLModel ORM, Milvus vector DB, Google Gemini LLM.
+**Ragify** - RAG application with FastAPI backend, SQLModel ORM, Milvus vector DB, Google Gemini LLM.
 
 **PRD:** `docs/PRD.md` - Complete specifications  
 **Tasks:** `tasks/` - Implementation tracking with checkboxes
