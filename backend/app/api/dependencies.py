@@ -179,8 +179,8 @@ async def get_current_user(
             detail="Session expired, please login again",
         )
 
-    result = await session.execute(select(User).where(User.user_id == user_id))
-    user = result.scalar_one_or_none()
+    result = await session.exec(select(User).where(User.user_id == user_id))
+    user = result.one_or_none()
 
     if not user:
         raise HTTPException(
@@ -243,8 +243,8 @@ async def get_current_user_optional(
     if await is_user_sessions_revoked(user_id):
         return None
 
-    result = await session.execute(select(User).where(User.user_id == user_id))
-    user = result.scalar_one_or_none()
+    result = await session.exec(select(User).where(User.user_id == user_id))
+    user = result.one_or_none()
 
     if not user or not user.is_active:
         return None
