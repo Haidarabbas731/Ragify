@@ -20,6 +20,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { TestErrorPage } from "./pages/TestErrorPage";
 import { useAuthStore } from "./store/authStore";
 
 function App() {
@@ -124,6 +125,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+          {/* Test Error Page - FOR TESTING ERROR BOUNDARY ONLY */}
+          <Route path="/test-error" element={<TestErrorPage />} />
           {/* Admin Routes - Protected by AdminRoute guard with persistent sidebar */}
           <Route
             path="/admin"

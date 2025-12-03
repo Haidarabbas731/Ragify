@@ -18,7 +18,7 @@ export function LandingFooter() {
                 className="text-xl font-bold text-slate-900 dark:text-white"
                 style={{ fontFamily: "'DM Sans', sans-serif" }}
               >
-                AI Knowledge Base
+                Ragify
               </span>
             </Link>
             <p className="text-slate-600 dark:text-slate-400 max-w-md leading-relaxed">
@@ -106,7 +106,7 @@ export function LandingFooter() {
 
         <div className="border-t border-slate-200 dark:border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-slate-600 dark:text-slate-400 text-sm">
-            © {currentYear} AI Knowledge Base. All rights reserved.
+            © {currentYear} Ragify. All rights reserved.
           </p>
 
           {/* Social links */}
