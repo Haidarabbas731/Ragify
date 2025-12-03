@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Moon,
   Search,
+  Shield,
   Sun,
   User,
   X,
@@ -191,6 +192,19 @@ export function DashboardPage() {
               <FolderOpen className="w-5 h-5" />
               <span>Collections</span>
             </Link>
+
+            {/* Admin Panel Link - Only visible for admin users */}
+            {user?.role === "admin" && (
+              <Link
+                to="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="relative flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/50 dark:to-blue-950/50 border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-['Inter'] font-semibold transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20 dark:hover:shadow-purple-500/10 group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-blue-500/0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Shield className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">Admin Panel</span>
+              </Link>
+            )}
           </div>
 
           {/* Collections Section */}
@@ -289,6 +303,18 @@ export function DashboardPage() {
                 <FolderOpen className="w-5 h-5" />
                 <span>Collections</span>
               </Link>
+
+              {/* Admin Panel Link - Only visible for admin users */}
+              {user?.role === "admin" && (
+                <Link
+                  to="/admin"
+                  className="relative flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/50 dark:to-blue-950/50 border border-purple-200/50 dark:border-purple-800/50 text-purple-700 dark:text-purple-300 font-['Inter'] font-semibold transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20 dark:hover:shadow-purple-500/10 group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/5 to-blue-500/0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Shield className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">Admin Panel</span>
+                </Link>
+              )}
             </div>
 
             {/* Collections Section */}

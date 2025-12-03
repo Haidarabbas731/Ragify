@@ -3166,4 +3166,1026 @@ PUT /api/v1/documents/{document_id}
 
 ---
 
+## 12.11 Admin Pages (Admin Role Only)
+
+**Priority:** HIGH (Required for admin users)
+**Estimated Time:** 2-3 days
+**Dependencies:** Authentication (12.3), Backend Admin APIs
+**PRD Reference:** Section 13.8 (Admin User & Document Management), Section 8 (Architecture - Admin Pages)
+
+**⚠️ CRITICAL: Use `/skill frontend-design` for ALL admin page UI implementation**
+
+---
+
+### Purpose
+
+Provide administrators with comprehensive tools to manage users, monitor system usage, create invite codes, and view audit logs. Admin pages should only be accessible to users with `role === 'admin'`.
+
+### Backend APIs Available
+
+All admin endpoints are already implemented and ready to use:
+
+**User Management (`/api/v1/admin/users`):**
+- `GET /admin/users` - List all users (pagination, filtering, sorting)
+- `GET /admin/users/{user_id}` - Get user details with stats
+- `PUT /admin/users/{user_id}/suspend` - Suspend user account
+- `PUT /admin/users/{user_id}/activate` - Activate suspended user
+- `DELETE /admin/users/{user_id}` - Delete user (with cascade options)
+- `GET /admin/stats` - System-wide statistics
+
+**Invite Codes (`/api/v1/invite-codes`):**
+- `POST /invite-codes` - Create new invite code (admin only)
+- `GET /invite-codes` - List all codes with status
+- `DELETE /invite-codes/{code}` - Revoke invite code
+
+**Documents (`/api/v1/admin/documents`):**
+- `GET /admin/documents` - List all documents across all users (with pagination, filtering by user_id/status, sorting)
+- `DELETE /admin/documents/{document_id}` - Delete specific document (hard delete from DB, B2, Milvus)
+- `DELETE /admin/users/{user_id}/documents` - Delete all documents for a specific user (cleanup)
+- `DELETE /admin/documents/cleanup-all` - **NUCLEAR OPTION** - Delete ALL documents system-wide (Milvus drop, B2 cleanup, PostgreSQL delete)
+
+**Audit Logs (`/api/v1/admin/audit-logs`):**
+- `GET /admin/audit-logs` - View all admin actions
+- Track who did what and when
+
+---
+
+### 12.11.1 Admin Route Guard
+
+**File:** `frontend/src/components/auth/AdminRoute.tsx`
+
+Create route guard component that checks for admin role:
+
+- [ ] Create AdminRoute component
+  ```typescript
+  import { Navigate } from 'react-router-dom'
+  import { useAuthStore } from '@/store/authStore'
+
+  interface AdminRouteProps {
+    children: React.ReactNode
+  }
+
+  export function AdminRoute({ children }: AdminRouteProps) {
+    const user = useAuthStore((state) => state.user)
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+
+    if (!isAuthenticated) {
+      return <Navigate to="/login" replace />
+    }
+
+    if (user?.role !== 'admin') {
+      return <Navigate to="/dashboard" replace />
+    }
+
+    return <>{children}</>
+  }
+  ```
+
+- [ ] Update App.tsx router with admin routes
+  ```typescript
+  import { AdminRoute } from '@/components/auth/AdminRoute'
+  import AdminDashboard from '@/pages/admin/AdminDashboard'
+  import AdminUsers from '@/pages/admin/AdminUsers'
+  import AdminDocuments from '@/pages/admin/AdminDocuments'
+  import AdminInviteCodes from '@/pages/admin/AdminInviteCodes'
+  import AdminAuditLogs from '@/pages/admin/AdminAuditLogs'
+
+  // Inside <Routes>
+  <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+  <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+  <Route path="/admin/documents" element={<AdminRoute><AdminDocuments /></AdminRoute>} />
+  <Route path="/admin/invite-codes" element={<AdminRoute><AdminInviteCodes /></AdminRoute>} />
+  <Route path="/admin/audit-logs" element={<AdminRoute><AdminAuditLogs /></AdminRoute>} />
+  ```
+
+- [ ] Add admin navigation link (visible only for admin users)
+  ```typescript
+  // In Sidebar/Navbar component
+  {user?.role === 'admin' && (
+    <Link
+      to="/admin"
+      className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+    >
+      <Shield className="h-5 w-5" />
+      Admin Panel
+    </Link>
+  )}
+  ```
+
+**Checklist:**
+- [ ] AdminRoute component created
+- [ ] Admin routes added to router
+- [ ] Admin navigation link visible only for admin users
+- [ ] Non-admin users redirected to dashboard
+- [ ] Unauthenticated users redirected to login
+
+---
+
+### 12.11.2 Admin Dashboard (Overview)
+
+**File:** `frontend/src/pages/admin/AdminDashboard.tsx`
+
+**Purpose:** System overview with key statistics and quick actions.
+
+**Use frontend-design skill with this prompt:**
+```
+Create an admin dashboard page for an AI Knowledge Base application.
+
+Features:
+- System statistics overview (total users, documents, conversations, storage used)
+- Recent user registrations (last 10 users with email, role, registration date)
+- System health indicators (processing queue, failed documents count)
+- Quick action cards (Create Invite Code, View Users, Audit Logs)
+- Charts/graphs for usage trends (optional, if time permits)
+
+Design:
+- Clean, professional admin interface
+- Card-based layout with statistics
+- Use shadcn/ui components (Card, Table, Badge, Button)
+- Dark mode compatible
+- Mobile responsive
+- Use lucide-react icons (Users, FileText, MessageSquare, HardDrive, Shield, Activity)
+
+Tech: React, TypeScript, Tailwind CSS, shadcn/ui, React Query
+Style: Professional admin panel (think Vercel/Linear aesthetic)
+```
+
+**API Integration:**
+- [ ] Create `useAdminStats` hook
+  ```typescript
+  // frontend/src/hooks/useAdminStats.ts
+  import { useQuery } from '@tanstack/react-query'
+  import api from '@/lib/api'
+
+  interface SystemStats {
+    total_users: number
+    total_documents: number
+    total_conversations: number
+    total_storage_bytes: number
+    active_users_7d: number
+    documents_processing: number
+    documents_failed: number
+  }
+
+  export function useAdminStats() {
+    return useQuery({
+      queryKey: ['admin', 'stats'],
+      queryFn: async () => {
+        const { data } = await api.get<SystemStats>('/admin/stats')
+        return data
+      },
+      refetchInterval: 30000, // Refresh every 30s
+    })
+  }
+  ```
+
+- [ ] Display statistics cards
+  - Total Users (with active in last 7 days)
+  - Total Documents (with processing/failed counts)
+  - Total Conversations
+  - Storage Used (formatted in GB/TB)
+
+- [ ] Recent activity table
+  - Last 10 user registrations
+  - Show email, role, registration date
+  - Link to user detail page
+
+- [ ] Quick action buttons
+  - "Create Invite Code" → Navigate to invite codes page
+  - "Manage Users" → Navigate to users page
+  - "View Audit Logs" → Navigate to audit logs page
+
+**Checklist:**
+- [x] Use frontend-design skill for UI implementation ✅
+- [x] AdminDashboard page created ✅
+- [ ] useAdminStats hook implemented (using mock data currently)
+- [x] Statistics cards displaying correctly ✅
+- [x] Recent activity table working ✅
+- [x] Quick action buttons functional ✅
+- [x] Dark mode compatible ✅
+- [x] Mobile responsive ✅
+- [x] Loading states ✅
+- [x] Error handling ✅
+
+**✅ IMPLEMENTATION COMPLETED - 2025-12-02**
+
+**FILES CREATED:**
+1. `frontend/src/pages/admin/AdminDashboard.tsx` - Command Center aesthetic admin dashboard
+2. `frontend/src/components/auth/AdminRoute.tsx` - Admin role guard component
+
+**FILES MODIFIED:**
+1. `frontend/src/App.tsx` - Added admin routes with AdminRoute guard
+2. `frontend/src/pages/DashboardPage.tsx` - Added "Admin Panel" navigation link (purple gradient)
+3. `frontend/src/store/authStore.ts` - **CRITICAL BUG FIX:** Changed initial `isLoading` from `false` to `true` to prevent race condition on direct URL navigation
+
+**CRITICAL BUG FIX - AdminRoute Race Condition:**
+- **Issue:** When navigating directly to `/admin` (typing URL or browser refresh), the page would redirect to `/dashboard` even for admin users
+- **Root Cause:** The authStore initial state had `isLoading: false`, which meant the AdminRoute guard would check permissions BEFORE `initializeAuth()` completed during app mount
+- **Solution:** Changed initial `isLoading` to `true` in authStore.ts:65, so AdminRoute waits (returns `null`) until auth state is fully initialized
+- **Result:** Now `/admin` URL works correctly - the guard waits for auth initialization, then grants access to admin users
+
+**DESIGN CONCEPT: "Command Center / Mission Control"**
+- **Aesthetic:** Terminal-inspired admin interface with military/NASA control room vibes
+- **Color Scheme:**
+  - Light mode: Professional dashboard with blue/purple/indigo/emerald stat cards
+  - Dark mode: Dark slate backgrounds (#0f172a, #1e293b) with cyan/teal/purple accents
+- **Typography:**
+  - JetBrains Mono for monospace data/numbers
+  - Inter for body text
+  - Font weights vary for hierarchy
+- **Key Visual Elements:**
+  - Stat cards with gradient backgrounds and hover effects
+  - Role badges (USER/ADMIN) with distinct colors
+  - System alerts with warning banner
+  - Quick action cards with icon indicators
+  - Monospace fonts for technical data (IDs, timestamps, storage values)
+
+**KEY FEATURES IMPLEMENTED:**
+- ✅ 4 stat cards: Users (cyan), Documents (purple), Conversations (indigo), Storage (emerald)
+- ✅ Each stat shows main metric + secondary info (e.g., "89 active (7d)", "12 processing 3 failed")
+- ✅ Recent registrations table with 3 mock users (user@example.com, admin@test.com, john.doe@company.com)
+- ✅ Role badges: USER (gray/slate), ADMIN (purple/fuchsia)
+- ✅ Quick actions: 4 navigation cards (Manage Users, Browse Documents, Invite Codes, Audit Logs)
+- ✅ System alerts banner showing processing queue and failed documents
+- ✅ Full light/dark mode support using Tailwind's `dark:` prefix
+- ✅ Responsive layout (grid system adjusts for mobile/tablet/desktop)
+- ✅ Gradient hover effects on stat cards and action cards
+- ✅ Icon integration (Users, FileText, MessageSquare, HardDrive icons from lucide-react)
+
+**CHROME DEVTOOLS VERIFICATION:**
+- ✅ Console: No errors or warnings (after removing debug logs)
+- ✅ Navigation: Direct URL to `/admin` now works correctly (bug fixed)
+- ✅ Navigation: Admin Panel link in sidebar works
+- ✅ AdminRoute guard: Correctly waits for auth initialization before checking permissions
+- ✅ Light mode: Professional dashboard with colorful stat cards
+- ✅ Dark mode: Command center aesthetic with dark slate and neon accents
+- ✅ Dark mode toggle: Works seamlessly across entire app (including admin pages)
+- ✅ Network: Login successful (200), no failed requests
+- ✅ Routing: `/admin` accessible only for admin users (tested with admin@test.com)
+
+**ADMIN NAVIGATION:**
+- ✅ Added "Admin Panel" link to DashboardPage sidebar (both desktop + mobile)
+- ✅ Purple gradient button with Shield icon (matches Data Observatory aesthetic)
+- ✅ Only visible for users with `role === "admin"`
+- ✅ Links to `/admin` route
+
+**MOCK DATA USED:**
+- Total users: 147 (89 active in 7d)
+- Total documents: 3,421 (12 processing, 3 failed)
+- Total conversations: 8,934
+- Storage used: 234.7 GB (23.5% of 1000 GB limit)
+- Recent registrations: 3 users (user@example.com, admin@test.com, john.doe@company.com)
+- System alerts: 3 documents failed, 12 in processing queue
+
+**NEXT STEPS:**
+- Implement useAdminStats hook to fetch real data from backend API GET /admin/stats
+- Implement remaining admin pages (Users, Documents, Invite Codes, Audit Logs)
+- Create AdminLayout component with persistent sidebar navigation
+
+---
+
+### 12.11.3 Admin Users Management
+
+**File:** `frontend/src/pages/admin/AdminUsers.tsx`
+
+**Purpose:** View, search, filter, suspend, activate, and delete users.
+
+**Use frontend-design skill with this prompt:**
+```
+Create an admin users management page for an AI Knowledge Base application.
+
+Features:
+- Users table with columns (email, role, status, documents count, storage used, last login, actions)
+- Search users by email
+- Filter by role (user, admin)
+- Filter by status (active, suspended)
+- Sort by columns (email, created_at, last_login_at, storage_used)
+- Pagination (page, limit controls)
+- User actions: Suspend, Activate, Delete (with confirmation)
+- View user details button (opens modal or navigates to detail page)
+- Responsive table design (card view on mobile)
+
+Design:
+- Professional data table with hover effects
+- Status badges (active: green, suspended: red)
+- Role badges (admin: blue, user: gray)
+- Action buttons (icon buttons with tooltips)
+- Confirmation dialog for destructive actions
+- Use shadcn/ui components (Table, Badge, Button, Dialog, Input, Select)
+- Dark mode compatible
+
+Tech: React, TypeScript, Tailwind CSS, shadcn/ui, React Query
+Style: Clean admin table (Vercel/Linear aesthetic)
+```
+
+**API Integration:**
+- [ ] Create `useAdminUsers` hook
+  ```typescript
+  // frontend/src/hooks/useAdminUsers.ts
+  import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+  import api from '@/lib/api'
+
+  interface AdminUser {
+    user_id: string
+    email: string
+    role: 'user' | 'admin'
+    status: 'active' | 'suspended'
+    storage_used_bytes: number
+    storage_limit_bytes: number
+    document_count: number
+    conversation_count: number
+    collection_count: number
+    created_at: string
+    last_login_at: string | null
+  }
+
+  interface UsersListResponse {
+    users: AdminUser[]
+    total: number
+    page: number
+    limit: number
+    pages: number
+  }
+
+  export function useAdminUsers(params: {
+    page: number
+    limit: number
+    status_filter?: string
+    role?: string
+    sort_by?: string
+    order?: string
+  }) {
+    return useQuery({
+      queryKey: ['admin', 'users', params],
+      queryFn: async () => {
+        const { data } = await api.get<UsersListResponse>('/admin/users', { params })
+        return data
+      },
+    })
+  }
+
+  export function useSuspendUser() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: async ({ userId, reason }: { userId: string; reason: string }) => {
+        await api.put(`/admin/users/${userId}/suspend`, { reason })
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      },
+    })
+  }
+
+  export function useActivateUser() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: async (userId: string) => {
+        await api.put(`/admin/users/${userId}/activate`)
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      },
+    })
+  }
+
+  export function useDeleteUser() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: async (userId: string) => {
+        await api.delete(`/admin/users/${userId}`)
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      },
+    })
+  }
+  ```
+
+- [ ] Implement users table with pagination
+- [ ] Add search/filter controls
+- [ ] Implement suspend user action (with reason input)
+- [ ] Implement activate user action
+- [ ] Implement delete user action (with confirmation dialog)
+- [ ] Add user details view (modal or separate page)
+
+**User Actions:**
+- **Suspend User:** Show dialog with reason input, call suspend endpoint
+- **Activate User:** Show confirmation, call activate endpoint
+- **Delete User:** Show double confirmation ("Are you sure?"), call delete endpoint
+- **View Details:** Show modal with full user info + stats
+
+**Checklist:**
+- [ ] Use frontend-design skill for UI implementation
+- [ ] AdminUsers page created
+- [ ] useAdminUsers hook implemented
+- [ ] Users table with all columns
+- [ ] Search functionality
+- [ ] Filter by role and status
+- [ ] Sort by columns
+- [ ] Pagination working
+- [ ] Suspend user action
+- [ ] Activate user action
+- [ ] Delete user action (with confirmation)
+- [ ] User details modal/page
+- [ ] Loading states
+- [ ] Error handling
+- [ ] Toast notifications for actions
+- [ ] Dark mode compatible
+- [ ] Mobile responsive (card view)
+
+---
+
+### 12.11.4 Admin Invite Codes Management
+
+**File:** `frontend/src/pages/admin/AdminInviteCodes.tsx`
+
+**Purpose:** Create, list, and revoke invite codes.
+
+**Use frontend-design skill with this prompt:**
+```
+Create an admin invite codes management page for an AI Knowledge Base application.
+
+Features:
+- "Create New Invite Code" button (opens dialog)
+- Create form fields: max_uses (1-1000), expires_at (optional date picker), description (optional)
+- Invite codes table with columns (code, status, uses/max_uses, expires_at, created_by, created_at, actions)
+- Filter by status (active, expired, fully_used, revoked)
+- Copy code button (copies to clipboard with toast notification)
+- Revoke code button (with confirmation)
+- Status badges (active: green, expired: yellow, fully_used: gray, revoked: red)
+- Progress bar for usage (e.g., 3/10 uses)
+
+Design:
+- Clean table layout with action buttons
+- Modal dialog for creating new codes
+- Code display with monospace font and copy button
+- Status badges with proper colors
+- Use shadcn/ui components (Table, Badge, Button, Dialog, Input, DatePicker, Progress)
+- Dark mode compatible
+
+Tech: React, TypeScript, Tailwind CSS, shadcn/ui, React Query, React Hook Form, Zod
+Style: Professional admin interface (Vercel/Linear aesthetic)
+```
+
+**API Integration:**
+- [ ] Create `useAdminInviteCodes` hook
+  ```typescript
+  // frontend/src/hooks/useAdminInviteCodes.ts
+  import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+  import api from '@/lib/api'
+
+  interface InviteCode {
+    code: string
+    status: 'active' | 'expired' | 'fully_used' | 'revoked'
+    max_uses: number
+    current_uses: number
+    expires_at: string | null
+    created_by: string
+    created_at: string
+    description: string | null
+  }
+
+  export function useAdminInviteCodes(statusFilter?: string) {
+    return useQuery({
+      queryKey: ['admin', 'invite-codes', statusFilter],
+      queryFn: async () => {
+        const { data } = await api.get<InviteCode[]>('/invite-codes', {
+          params: { status_filter: statusFilter },
+        })
+        return data
+      },
+    })
+  }
+
+  export function useCreateInviteCode() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: async (payload: {
+        max_uses: number
+        expires_at?: string
+        description?: string
+      }) => {
+        const { data } = await api.post('/invite-codes', payload)
+        return data
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'invite-codes'] })
+      },
+    })
+  }
+
+  export function useRevokeInviteCode() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: async (code: string) => {
+        await api.delete(`/invite-codes/${code}`)
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'invite-codes'] })
+      },
+    })
+  }
+  ```
+
+- [ ] Implement create invite code form
+  - max_uses: number input (1-1000)
+  - expires_at: optional date picker
+  - description: optional textarea
+
+- [ ] Implement invite codes table
+  - Show code in monospace font with copy button
+  - Display usage progress bar (e.g., "3 / 10 uses")
+  - Show status badge
+  - Show expiration date (if set)
+
+- [ ] Implement revoke action
+  - Show confirmation dialog
+  - Call revoke endpoint
+  - Update list on success
+
+- [ ] Implement copy code functionality
+  - Copy to clipboard
+  - Show success toast
+
+**Checklist:**
+- [ ] Use frontend-design skill for UI implementation
+- [ ] AdminInviteCodes page created
+- [ ] useAdminInviteCodes hook implemented
+- [ ] Create invite code dialog
+- [ ] Create form with validation (Zod schema)
+- [ ] Invite codes table
+- [ ] Filter by status
+- [ ] Copy code button with toast
+- [ ] Revoke code action with confirmation
+- [ ] Usage progress bar
+- [ ] Status badges
+- [ ] Loading states
+- [ ] Error handling
+- [ ] Toast notifications
+- [ ] Dark mode compatible
+- [ ] Mobile responsive
+
+---
+
+### 12.11.5 Admin Documents Browser
+
+**File:** `frontend/src/pages/admin/AdminDocuments.tsx`
+
+**Purpose:** Browse all documents across all users, filter by user/status, and perform cleanup operations.
+
+**Use frontend-design skill with this prompt:**
+```
+Create an admin documents browser page for an AI Knowledge Base application.
+
+Features:
+- Documents table with columns (filename, user_email, file_type, size, status, chunks_count, uploaded_at, actions)
+- Filter by user (dropdown with user emails)
+- Filter by status (processing, active, error, deleted)
+- Search by filename
+- Sort by columns (filename, uploaded_at, size_bytes, status)
+- Pagination (page, limit controls)
+- Document actions: View Details, Delete (with confirmation)
+- Bulk actions: "Delete All Documents for User" (with double confirmation), "NUCLEAR: Cleanup All Documents" (with triple confirmation)
+- Status badges (processing: yellow spinner, active: green, error: red, deleted: gray)
+- File type icons (PDF, DOCX, TXT, MD)
+
+Design:
+- Professional data table with hover effects
+- Danger zone section for destructive bulk operations (red bordered card)
+- Status badges with proper colors
+- File size formatting (KB, MB)
+- Action buttons (icon buttons with tooltips)
+- Confirmation dialogs for all destructive actions
+- Warning messages for nuclear options
+- Use shadcn/ui components (Table, Badge, Button, Dialog, Input, Select, Alert)
+- Dark mode compatible
+
+Tech: React, TypeScript, Tailwind CSS, shadcn/ui, React Query
+Style: Clean admin table (Vercel/Linear aesthetic)
+```
+
+**API Integration:**
+- [ ] Create `useAdminDocuments` hook
+  ```typescript
+  // frontend/src/hooks/useAdminDocuments.ts
+  import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+  import api from '@/lib/api'
+
+  interface AdminDocument {
+    document_id: string
+    user_id: string
+    user_email: string
+    filename: string
+    file_type: string
+    size_bytes: number
+    status: 'processing' | 'active' | 'error' | 'deleted'
+    chunks_count: number
+    uploaded_at: string
+    processed_at: string | null
+    error_message: string | null
+  }
+
+  interface AdminDocumentsListResponse {
+    documents: AdminDocument[]
+    total: number
+    page: number
+    limit: number
+    pages: number
+  }
+
+  export function useAdminDocuments(params: {
+    page: number
+    limit: number
+    user_id?: string
+    status_filter?: string
+    sort_by?: string
+    order?: string
+  }) {
+    return useQuery({
+      queryKey: ['admin', 'documents', params],
+      queryFn: async () => {
+        const { data } = await api.get<AdminDocumentsListResponse>('/admin/documents', { params })
+        return data
+      },
+    })
+  }
+
+  export function useDeleteAdminDocument() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: async (documentId: string) => {
+        await api.delete(`/admin/documents/${documentId}`)
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'documents'] })
+        queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] })
+      },
+    })
+  }
+
+  export function useCleanupUserDocuments() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: async (userId: string) => {
+        const { data } = await api.delete(`/admin/users/${userId}/documents`)
+        return data
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'documents'] })
+        queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] })
+      },
+    })
+  }
+
+  export function useCleanupAllDocuments() {
+    const queryClient = useQueryClient()
+    return useMutation({
+      mutationFn: async () => {
+        const { data } = await api.delete('/admin/documents/cleanup-all')
+        return data
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['admin', 'documents'] })
+        queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] })
+      },
+    })
+  }
+  ```
+
+- [ ] Implement documents table with pagination
+- [ ] Add filter controls (user dropdown, status filter, search)
+- [ ] Implement delete document action (with confirmation)
+- [ ] Implement cleanup user documents (with double confirmation)
+- [ ] Implement cleanup all documents (with triple confirmation + warning)
+
+**Document Actions:**
+- **View Details:** Show modal with full document info (metadata, chunks, processing details, error message if failed)
+- **Delete Document:** Show confirmation dialog, call delete endpoint, show success/error toast
+- **Cleanup User Docs:** Show double confirmation ("Delete ALL {count} documents for user@email.com?"), call cleanup endpoint
+- **NUCLEAR Cleanup All:** Show triple confirmation with WARNING message, require typing "DELETE ALL DOCUMENTS" to confirm, call cleanup-all endpoint
+
+**Danger Zone Section:**
+- [ ] Create danger zone card (red border, warning icon)
+- [ ] "Delete All Documents for User" button (requires user selection)
+- [ ] "NUCLEAR: Cleanup All System Documents" button (red, requires triple confirmation)
+- [ ] Warning text: "⚠️ DANGER: These operations permanently delete documents from database, B2 storage, and Milvus. This cannot be undone!"
+
+**Checklist:**
+- [ ] Use frontend-design skill for UI implementation
+- [ ] AdminDocuments page created
+- [ ] useAdminDocuments hook implemented
+- [ ] Documents table with all columns
+- [ ] Filter by user (dropdown)
+- [ ] Filter by status
+- [ ] Search by filename
+- [ ] Sort by columns
+- [ ] Pagination working
+- [ ] Delete document action
+- [ ] Cleanup user documents action
+- [ ] Cleanup all documents action (NUCLEAR)
+- [ ] View document details modal
+- [ ] Danger zone section
+- [ ] Triple confirmation for nuclear option
+- [ ] File type icons
+- [ ] Status badges
+- [ ] File size formatting
+- [ ] Loading states
+- [ ] Error handling
+- [ ] Toast notifications
+- [ ] Dark mode compatible
+- [ ] Mobile responsive
+
+---
+
+### 12.11.6 Admin Audit Logs
+
+**File:** `frontend/src/pages/admin/AdminAuditLogs.tsx`
+
+**Purpose:** View all administrative actions for compliance and security auditing.
+
+**Use frontend-design skill with this prompt:**
+```
+Create an admin audit logs page for an AI Knowledge Base application.
+
+Features:
+- Audit logs table with columns (timestamp, admin_email, action, target_type, target_id, details)
+- Filter by action type (user_suspended, user_activated, user_deleted, invite_code_created, invite_code_revoked)
+- Date range filter (from date, to date)
+- Search by admin email or target ID
+- Pagination
+- Action badges with colors (suspended: red, activated: green, deleted: red, created: blue, revoked: yellow)
+- Expandable row details (show full JSON details on click)
+
+Design:
+- Clean, chronological log table
+- Timestamp in readable format (e.g., "2 hours ago" or "Dec 2, 2025 at 3:45 PM")
+- Action badges with appropriate colors
+- Details expandable with JSON pretty-print
+- Use shadcn/ui components (Table, Badge, Button, Input, DatePicker, Accordion)
+- Dark mode compatible
+
+Tech: React, TypeScript, Tailwind CSS, shadcn/ui, React Query
+Style: Professional audit log interface (Vercel/Linear aesthetic)
+```
+
+**API Integration:**
+- [ ] Create `useAdminAuditLogs` hook
+  ```typescript
+  // frontend/src/hooks/useAdminAuditLogs.ts
+  import { useQuery } from '@tanstack/react-query'
+  import api from '@/lib/api'
+
+  interface AuditLog {
+    log_id: string
+    admin_user_id: string
+    admin_email: string
+    action: string
+    target_type: string
+    target_id: string
+    details: Record<string, any>
+    created_at: string
+  }
+
+  export function useAdminAuditLogs(params: {
+    page: number
+    limit: number
+    action_filter?: string
+    start_date?: string
+    end_date?: string
+  }) {
+    return useQuery({
+      queryKey: ['admin', 'audit-logs', params],
+      queryFn: async () => {
+        const { data } = await api.get<{
+          logs: AuditLog[]
+          total: number
+          page: number
+          limit: number
+          pages: number
+        }>('/admin/audit-logs', { params })
+        return data
+      },
+    })
+  }
+  ```
+
+- [ ] Implement audit logs table with pagination
+- [ ] Add filter controls (action type, date range, search)
+- [ ] Implement expandable row details (show JSON)
+- [ ] Format timestamps (use date-fns)
+
+**Checklist:**
+- [ ] Use frontend-design skill for UI implementation
+- [ ] AdminAuditLogs page created
+- [ ] useAdminAuditLogs hook implemented
+- [ ] Audit logs table
+- [ ] Filter by action type
+- [ ] Date range filter
+- [ ] Search functionality
+- [ ] Pagination
+- [ ] Expandable row details (JSON pretty-print)
+- [ ] Timestamp formatting
+- [ ] Action badges with colors
+- [ ] Loading states
+- [ ] Error handling
+- [ ] Dark mode compatible
+- [ ] Mobile responsive
+
+---
+
+### 12.11.6 Admin Navigation Layout
+
+**File:** `frontend/src/components/admin/AdminLayout.tsx`
+
+Create a consistent admin layout with sidebar navigation:
+
+- [x] Create AdminLayout component ✅
+  ```typescript
+  import { Outlet, Link, useLocation } from 'react-router-dom'
+  import { LayoutDashboard, Users, Key, FileText, Activity } from 'lucide-react'
+
+  const adminNavItems = [
+    { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/admin/users', label: 'Users', icon: Users },
+    { to: '/admin/documents', label: 'Documents', icon: FileText },
+    { to: '/admin/invite-codes', label: 'Invite Codes', icon: Key },
+    { to: '/admin/audit-logs', label: 'Audit Logs', icon: Activity },
+  ]
+
+  export function AdminLayout() {
+    const location = useLocation()
+
+    return (
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        <aside className="w-64 border-r bg-gray-50 dark:bg-gray-900">
+          <div className="p-4">
+            <h2 className="text-lg font-bold">Admin Panel</h2>
+          </div>
+          <nav className="space-y-1 p-2">
+            {adminNavItems.map((item) => {
+              const Icon = item.icon
+              const isActive = location.pathname === item.to
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                    isActive
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                  {item.label}
+                </Link>
+              )
+            })}
+          </nav>
+          {/* Back to Dashboard Link */}
+          <div className="absolute bottom-4 left-4">
+            <Link
+              to="/dashboard"
+              className="text-sm text-gray-600 dark:text-gray-400 hover:underline"
+            >
+              ← Back to Dashboard
+            </Link>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-auto">
+          <Outlet />
+        </main>
+      </div>
+    )
+  }
+  ```
+
+- [x] Update App.tsx to use AdminLayout ✅
+  ```typescript
+  <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+    <Route index element={<AdminDashboard />} />
+    <Route path="users" element={<AdminUsers />} />
+    <Route path="documents" element={<AdminDocuments />} />
+    <Route path="invite-codes" element={<AdminInviteCodes />} />
+    <Route path="audit-logs" element={<AdminAuditLogs />} />
+  </Route>
+  ```
+
+**UPDATE:** AdminLayout implemented with Command Center aesthetic:
+- Sidebar with gradient header showing "ADMIN PANEL / Control Center"
+- Navigation items with icons, labels, and descriptions
+- Active state highlighting with blue/cyan gradient
+- Hover effects with subtle indicators
+- "Exit Admin" button in footer to return to main dashboard
+- All admin pages updated to remove individual back buttons (persistent sidebar navigation)
+- Fully responsive with dark mode support
+
+**Checklist:**
+- [ ] AdminLayout component created
+- [ ] Sidebar navigation with icons
+- [ ] Active link highlighting
+- [ ] "Back to Dashboard" link
+- [ ] Nested routes working
+- [ ] Dark mode compatible
+- [ ] Mobile responsive (collapsible sidebar)
+
+---
+
+### 12.11.7 Testing & Verification
+
+**Manual Testing Checklist:**
+
+- [ ] Login as admin user (admin@test.com / Test@1234)
+- [ ] Verify "Admin Panel" link visible in navigation
+- [ ] Access admin dashboard (/admin)
+  - [ ] System stats displaying correctly
+  - [ ] Recent activity table working
+  - [ ] Quick action buttons functional
+- [ ] Access users management (/admin/users)
+  - [ ] Users table loads with real data
+  - [ ] Search users by email
+  - [ ] Filter by role and status
+  - [ ] Sort by columns
+  - [ ] Pagination working
+  - [ ] Suspend user action (with reason)
+  - [ ] Activate user action
+  - [ ] Delete user action (with confirmation)
+  - [ ] View user details
+- [ ] Access documents browser (/admin/documents)
+  - [ ] Documents table loads with all users' documents
+  - [ ] Filter by user (dropdown)
+  - [ ] Filter by status
+  - [ ] Search by filename
+  - [ ] Sort by columns
+  - [ ] Pagination working
+  - [ ] Delete single document (with confirmation)
+  - [ ] Cleanup user documents (with double confirmation)
+  - [ ] NUCLEAR cleanup all (with triple confirmation + type verification)
+  - [ ] View document details modal
+  - [ ] Danger zone properly styled with warnings
+- [ ] Access invite codes (/admin/invite-codes)
+  - [ ] Invite codes list displaying
+  - [ ] Create new invite code (with all fields)
+  - [ ] Copy code to clipboard (verify toast)
+  - [ ] Filter by status
+  - [ ] Revoke code (with confirmation)
+- [ ] Access audit logs (/admin/audit-logs)
+  - [ ] Audit logs displaying
+  - [ ] Filter by action type
+  - [ ] Date range filter
+  - [ ] Search functionality
+  - [ ] Expand row to view JSON details
+  - [ ] Pagination working
+- [ ] Logout and login as regular user
+  - [ ] Verify "Admin Panel" link NOT visible
+  - [ ] Try to access /admin URL directly → redirected to /dashboard
+  - [ ] Try to access /admin/users URL directly → redirected to /dashboard
+  - [ ] Try to access /admin/documents URL directly → redirected to /dashboard
+
+**Chrome DevTools MCP Verification:**
+
+- [ ] Navigate to each admin page
+- [ ] Check console for errors
+- [ ] Verify network requests (status 200/201)
+- [ ] Check page performance
+- [ ] Verify dark mode works on all admin pages
+- [ ] Test responsive layout (mobile, tablet, desktop)
+
+**Functional Requirements:**
+
+- [ ] Admin pages only accessible to admin users
+- [ ] Non-admin users redirected to dashboard
+- [ ] All CRUD operations working
+- [ ] Real-time data updates after mutations
+- [ ] Loading states during API calls
+- [ ] Error handling with toast notifications
+- [ ] Confirmation dialogs for destructive actions
+- [ ] Copy to clipboard working
+- [ ] Dark mode support
+- [ ] Mobile responsive
+
+---
+
+### 12.11.8 Commit After Completion
+
+```bash
+git add .
+git commit -m "feat(frontend): add admin pages with user management, invite codes, and audit logs
+
+- AdminRoute guard for role-based access
+- Admin dashboard with system statistics
+- Users management (list, suspend, activate, delete)
+- Invite codes management (create, list, revoke)
+- Audit logs viewer with filters
+- Admin navigation layout with sidebar
+- Role-based navigation (admin link visible only for admins)
+- Dark mode compatible and mobile responsive"
+```
+
+**CRITICAL:** Update this task file with `**UPDATE:**` prefix after implementing each section to document any changes or improvements made.
+
+---
+
 **Next Phase:** Phase 13 - Migration & Re-indexing Strategy (Optional)
