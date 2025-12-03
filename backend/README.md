@@ -1,4 +1,4 @@
-# AI Knowledge Base - Backend
+# Ragify - Backend
 
 FastAPI-based RAG (Retrieval-Augmented Generation) system for chatting with your documents using Google Gemini and Milvus vector database.
 
@@ -417,7 +417,7 @@ curl http://localhost:8000/api/v1/health
 ```json
 {
   "status": "healthy",
-  "app_name": "AI Knowledge Base",
+  "app_name": "Ragify",
   "environment": "development",
   "services": {
     "api": "up",

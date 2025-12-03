@@ -35,18 +35,23 @@ async def send_password_reset_email(to_email: str, reset_token: str) -> bool:
     logger.warning("")
     logger.warning("Use this token to reset password via API:")
     logger.warning("POST /api/v1/auth/password-reset/confirm")
-    logger.warning(f'{{"token": "{reset_token}", "new_password": "YourNewPassword123!"}}')
+    logger.warning(
+        f'{{"token": "{reset_token}", "new_password": "YourNewPassword123!"}}'
+    )
     logger.warning("=" * 80)
 
     # If Resend is not configured, return success (development mode)
-    if not settings.RESEND_API_KEY or settings.RESEND_API_KEY == "your-resend-api-key-here":
+    if (
+        not settings.RESEND_API_KEY
+        or settings.RESEND_API_KEY == "your-resend-api-key-here"
+    ):
         logger.info("Resend API key not configured - skipping email send")
         return True
 
     params = {
         "from": f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM_ADDRESS}>",
         "to": [to_email],
-        "subject": "Reset Your Password - AI Knowledge Base",
+        "subject": "Reset Your Password - Ragify",
         "html": f"""
         <!DOCTYPE html>
         <html>
@@ -210,14 +215,17 @@ async def send_welcome_email(to_email: str, user_email: str) -> bool:
     logger.info("=" * 80)
 
     # If Resend is not configured, return success (development mode)
-    if not settings.RESEND_API_KEY or settings.RESEND_API_KEY == "your-resend-api-key-here":
+    if (
+        not settings.RESEND_API_KEY
+        or settings.RESEND_API_KEY == "your-resend-api-key-here"
+    ):
         logger.info("Resend API key not configured - skipping email send")
         return True
 
     params = {
         "from": f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM_ADDRESS}>",
         "to": [to_email],
-        "subject": "Welcome to AI Knowledge Base!",
+        "subject": "Welcome to Ragify!",
         "html": f"""
         <!DOCTYPE html>
         <html>
@@ -417,7 +425,10 @@ async def check_email_service_health() -> dict[str, str]:
         dict: Health status with 'status' key ('up', 'down', or 'not_configured')
     """
     # If Resend is not configured, return not_configured status
-    if not settings.RESEND_API_KEY or settings.RESEND_API_KEY == "your-resend-api-key-here":
+    if (
+        not settings.RESEND_API_KEY
+        or settings.RESEND_API_KEY == "your-resend-api-key-here"
+    ):
         return {"status": "not_configured", "message": "Resend API key not configured"}
 
     try:

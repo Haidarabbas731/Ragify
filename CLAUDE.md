@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-AI Knowledge Base Chat System - RAG app with FastAPI + React.
+Ragify - RAG app with FastAPI + React.
 
 **PRD:** `docs/PRD.md` | **Tasks:** `tasks/*.md`
 
@@ -106,7 +106,7 @@ bun run biome check --write .
 ### Environment
 ```bash
 VITE_API_URL=http://localhost:8000/api/v1
-VITE_APP_NAME=AI Knowledge Base
+VITE_APP_NAME=Ragify
 ```
 
 ### Code Rules

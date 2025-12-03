@@ -13,6 +13,14 @@ class DocumentUpload(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
+class DocumentChunk(BaseModel):
+    """Schema for document chunk data."""
+
+    chunk_id: str
+    content: str
+    chunk_index: int
+
+
 class DocumentResponse(BaseModel):
     """Schema for document data in API responses."""
 
@@ -32,6 +40,7 @@ class DocumentResponse(BaseModel):
     uploaded_at: datetime
     processed_at: datetime | None
     deleted_at: datetime | None
+    chunks: list[DocumentChunk] | None = None
 
 
 class DocumentUpdate(BaseModel):
@@ -62,7 +71,9 @@ class DocumentsListResponse(BaseModel):
 class BatchDeleteRequest(BaseModel):
     """Schema for batch document deletion request."""
 
-    document_ids: list[str] = Field(..., min_length=1, description="List of document IDs to delete")
+    document_ids: list[str] = Field(
+        ..., min_length=1, description="List of document IDs to delete"
+    )
 
     @field_validator("document_ids")
     @classmethod
@@ -84,8 +95,16 @@ class BatchDeleteResponse(BaseModel):
 class BatchUpdateRequest(BaseModel):
     """Schema for batch document update request."""
 
-    document_ids: list[str] = Field(..., min_length=1, max_length=100, description="List of document IDs to update (max 100)")
-    collection_id: str | None = Field(None, description="New collection ID (set to empty string to remove from collection)")
+    document_ids: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="List of document IDs to update (max 100)",
+    )
+    collection_id: str | None = Field(
+        None,
+        description="New collection ID (set to empty string to remove from collection)",
+    )
 
     @field_validator("document_ids")
     @classmethod
@@ -118,8 +137,13 @@ class DocumentListParams(BaseModel):
     page: int = Field(1, ge=1, description="Page number (1-indexed)")
     limit: int = Field(50, ge=1, le=100, description="Items per page")
     collection_id: str | None = Field(None, description="Filter by collection ID")
-    status_filter: str | None = Field(None, description="Filter by status (processing, active, error)")
-    sort_by: str = Field("uploaded_at", description="Sort field (uploaded_at, filename, size_bytes, processed_at)")
+    status_filter: str | None = Field(
+        None, description="Filter by status (processing, active, error)"
+    )
+    sort_by: str = Field(
+        "uploaded_at",
+        description="Sort field (uploaded_at, filename, size_bytes, processed_at)",
+    )
     order: str = Field("desc", description="Sort order (asc, desc)")
 
 
@@ -130,4 +154,3 @@ class BulkUploadResponse(BaseModel):
     failed_count: int
     documents: list[DocumentResponse]
     errors: list[dict] | None = None
-
