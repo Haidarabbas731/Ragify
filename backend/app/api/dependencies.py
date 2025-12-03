@@ -265,7 +265,7 @@ async def get_current_user_sse(
         ) from e
 
     # Check token type (refresh field: False = access token, True = refresh token)
-    is_refresh = token_data.get("refresh", True)
+    is_refresh = token_data.get("refresh", True)  # type:ignore
     if is_refresh:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -273,7 +273,7 @@ async def get_current_user_sse(
         )
 
     # Check if token is blocklisted
-    jti = token_data.get("jti")
+    jti = token_data.get("jti")  # type:ignore
     if jti and await is_jti_blocklisted(jti):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -281,7 +281,7 @@ async def get_current_user_sse(
         )
 
     # Get user from token
-    user_id = token_data.get("sub")
+    user_id = token_data.get("sub")  # type:ignore
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -289,7 +289,7 @@ async def get_current_user_sse(
         )
 
     # Check if token was issued before password change
-    token_iat = token_data.get("iat")
+    token_iat = token_data.get("iat")  # type:ignore
     if token_iat and await is_token_issued_before_password_change(user_id, token_iat):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

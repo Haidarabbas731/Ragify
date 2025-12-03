@@ -460,7 +460,9 @@ export function DashboardPage() {
                     />
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
-                    {storagePercentage.toFixed(1)}% used
+                    {storagePercentage < 0.1 && storagePercentage > 0
+                      ? storagePercentage.toFixed(3)
+                      : storagePercentage.toFixed(1)}% used
                     {storagePercentage >= 90 && (
                       <span className="text-red-500 font-semibold ml-2">
                         ⚠️ Nearly full

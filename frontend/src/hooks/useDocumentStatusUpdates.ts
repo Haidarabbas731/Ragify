@@ -73,6 +73,9 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
 
       // Invalidate documents list to refresh (will show new status)
       queryClient.invalidateQueries({ queryKey: ["documents"] });
+      
+      // Invalidate user stats to update counts and storage
+      queryClient.invalidateQueries({ queryKey: ["userStats"] });
 
       // Show toast notification
       if (update.status === "active") {
@@ -118,6 +121,7 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
 
         try {
           const data = JSON.parse(event.data);
+          console.log("[SSE] Received message:", data);
 
           // Handle errors from backend
           if (data.error) {
@@ -127,6 +131,7 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
 
           // Handle document status updates
           if (data.document_id && data.status) {
+            console.log("[SSE] Updating document cache:", data);
             updateDocumentCache(data as DocumentStatusUpdate);
           }
         } catch (error) {
