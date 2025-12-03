@@ -46,7 +46,7 @@ export function LandingNav() {
               className="text-xl font-bold text-slate-900 dark:text-white hidden sm:block"
               style={{ fontFamily: "'DM Sans', sans-serif" }}
             >
-              AI Knowledge Base
+              Ragify
             </span>
           </Link>
 
