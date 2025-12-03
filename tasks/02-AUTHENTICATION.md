@@ -499,6 +499,74 @@ headers={"Authorization": f"Bearer {access_token}"}
 - [x] Response: `{"message": "Password changed successfully. Please login again with your new password."}`
 - [x] **COMPLETED:** Full implementation in `backend/app/api/v1/users.py`
 
+### ⚠️ CRITICAL DESIGN ISSUE: Session Revocation Pattern
+
+**Problem with Current Implementation:**
+
+The current `revoke_all_user_sessions()` + `clear_user_session_revocation()` pattern has a fundamental design flaw:
+
+**How It Works:**
+1. `revoke_all_user_sessions(user_id, ttl=604800)` → Sets Redis flag `user_revoked:{user_id}` = "1" (7 days)
+2. This flag blocks **ALL** authentication attempts (old tokens + new logins)
+3. `clear_user_session_revocation(user_id)` → Deletes the flag immediately
+4. Now user can login with new password
+
+**The Problem:**
+- The function name suggests it revokes "sessions" but it actually blocks the entire user account
+- We have to immediately clear the flag, which defeats the purpose of setting it
+- Old tokens issued before password change might still work briefly (race condition)
+- Any future password-related endpoint will break if developer forgets to call `clear_user_session_revocation()`
+
+**Where This Pattern Is Used:**
+- `POST /api/v1/auth/password-reset/confirm` (password reset flow)
+- `POST /api/v1/users/me/change-password` (password change flow)
+- Any future password update endpoints will need this pattern
+
+**Better Solution (TODO - Future Improvement):**
+
+Instead of blocking the entire user account, implement timestamp-based token validation:
+
+1. **Store password change timestamp:**
+   ```python
+   await redis.setex(f"password_changed:{user_id}", 604800, str(datetime.now().timestamp()))
+   ```
+
+2. **Add `iat` (issued at) to all tokens:**
+   ```python
+   to_encode["iat"] = datetime.now(UTC).timestamp()
+   ```
+
+3. **Check if token was issued before password change:**
+   ```python
+   async def is_token_invalidated_by_password_change(user_id: str, token_iat: float) -> bool:
+       password_changed_at = await redis.get(f"password_changed:{user_id}")
+       if not password_changed_at:
+           return False
+       return token_iat < float(password_changed_at)
+   ```
+
+4. **Update token validation in `dependencies.py` and `auth_service.py`:**
+   - Check `is_token_invalidated_by_password_change()` instead of `is_user_sessions_revoked()`
+   - Reject tokens issued before password change
+   - Allow new logins automatically (no need to clear flag)
+
+**Benefits:**
+- ✅ More intuitive: invalidates old tokens without blocking new logins
+- ✅ No need for `clear_user_session_revocation()` workaround
+- ✅ Prevents race conditions
+- ✅ Future-proof: any password endpoint automatically works correctly
+- ✅ Better developer experience: harder to forget the "clear" step
+
+**Implementation Priority:** Medium (current workaround is functional but fragile)
+
+**Files to Update:**
+- `backend/app/services/redis_service.py` - Add timestamp-based functions
+- `backend/app/core/security.py` - Add `iat` to token creation
+- `backend/app/api/dependencies.py` - Update token validation
+- `backend/app/services/auth_service.py` - Update authentication checks
+- `backend/app/api/v1/auth.py` - Remove `clear_user_session_revocation()` calls
+- `backend/app/api/v1/users.py` - Remove `clear_user_session_revocation()` calls
+
 ### Email Template Design
 
 **UPDATE:** Email template redesigned with editorial-tech aesthetic
