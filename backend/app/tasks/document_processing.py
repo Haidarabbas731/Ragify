@@ -3,6 +3,7 @@
 Handles text extraction, chunking, embedding generation, and vector storage.
 """
 
+import json
 from datetime import UTC, datetime
 from io import BytesIO
 
@@ -16,6 +17,7 @@ from app.models.document import Document, DocumentStatus
 from app.services.b2_service import get_b2_service
 from app.services.embedding_service import get_embedding_service
 from app.services.milvus_service import get_milvus_service
+from app.services.redis_service import get_redis
 from app.utils.chunking import create_chunks_with_metadata
 from app.utils.text_extraction import extract_text
 
@@ -154,7 +156,9 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 chunk_texts = []
                 chunk_indices = []
 
-                for i, (chunk, _embedding) in enumerate(zip(chunks_data, embeddings, strict=True)):
+                for i, (chunk, _embedding) in enumerate(
+                    zip(chunks_data, embeddings, strict=True)
+                ):
                     chunk_ids.append(f"{document_id}_{i}")
                     chunk_texts.append(chunk["text"])
                     chunk_indices.append(chunk["chunk_index"])
@@ -189,6 +193,16 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 await db.commit()
                 await db.refresh(document)
 
+                # Broadcast status update via Redis pub/sub
+                await _broadcast_document_status(
+                    user_id=user_id,
+                    document_id=document_id,
+                    status=DocumentStatus.ACTIVE.value,
+                    chunks_count=len(chunks_data),
+                    filename=document.filename,
+                    processed_at=document.processed_at.isoformat(),
+                )
+
             except Exception as e:
                 error_msg = f"Database update failed: {str(e)}"
                 # Don't mark as error since processing succeeded
@@ -199,7 +213,9 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 "status": "success",
                 "document_id": document_id,
                 "chunks_count": len(chunks_data),
-                "processing_time": (datetime.now(UTC) - document.uploaded_at).total_seconds(),
+                "processing_time": (
+                    datetime.now(UTC) - document.uploaded_at
+                ).total_seconds(),
             }
 
         except Retry:
@@ -210,7 +226,9 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
             # Unexpected errors
             error_msg = f"Unexpected error during processing: {str(e)}"
             try:
-                result = await db.exec(select(Document).where(Document.document_id == document_id))
+                result = await db.exec(
+                    select(Document).where(Document.document_id == document_id)
+                )
                 doc = result.one_or_none()
                 if doc:
                     await _mark_document_error(db, doc, error_msg)
@@ -220,7 +238,9 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
             return {"status": "error", "error": error_msg}
 
 
-async def _mark_document_error(db: AsyncSession, document: Document, error_message: str) -> None:
+async def _mark_document_error(
+    db: AsyncSession, document: Document, error_message: str
+) -> None:
     """
     Mark document as ERROR status with error message.
 
@@ -235,3 +255,56 @@ async def _mark_document_error(db: AsyncSession, document: Document, error_messa
 
     db.add(document)
     await db.commit()
+
+    # Broadcast error status via Redis pub/sub
+    await _broadcast_document_status(
+        user_id=str(document.user_id),
+        document_id=str(document.document_id),
+        status=DocumentStatus.ERROR.value,
+        chunks_count=0,
+        filename=document.filename,
+        processed_at=document.processed_at.isoformat(),
+        error_message=error_message[:500],
+    )
+
+
+async def _broadcast_document_status(
+    user_id: str,
+    document_id: str,
+    status: str,
+    chunks_count: int,
+    filename: str,
+    processed_at: str,
+    error_message: str | None = None,
+) -> None:
+    """
+    Broadcast document status update via Redis pub/sub.
+
+    Publishes to channel: document:status:{user_id}:{document_id}
+    Frontend subscribes to pattern: document:status:{user_id}:*
+
+    Args:
+        user_id: User ID
+        document_id: Document ID
+        status: Document status (ACTIVE or ERROR)
+        chunks_count: Number of chunks processed
+        filename: Document filename
+        processed_at: ISO timestamp when processing completed
+        error_message: Error message if status is ERROR
+    """
+    redis = await get_redis()
+    try:
+        channel = f"document:status:{user_id}:{document_id}"
+        message = json.dumps(
+            {
+                "document_id": document_id,
+                "status": status,
+                "chunks_count": chunks_count,
+                "filename": filename,
+                "processed_at": processed_at,
+                "error_message": error_message,
+            }
+        )
+        await redis.publish(channel, message)
+    finally:
+        await redis.aclose()
