@@ -1,8 +1,23 @@
-"""Clear all user session revocation flags from Redis."""
+"""Clear all user session revocation flags from Redis.
+
+Usage:
+    Run from anywhere:
+    $ uv run python scripts/clear_revoked_sessions.py
+    $ uv run python backend/scripts/clear_revoked_sessions.py
+"""
 
 import asyncio
+import os
+import sys
+from pathlib import Path
 
-from app.services.redis_service import get_redis
+# Change to backend directory so pydantic-settings can find .env
+backend_dir = Path(__file__).parent.parent
+os.chdir(backend_dir)
+
+sys.path.insert(0, str(backend_dir))
+
+from app.services.redis_service import get_redis  # noqa: E402
 
 
 async def clear_all_revoked_sessions():
