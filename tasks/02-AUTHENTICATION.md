@@ -478,6 +478,27 @@ headers={"Authorization": f"Bearer {access_token}"}
 - [x] **FIX:** Previously, `revoke_all_user_sessions()` blocked ALL future logins, not just old tokens
 - [x] **FIX:** Now clears revocation flag after revoking old sessions - user can login with new password
 
+### Change Password Flow
+
+**Location:** `backend/app/api/v1/users.py`
+
+- [x] Create `POST /api/v1/users/me/change-password` endpoint
+- [x] Require authentication (current user)
+- [x] Request: `{"current_password": "...", "new_password": "..."}`
+- [x] Validate current password is correct
+- [x] Validate new password strength
+- [x] Hash new password with Argon2
+- [x] Update user password in database
+- [x] Revoke all existing user sessions for security
+- [x] **SECURITY FIX (2024-12-03):** Added `clear_user_session_revocation()` after password change
+  - **Issue:** After changing password, users got "session expired" error when trying to login
+  - **Root Cause:** `revoke_all_user_sessions()` sets `user_revoked:{user_id}` flag in Redis
+  - **Impact:** Flag blocked ALL logins for 7 days, not just old sessions
+  - **Fix:** Added `clear_user_session_revocation()` call after revoking sessions (same as password reset flow)
+  - **Result:** Users can now change password and login immediately with new password
+- [x] Response: `{"message": "Password changed successfully. Please login again with your new password."}`
+- [x] **COMPLETED:** Full implementation in `backend/app/api/v1/users.py`
+
 ### Email Template Design
 
 **UPDATE:** Email template redesigned with editorial-tech aesthetic

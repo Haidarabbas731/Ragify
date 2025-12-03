@@ -15,7 +15,10 @@ from app.schemas.user import (
     UserStatsResponse,
     UserUpdateRequest,
 )
-from app.services.redis_service import revoke_all_user_sessions
+from app.services.redis_service import (
+    clear_user_session_revocation,
+    revoke_all_user_sessions,
+)
 from app.services.user_service import (
     change_user_password,
     get_user_stats,
@@ -159,6 +162,9 @@ async def change_current_user_password(
     # Revoke all user sessions (logout from all devices)
     # User will need to login again with new password
     await revoke_all_user_sessions(current_user.user_id, ttl=604800)  # 7 days
+
+    # Clear revocation flag to allow user to login with new password
+    await clear_user_session_revocation(current_user.user_id)
 
     return {
         "message": "Password changed successfully. Please login again with your new password."
