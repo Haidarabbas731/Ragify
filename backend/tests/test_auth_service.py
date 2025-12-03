@@ -81,7 +81,10 @@ async def test_register_user_weak_password(session: AsyncSession):
     with patch(
         "app.services.auth_service.validate_password_strength"
     ) as mock_validate_pwd:
-        mock_validate_pwd.return_value = (False, "Password must be at least 8 characters")
+        mock_validate_pwd.return_value = (
+            False,
+            "Password must be at least 8 characters",
+        )
 
         success, message, user_data = await register_user(
             session, "newuser@example.com", "weak", None
@@ -164,8 +167,8 @@ async def test_authenticate_user_success(session: AsyncSession):
     with patch("app.services.auth_service.get_user_by_email") as mock_get_user, patch(
         "app.services.auth_service.verify_password"
     ) as mock_verify, patch(
-        "app.services.auth_service.is_user_sessions_revoked"
-    ) as mock_is_revoked, patch(
+        "app.services.auth_service.is_token_issued_before_password_change"
+    ) as mock_is_token_invalid, patch(
         "app.services.auth_service.create_access_token"
     ) as mock_create_access, patch(
         "app.services.auth_service.create_refresh_token"
@@ -179,7 +182,7 @@ async def test_authenticate_user_success(session: AsyncSession):
         # Setup mocks
         mock_get_user.return_value = mock_user
         mock_verify.return_value = True
-        mock_is_revoked.return_value = False
+        mock_is_token_invalid.return_value = False
         mock_create_access.return_value = "access_token_123"
         mock_create_refresh.return_value = "refresh_token_456"
         mock_decode.side_effect = [
@@ -301,18 +304,28 @@ async def test_authenticate_user_session_revoked(session: AsyncSession):
     with patch("app.services.auth_service.get_user_by_email") as mock_get_user, patch(
         "app.services.auth_service.verify_password"
     ) as mock_verify, patch(
-        "app.services.auth_service.is_user_sessions_revoked"
-    ) as mock_is_revoked:
+        "app.services.auth_service.is_token_issued_before_password_change"
+    ) as mock_is_token_invalid, patch(
+        "app.services.auth_service.create_access_token"
+    ) as mock_create_access, patch(
+        "app.services.auth_service.decode_token"
+    ) as mock_decode:
         mock_get_user.return_value = mock_user
         mock_verify.return_value = True
-        mock_is_revoked.return_value = True
+        mock_create_access.return_value = "access_token_123"
+        mock_decode.return_value = {
+            "jti": "access_jti",
+            "sub": "user123",
+            "iat": 1234567890,
+        }
+        mock_is_token_invalid.return_value = True  # Token issued before password change
 
         success, message, tokens = await authenticate_user(
             session, "user@example.com", "correct_password"
         )
 
         assert success is False
-        assert message == "Session expired, please login again"
+        assert "password change" in message.lower()
         assert tokens is None
 
 
@@ -326,8 +339,8 @@ async def test_refresh_token_success():
     token_details = {"sub": "user123", "role": "user", "jti": "old_refresh_jti"}
 
     with patch(
-        "app.services.auth_service.is_user_sessions_revoked"
-    ) as mock_is_revoked, patch(
+        "app.services.auth_service.is_token_issued_before_password_change"
+    ) as mock_is_token_invalid, patch(
         "app.services.auth_service.add_jti_to_blocklist"
     ) as mock_add_blocklist, patch(
         "app.services.auth_service.create_access_token"
@@ -339,7 +352,7 @@ async def test_refresh_token_success():
         "app.services.auth_service.store_token_pair"
     ) as mock_store_pair:
         # Setup mocks
-        mock_is_revoked.return_value = False
+        mock_is_token_invalid.return_value = False
         mock_create_access.return_value = "new_access_token"
         mock_create_refresh.return_value = "new_refresh_token"
         mock_decode.side_effect = [
@@ -348,7 +361,9 @@ async def test_refresh_token_success():
         ]
 
         # Execute refresh
-        success, message, tokens = await refresh_access_token_from_details(token_details)
+        success, message, tokens = await refresh_access_token_from_details(
+            token_details
+        )
 
         # Assertions
         assert success is True
@@ -382,19 +397,26 @@ async def test_refresh_token_invalid_payload():
 
 @pytest.mark.asyncio
 async def test_refresh_token_session_revoked():
-    """Test token refresh fails when session revoked."""
+    """Test token refresh fails when token was issued before password change."""
 
-    token_details = {"sub": "user123", "role": "user", "jti": "old_refresh_jti"}
+    token_details = {
+        "sub": "user123",
+        "role": "user",
+        "jti": "old_refresh_jti",
+        "iat": 1234567890,
+    }
 
     with patch(
-        "app.services.auth_service.is_user_sessions_revoked"
-    ) as mock_is_revoked:
-        mock_is_revoked.return_value = True
+        "app.services.auth_service.is_token_issued_before_password_change"
+    ) as mock_is_token_invalid:
+        mock_is_token_invalid.return_value = True  # Token issued before password change
 
-        success, message, tokens = await refresh_access_token_from_details(token_details)
+        success, message, tokens = await refresh_access_token_from_details(
+            token_details
+        )
 
         assert success is False
-        assert message == "Session expired, please login again"
+        assert "password change" in message.lower()
         assert tokens is None
 
 
