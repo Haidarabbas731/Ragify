@@ -564,6 +564,15 @@ Timestamp-based token validation that invalidates old tokens without blocking ne
 
 **Implementation Status:** ✅ Complete (2024-12-03)
 
+**Testing Updates (2024-12-03):**
+- ✅ Updated `backend/tests/test_auth_service.py` to use new validation mocks
+- ✅ Replaced `is_user_sessions_revoked()` mocks with `is_token_issued_before_password_change()`
+- ✅ Added `iat` field to token_details in test data
+- ✅ Updated test docstrings to reflect password change scenarios
+- ✅ All 15 auth service tests passing
+- ⚠️ 9 API user tests still failing due to Windows event loop issues (known limitation)
+- ✅ Test suite coverage: 58% (up from 34%)
+
 ### Email Template Design
 
 **UPDATE:** Email template redesigned with editorial-tech aesthetic
