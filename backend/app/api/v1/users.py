@@ -16,8 +16,7 @@ from app.schemas.user import (
     UserUpdateRequest,
 )
 from app.services.redis_service import (
-    clear_user_session_revocation,
-    revoke_all_user_sessions,
+    store_password_change_timestamp,
 )
 from app.services.user_service import (
     change_user_password,
@@ -159,12 +158,9 @@ async def change_current_user_password(
     if not success:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
 
-    # Revoke all user sessions (logout from all devices)
+    # Store password change timestamp to invalidate old tokens
     # User will need to login again with new password
-    await revoke_all_user_sessions(current_user.user_id, ttl=604800)  # 7 days
-
-    # Clear revocation flag to allow user to login with new password
-    await clear_user_session_revocation(current_user.user_id)
+    await store_password_change_timestamp(current_user.user_id, ttl=604800)  # 7 days
 
     return {
         "message": "Password changed successfully. Please login again with your new password."

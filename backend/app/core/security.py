@@ -31,13 +31,15 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     to_encode = data.copy()
 
     # Add JTI (JWT ID) for unique token identification
+    now = datetime.now(UTC)
     to_encode["jti"] = str(uuid.uuid4())
+    to_encode["iat"] = int(now.timestamp())  # Issued at timestamp
     to_encode["refresh"] = False  # Mark as access token
 
     if expires_delta:
-        expire = datetime.now(UTC) + expires_delta
+        expire = now + expires_delta
     else:
-        expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
@@ -56,10 +58,12 @@ def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
 
     # Add JTI (JWT ID) for unique token identification
+    now = datetime.now(UTC)
     to_encode["jti"] = str(uuid.uuid4())
+    to_encode["iat"] = int(now.timestamp())  # Issued at timestamp
     to_encode["refresh"] = True  # Mark as refresh token
 
-    expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt

@@ -10,7 +10,7 @@ from app.db.database import get_session
 from app.models.user import User
 from app.services.redis_service import (
     is_jti_blocklisted,
-    is_user_sessions_revoked,
+    is_token_issued_before_password_change,
 )
 
 security = HTTPBearer()
@@ -173,10 +173,12 @@ async def get_current_user(
             detail="Invalid token payload",
         )
 
-    if await is_user_sessions_revoked(user_id):
+    # Check if token was issued before password change
+    token_iat = token_details.get("iat")
+    if token_iat and await is_token_issued_before_password_change(user_id, token_iat):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session expired, please login again",
+            detail="Session expired due to password change. Please login again.",
         )
 
     result = await session.exec(select(User).where(User.user_id == user_id))
@@ -240,7 +242,9 @@ async def get_current_user_optional(
     if not user_id:
         return None
 
-    if await is_user_sessions_revoked(user_id):
+    # Check if token was issued before password change
+    token_iat = token_details.get("iat")
+    if token_iat and await is_token_issued_before_password_change(user_id, token_iat):
         return None
 
     result = await session.exec(select(User).where(User.user_id == user_id))

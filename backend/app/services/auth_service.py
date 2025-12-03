@@ -15,7 +15,7 @@ from app.services.invite_service import (
 )
 from app.services.redis_service import (
     add_jti_to_blocklist,
-    is_user_sessions_revoked,
+    is_token_issued_before_password_change,
     store_token_pair,
 )
 from app.services.user_service import (
@@ -98,9 +98,6 @@ async def authenticate_user(
     if not user.is_active:
         return False, "Account is suspended", None
 
-    if await is_user_sessions_revoked(user.user_id):
-        return False, "Session expired, please login again", None
-
     access_token = create_access_token(
         {"sub": user.user_id, "email": user.email, "role": user.role}
     )
@@ -108,8 +105,14 @@ async def authenticate_user(
         {"sub": user.user_id, "email": user.email, "role": user.role}
     )
 
-    # Store token pair mapping for automatic refresh token lookup on logout
+    # Check if tokens were issued before password change
     access_payload = decode_token(access_token)
+    if access_payload:
+        token_iat = access_payload.get("iat")
+        if token_iat and await is_token_issued_before_password_change(user.user_id, token_iat):
+            return False, "Session expired due to password change. Please login again.", None
+
+    # Store token pair mapping for automatic refresh token lookup on logout
     refresh_payload = decode_token(refresh_token)
     if access_payload and refresh_payload:
         access_jti = access_payload.get("jti")
@@ -153,8 +156,10 @@ async def refresh_access_token_from_details(
     if not user_id:
         return False, "Invalid token payload", None
 
-    if await is_user_sessions_revoked(user_id):
-        return False, "Session expired, please login again", None
+    # Check if token was issued before password change
+    token_iat = token_details.get("iat")
+    if token_iat and await is_token_issued_before_password_change(user_id, token_iat):
+        return False, "Session expired due to password change. Please login again.", None
 
     # Revoke old refresh token
     old_jti = token_details.get("jti")
