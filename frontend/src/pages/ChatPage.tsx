@@ -7,6 +7,7 @@
  * Features: Real-time streaming, conversation management, collection filtering
  */
 
+import { useQueryClient } from "@tanstack/react-query";
 import {
   FileText,
   FolderOpen,
@@ -30,6 +31,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { CollectionFilter } from "../components/chat/CollectionFilter";
+import { DeleteConfirmDialog } from "../components/chat/DeleteConfirmDialog";
 import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { Button } from "../components/ui/button";
 import { useDarkMode } from "../contexts/DarkModeContext";
@@ -58,6 +60,7 @@ export function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout } = useAuthStore();
   const { darkMode, toggleDarkMode } = useDarkMode();
+  const queryClient = useQueryClient();
 
   // UI State
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -65,6 +68,10 @@ export function ChatPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [selectedCollectionId, setSelectedCollectionId] = useState<
+    string | null
+  >(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<
     string | null
   >(null);
 
@@ -170,18 +177,33 @@ export function ChatPage() {
     setMobileSidebarOpen(false);
   };
 
-  const handleDeleteConversation = async (convId: string) => {
-    if (!confirm("Delete this conversation? This cannot be undone.")) return;
+  // Open delete confirmation dialog
+  const handleDeleteConversation = (convId: string) => {
+    setConversationToDelete(convId);
+    setDeleteDialogOpen(true);
+  };
+
+  // Confirm deletion
+  const confirmDelete = async () => {
+    if (!conversationToDelete) return;
 
     try {
-      await deleteConversationMutation.mutateAsync(convId);
+      await deleteConversationMutation.mutateAsync(conversationToDelete);
       // If we're viewing this conversation, clear it
-      if (conversationId === convId) {
+      if (conversationId === conversationToDelete) {
         handleNewChat();
       }
+      setDeleteDialogOpen(false);
+      setConversationToDelete(null);
     } catch (error) {
       console.error("Failed to delete conversation:", error);
     }
+  };
+
+  // Cancel deletion
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setConversationToDelete(null);
   };
 
   const handleSendMessage = async () => {
@@ -223,7 +245,7 @@ export function ChatPage() {
           ),
         );
       },
-      onComplete: (fullResponse, sources) => {
+      onComplete: (fullResponse, sources, newConversationId) => {
         // Update with final response and sources
         setMessages((prev) =>
           prev.map((msg) =>
@@ -241,15 +263,11 @@ export function ChatPage() {
           ),
         );
 
-        // If this was a new conversation, the backend creates it
-        // We should refresh the conversations list
-        // The backend doesn't return the conversation_id in streaming mode,
-        // so we'll just refetch conversations after a short delay
-        if (!conversationId) {
-          setTimeout(() => {
-            // Refresh conversations list
-            // The useConversations hook will auto-update
-          }, 1000);
+        // If this was a new conversation, update URL with conversation_id
+        if (!conversationId && newConversationId) {
+          setSearchParams({ conversation: newConversationId });
+          // Invalidate conversations cache to show new conversation in sidebar
+          queryClient.invalidateQueries({ queryKey: ["conversations"] });
         }
       },
       onError: (error) => {
@@ -787,6 +805,18 @@ export function ChatPage() {
           background: rgba(71, 85, 105, 0.5);
         }
       `}</style>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={deleteDialogOpen}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title="Delete Conversation?"
+        message="This conversation will be permanently deleted. This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDeleting={deleteConversationMutation.isPending}
+      />
     </div>
   );
 }

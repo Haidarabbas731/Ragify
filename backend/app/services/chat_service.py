@@ -282,7 +282,7 @@ async def execute_rag_query_stream(
     conversation_id: str | None = None,
     collection_id: str | None = None,
     top_k: int = 5,
-) -> AsyncIterator[str]:
+) -> AsyncIterator[str | dict]:
     """
     Execute RAG query with streaming response.
 
@@ -294,6 +294,7 @@ async def execute_rag_query_stream(
     8. Build prompt with conversation history
     9. Stream LLM response chunks
     10. Save complete response to conversation after streaming finishes
+    11. Yield metadata (conversation_id and sources)
 
     Args:
         query: User's question
@@ -304,7 +305,8 @@ async def execute_rag_query_stream(
         top_k: Number of chunks to retrieve (default: 5)
 
     Yields:
-        str: Response chunks as they are generated
+        str: Response text chunks as they are generated
+        dict: Metadata at the end containing conversation_id and sources
 
     Raises:
         ValueError: If query is empty
@@ -365,6 +367,22 @@ async def execute_rag_query_stream(
         await _save_to_conversation(
             db, conversation.conversation_id, query, response_text, sources
         )
+
+        # Yield metadata at the end (conversation_id and sources)
+        yield {
+            "conversation_id": conversation.conversation_id,
+            "sources": [
+                {
+                    "document_id": src["document_id"],
+                    "document_name": src["document_name"],
+                    "filename": src["filename"],
+                    "chunk_index": src["chunk_index"],
+                    "chunk_text": src["chunk_text"],
+                    "relevance_score": src["relevance_score"],
+                }
+                for src in sources
+            ],
+        }
 
         logger.info(
             f"Completed streaming RAG query for conversation {conversation.conversation_id}"

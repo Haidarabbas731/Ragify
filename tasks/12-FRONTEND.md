@@ -2359,6 +2359,39 @@ ChatPage redesigned to match dashboard design system with purple/indigo theme.
   - Updated `format_user_prompt()` with clearer instructions for different question types
   - Added **Ragify branding** to system prompt - AI now introduces itself as "Ragify's AI assistant" and mentions RAG technology
   - **File modified:** `backend/app/prompts/chat_prompt.py:7-32,63-76`
+- ✅ **Replaced generic browser `confirm()` with polished custom delete dialog** - UX improvement
+  - Created beautiful `DeleteConfirmDialog` component with:
+    - Smooth fade-in animation with backdrop blur
+    - Red gradient warning icon with animated pulse ring
+    - Keyboard navigation (Escape to cancel, Enter to confirm)
+    - Focus management for accessibility
+    - Loading state with spinner during deletion
+    - Matches app's purple/indigo theme with refined aesthetics
+  - Updated `ChatPage` to use custom dialog instead of `window.confirm()`
+  - **Files created:** `frontend/src/components/chat/DeleteConfirmDialog.tsx`
+  - **Files modified:** `frontend/src/pages/ChatPage.tsx:33,71-74,179-205,811-821`
+- ✅ **Fixed chat URL not updating with conversation_id automatically** - Conversations were scattering across different histories
+  - **Root cause:** Backend streaming response didn't return conversation_id, so frontend couldn't update URL
+  - **Backend changes:**
+    - Updated `execute_rag_query_stream()` to yield metadata dict at end with conversation_id and sources
+    - Updated `chat.py` stream_generator to extract and send metadata in final "done" message
+    - Changed return type from `AsyncIterator[str]` to `AsyncIterator[str | dict]`
+  - **Frontend changes:**
+    - Updated `useChatStream` to extract conversation_id and sources from "done" message
+    - Updated `onComplete` callback signature to include `conversationId` parameter
+    - Updated `ChatPage` to call `setSearchParams({ conversation: newConversationId })` after stream completes
+  - **Files modified:**
+    - `backend/app/api/v1/chat.py:71-110` - Handle metadata in stream_generator
+    - `backend/app/services/chat_service.py:285,307-309,369-383` - Yield metadata at end
+    - `frontend/src/hooks/useChatStream.ts:16-20,108,134-148` - Extract conversation_id from stream
+    - `frontend/src/pages/ChatPage.tsx:246,265-267` - Update URL with conversation_id
+- ✅ **Fixed sources not showing until page refresh** - Sources were missing from streaming responses
+  - Same fix as above - backend now sends sources in the final "done" message
+  - Frontend extracts and displays sources immediately without needing refresh
+- ✅ **Fixed conversation history not showing in sidebar until refresh** - New conversations weren't appearing
+  - **Root cause:** React Query cache wasn't being invalidated when new conversation was created
+  - **Solution:** Added `queryClient.invalidateQueries({ queryKey: ["conversations"] })` after setting conversation URL
+  - **Files modified:** `frontend/src/pages/ChatPage.tsx:270` - Invalidate cache when new conversation created
 
 ### Chat Window
 **File:** `frontend/src/pages/ChatPage.tsx` **UPDATE (2025-12-01):** Implemented as single-file component
