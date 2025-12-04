@@ -826,6 +826,17 @@ frontend/
 - [x] Add search bar in top navigation
 - [x] Make responsive for mobile
 
+**BUGFIX UPDATE (2025-12-04):**
+- ✅ **FIXED:** Delete document functionality now working properly
+  - Connected `onDeleteDocument` handler to `useDeleteDocument()` mutation hook
+  - Added proper async handler `handleDeleteDocument()` with refetch after deletion
+  - Toast notifications now show on successful/failed deletion (from mutation hook)
+- ✅ **IMPROVEMENT:** Removed unnecessary checkboxes from dashboard document list
+  - Added `hideCheckboxes` prop to `DocumentList` component (default: false)
+  - Dashboard now passes `hideCheckboxes={true}` to hide selection UI
+  - Checkboxes remain visible in `/documents` page for batch operations
+  - Cleaner, simpler dashboard UX focused on quick document access
+
 **IMPLEMENTATION SUMMARY - 2025-11-29**
 - ✅ **Used frontend-design skill** for production-grade UI
 - ✅ **"Data Observatory"** aesthetic - Industrial-futuristic control room
@@ -2237,6 +2248,9 @@ is_refresh = token_data.get("refresh", False)  # ✅ CORRECT - defaults to False
 
 **PRD Reference:** Section 8.3 (Chat Interface)
 
+**BACKEND INTEGRATION COMPLETED - 2025-12-04:**
+ChatPage now fully integrated with real backend APIs for conversations, collections, and streaming chat.
+
 **REDESIGN COMPLETED - 2025-12-01:**
 ChatPage redesigned to match dashboard design system with purple/indigo theme.
 
@@ -2274,13 +2288,77 @@ ChatPage redesigned to match dashboard design system with purple/indigo theme.
 ### Conversation Sidebar
 **File:** `frontend/src/components/chat/ConversationSidebar.tsx`
 
-- [x] Fetch conversations (GET /api/v1/conversations) **READY:** Sidebar UI ready, needs API connection
-- [x] Display conversation list **UPDATE:** Sidebar with conversation items implemented
-- [x] Show last message preview **READY:** UI pattern ready for API data
-- [x] Add "New Conversation" button **UPDATE:** Implemented in ChatPage
-- [x] Add active conversation highlight **READY:** UI pattern ready
-- [x] Add delete conversation button **READY:** UI pattern ready
-- [x] Add conversation date grouping (Today, Yesterday, Last 7 days) **DEFERRED:** Will add with API integration
+- [x] Fetch conversations (GET /api/v1/conversations) ✅ **INTEGRATED (2025-12-04):** Using useConversations() hook
+- [x] Display conversation list ✅ **INTEGRATED:** Real conversations from backend with loading states
+- [x] Show last message preview ✅ **INTEGRATED:** Shows last_message from API response
+- [x] Add "New Conversation" button ✅ **INTEGRATED:** Clears URL params and starts new chat
+- [x] Add active conversation highlight ✅ **INTEGRATED:** Purple highlight for active conversation
+- [x] Add delete conversation button ✅ **INTEGRATED:** Trash icon with confirmation dialog
+- [ ] Add conversation date grouping (Today, Yesterday, Last 7 days) **DEFERRED:** Post-MVP enhancement
+
+**BACKEND INTEGRATION DETAILS (2025-12-04):**
+
+**New Files Created:**
+- ✅ `hooks/useConversations.ts` - React Query hooks for conversations (useConversations, useConversation, useDeleteConversation)
+- ✅ `hooks/useCollections.ts` - React Query hooks for collections (useCollections, useCollection, useCreateCollection, useUpdateCollection, useDeleteCollection)
+
+**API Functions Added (`lib/api.ts`):**
+- ✅ `getConversations(params)` - GET /conversations with pagination
+- ✅ `getConversation(id)` - GET /conversations/:id with full message history
+- ✅ `deleteConversation(id)` - DELETE /conversations/:id
+- ✅ `getCollections()` - GET /collections
+- ✅ `getCollection(id)` - GET /collections/:id
+- ✅ `createCollection(data)` - POST /collections
+- ✅ `updateCollection(id, data)` - PUT /collections/:id
+- ✅ `deleteCollection(id)` - DELETE /collections/:id
+
+**Types Added (`types/api.ts`):**
+- ✅ `ChatMessage` - Message structure with role, content, timestamp, sources
+- ✅ `SourceCitation` - Source citation with document details and relevance score
+- ✅ `ConversationListItem` - Conversation summary for list view
+- ✅ `Conversation` - Full conversation with messages array
+- ✅ `Collection` - Collection structure with metadata
+- ✅ `CreateCollectionRequest`, `UpdateCollectionRequest` - Request types
+
+**ChatPage Integration:**
+- ✅ **Conversations List:** Fetches real conversations from backend with pagination (limit: 50)
+- ✅ **URL-based Routing:** Conversation ID in URL query param `?conversation=<id>`
+- ✅ **Message Loading:** Loads conversation messages when conversation selected
+- ✅ **New Chat:** Clears URL params and messages state
+- ✅ **Delete Conversation:** Confirmation dialog → API call → toast notification → auto-refresh
+- ✅ **Loading States:** Spinners for conversations loading and conversation loading
+- ✅ **Empty States:** "No conversations yet" message with friendly prompt
+- ✅ **Error Handling:** Toast notifications for API errors
+- ✅ **Collection Filter:** Fetches real collections from backend
+- ✅ **Streaming Chat:** Already implemented via `useChatStream()` hook
+- ✅ **Source Citations:** Renders sources from API response
+
+**BUG FIX (2025-12-04):**
+- ✅ **Fixed 403 Forbidden error in chat streaming** - `useChatStream.ts` was using `const { token }` instead of `const { accessToken }` from `useAuthStore()`, causing undefined token to be sent in Authorization header
+- ✅ **Updated CORS configuration** - Changed `expose_headers=["*"]` to explicit list `["Content-Type", "Cache-Control", "X-Accel-Buffering"]` for better security
+- ✅ **Fixed file:** `frontend/src/hooks/useChatStream.ts:44,75,182` - Changed all references from `token` to `accessToken`
+- ✅ **Fixed source citations showing "NaN% match" and missing filename** - Backend schema was inconsistent with frontend expectations
+  - **Backend changes:**
+    - Updated `SourceCitation` schema to include `filename`, `chunk_index`, and renamed `score` → `relevance_score`
+    - Updated `format_context_with_metadata()` to extract `filename` and `chunk_index` from chunks
+    - Updated `chat_service.py` to use new field names when creating SourceCitation objects
+  - **Frontend changes:**
+    - Updated `DisplayMessage` interface to use `filename` instead of `document_name` in sources
+    - Fixed source mapping in `ChatPage.tsx` to correctly map backend fields to display format
+    - Updated source display to show `source.filename` instead of `source.document_name`
+  - **Files modified:**
+    - `backend/app/schemas/chat.py:26-34` - Added `filename`, `chunk_index`, renamed `score` to `relevance_score`
+    - `backend/app/prompts/chat_prompt.py:110-127` - Extract `filename` and `chunk_index` from chunks
+    - `backend/app/services/chat_service.py:135-145` - Use new field names in SourceCitation
+    - `frontend/src/pages/ChatPage.tsx:46-54,99-103,230-234,623-655` - Update interfaces and display
+- ✅ **Fixed AI responding "I don't have enough information" to greetings and general questions** - System prompt was too restrictive
+  - Updated `SYSTEM_PROMPT` to differentiate between:
+    1. Greetings/general conversation (respond naturally)
+    2. System capability questions (explain features)
+    3. Document-specific questions (use provided context only)
+  - Updated `format_user_prompt()` with clearer instructions for different question types
+  - Added **Ragify branding** to system prompt - AI now introduces itself as "Ragify's AI assistant" and mentions RAG technology
+  - **File modified:** `backend/app/prompts/chat_prompt.py:7-32,63-76`
 
 ### Chat Window
 **File:** `frontend/src/pages/ChatPage.tsx` **UPDATE (2025-12-01):** Implemented as single-file component

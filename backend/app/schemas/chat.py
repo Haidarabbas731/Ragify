@@ -28,8 +28,10 @@ class SourceCitation(BaseModel):
 
     document_id: str
     document_name: str
+    filename: str
+    chunk_index: int
     chunk_text: str
-    score: float
+    relevance_score: float
 
 
 class ChatResponse(BaseModel):

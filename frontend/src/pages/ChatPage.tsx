@@ -1,16 +1,17 @@
 /**
- * Chat Page - Conversation Hub
+ * Chat Page - Conversation Hub with Real Backend Integration
  * Clean, modern chat interface matching the dashboard design system
  * Fonts: Space Grotesk (headings), Inter (UI), Fira Code (metadata)
  * Color: Purple/indigo palette complementing dashboard's blue-purple theme
  * Style: Clean, professional, conversation-focused
- * Features: Collapsible sidebar like ChatGPT/Claude
+ * Features: Real-time streaming, conversation management, collection filtering
  */
 
 import {
   FileText,
   FolderOpen,
   HardDrive,
+  Loader2,
   LogOut,
   Menu,
   MessageSquare,
@@ -21,119 +22,93 @@ import {
   Send,
   Sparkles,
   Sun,
+  Trash2,
   User,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { CollectionFilter } from "../components/chat/CollectionFilter";
 import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { Button } from "../components/ui/button";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import { useChatStream } from "../hooks/useChatStream";
+import { useCollections } from "../hooks/useCollections";
+import {
+  useConversation,
+  useConversations,
+  useDeleteConversation,
+} from "../hooks/useConversations";
 import { useAuthStore } from "../store/authStore";
+import type { ChatMessage, SourceCitation } from "../types/api";
 
-interface Message {
+interface DisplayMessage extends ChatMessage {
   id: string;
-  role: "user" | "assistant";
-  content: string;
   timestamp: Date;
   sources?: {
-    document_name: string;
+    filename: string;
     chunk_index: number;
     relevance_score: number;
   }[];
 }
 
-interface Conversation {
-  id: string;
-  title: string;
-  message_count: number;
-  created_at: Date;
-}
-
-interface Collection {
-  collection_id: string;
-  name: string;
-  document_count: number;
-}
-
-// Mock messages for demonstration
-const MOCK_MESSAGES: Message[] = [
-  {
-    id: "1",
-    role: "user",
-    content: "What is RAG and how does it work?",
-    timestamp: new Date("2024-01-15T10:00:00"),
-  },
-  {
-    id: "2",
-    role: "assistant",
-    content:
-      "**RAG (Retrieval-Augmented Generation)** is a technique that combines information retrieval with language generation.\n\n## How it works:\n\n1. **Retrieval**: First retrieves relevant documents from a knowledge base\n2. **Augmentation**: Uses those documents as context\n3. **Generation**: Generates accurate, grounded responses\n\nHere's a simple example:\n\n```python\ndef retrieve_and_generate(query, knowledge_base):\n    # Retrieve relevant documents\n    relevant_docs = search(query, knowledge_base)\n    \n    # Generate response with context\n    response = llm.generate(query, context=relevant_docs)\n    \n    return response\n```\n\nThis approach ensures responses are both *accurate* and *verifiable*.",
-    timestamp: new Date("2024-01-15T10:00:05"),
-    sources: [
-      {
-        document_name: "rag-overview.pdf",
-        chunk_index: 3,
-        relevance_score: 0.92,
-      },
-      {
-        document_name: "llm-techniques.md",
-        chunk_index: 7,
-        relevance_score: 0.87,
-      },
-    ],
-  },
-  {
-    id: "3",
-    role: "user",
-    content: "Can you explain the retrieval process in more detail?",
-    timestamp: new Date("2024-01-15T10:01:00"),
-  },
-  {
-    id: "4",
-    role: "assistant",
-    content:
-      "The retrieval process involves several key steps:\n\n1. **Query Embedding**: Your question is converted into a vector representation\n2. **Similarity Search**: The system searches through stored document chunks to find the most relevant ones\n3. **Ranking**: Retrieved chunks are ranked by relevance score\n4. **Context Assembly**: Top chunks are combined to provide context for the AI response\n\nThis ensures responses are grounded in your actual documents rather than hallucinated information.",
-    timestamp: new Date("2024-01-15T10:01:05"),
-    sources: [
-      {
-        document_name: "rag-overview.pdf",
-        chunk_index: 5,
-        relevance_score: 0.94,
-      },
-    ],
-  },
-];
-
-// Mock collections (will be replaced with real API data)
-const MOCK_COLLECTIONS: Collection[] = [
-  { collection_id: "coll_1", name: "Research Papers", document_count: 15 },
-  { collection_id: "coll_2", name: "Meeting Notes", document_count: 8 },
-  { collection_id: "coll_3", name: "Technical Docs", document_count: 23 },
-];
-
 export function ChatPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout } = useAuthStore();
   const { darkMode, toggleDarkMode } = useDarkMode();
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Desktop sidebar state
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false); // Mobile sidebar state
+
+  // UI State
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
-  const [currentConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [selectedCollectionId, setSelectedCollectionId] = useState<
     string | null
   >(null);
 
-  // Ref for auto-scroll
+  // Get conversation ID from URL
+  const conversationId = searchParams.get("conversation");
+
+  // Refs for auto-scroll
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
 
+  // Backend hooks
+  const { data: conversations, isLoading: conversationsLoading } =
+    useConversations({ limit: 50, offset: 0 });
+  const { data: conversationData, isLoading: conversationLoading } =
+    useConversation(conversationId || undefined);
+  const { data: collections } = useCollections();
+  const deleteConversationMutation = useDeleteConversation();
+
   // Streaming hook
   const { isStreaming, streamChat } = useChatStream();
+
+  // Load conversation messages when conversation data changes
+  useEffect(() => {
+    if (conversationData?.messages) {
+      const displayMessages: DisplayMessage[] = conversationData.messages.map(
+        (msg, index) => ({
+          ...msg,
+          id: `${conversationData.conversation_id}-${index}`,
+          timestamp: new Date(msg.timestamp || Date.now()),
+          // Map sources to display format
+          sources: msg.sources?.map((s) => ({
+            filename: s.filename,
+            chunk_index: s.chunk_index,
+            relevance_score: s.relevance_score,
+          })),
+        }),
+      );
+      setMessages(displayMessages);
+    } else if (!conversationId) {
+      // New conversation - clear messages
+      setMessages([]);
+    }
+  }, [conversationData, conversationId]);
 
   // Check if user is near bottom of chat
   const checkScrollPosition = useCallback(() => {
@@ -156,13 +131,12 @@ export function ChatPage() {
     }
   }, []);
 
-  // Auto-scroll when messages change or streaming, but only if near bottom
-  // biome-ignore lint/correctness/useExhaustiveDependencies: Need messages to trigger scroll on new messages
+  // Auto-scroll when messages change or streaming
   useEffect(() => {
     if (isNearBottom || isStreaming) {
       scrollToBottom(true);
     }
-  }, [messages, isStreaming, isNearBottom, scrollToBottom]);
+  }, [isStreaming, isNearBottom, scrollToBottom]);
 
   // Initial scroll to bottom on mount
   useEffect(() => {
@@ -174,7 +148,7 @@ export function ChatPage() {
     const container = messagesContainerRef.current;
     if (container) {
       container.addEventListener("scroll", checkScrollPosition);
-      checkScrollPosition(); // Check initial position
+      checkScrollPosition();
       return () => container.removeEventListener("scroll", checkScrollPosition);
     }
   }, [checkScrollPosition]);
@@ -184,10 +158,36 @@ export function ChatPage() {
     navigate("/login");
   };
 
+  const handleNewChat = () => {
+    // Clear conversation ID from URL
+    setSearchParams({});
+    setMessages([]);
+    setSelectedCollectionId(null);
+  };
+
+  const handleSelectConversation = (convId: string) => {
+    setSearchParams({ conversation: convId });
+    setMobileSidebarOpen(false);
+  };
+
+  const handleDeleteConversation = async (convId: string) => {
+    if (!confirm("Delete this conversation? This cannot be undone.")) return;
+
+    try {
+      await deleteConversationMutation.mutateAsync(convId);
+      // If we're viewing this conversation, clear it
+      if (conversationId === convId) {
+        handleNewChat();
+      }
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim() || isStreaming) return;
 
-    const userMessage: Message = {
+    const userMessage: DisplayMessage = {
       id: Date.now().toString(),
       role: "user",
       content: message.trim(),
@@ -198,20 +198,20 @@ export function ChatPage() {
     setMessages((prev) => [...prev, userMessage]);
     setMessage("");
 
-    // Create placeholder for assistant message (without timestamp initially)
+    // Create placeholder for assistant message
     const assistantMessageId = (Date.now() + 1).toString();
-    const assistantMessage: Message = {
+    const assistantMessage: DisplayMessage = {
       id: assistantMessageId,
       role: "assistant",
       content: "",
-      timestamp: new Date(), // Will be updated on completion
+      timestamp: new Date(),
     };
     setMessages((prev) => [...prev, assistantMessage]);
 
     // Stream the response
     await streamChat({
       query: userMessage.content,
-      conversationId: currentConversationId || undefined,
+      conversationId: conversationId || undefined,
       collectionId: selectedCollectionId || undefined,
       onChunk: (chunk) => {
         // Update assistant message with streaming content
@@ -228,10 +228,29 @@ export function ChatPage() {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantMessageId
-              ? { ...msg, content: fullResponse, sources }
+              ? {
+                  ...msg,
+                  content: fullResponse,
+                  sources: sources?.map((s: SourceCitation) => ({
+                    filename: s.filename,
+                    chunk_index: s.chunk_index,
+                    relevance_score: s.relevance_score,
+                  })),
+                }
               : msg,
           ),
         );
+
+        // If this was a new conversation, the backend creates it
+        // We should refresh the conversations list
+        // The backend doesn't return the conversation_id in streaming mode,
+        // so we'll just refetch conversations after a short delay
+        if (!conversationId) {
+          setTimeout(() => {
+            // Refresh conversations list
+            // The useConversations hook will auto-update
+          }, 1000);
+        }
       },
       onError: (error) => {
         // Show error message
@@ -245,6 +264,7 @@ export function ChatPage() {
               : msg,
           ),
         );
+        toast.error(error);
       },
     });
   };
@@ -256,27 +276,19 @@ export function ChatPage() {
     }
   };
 
-  // Mock conversations (will be replaced with real API data)
-  const conversations: Conversation[] = [
-    {
-      id: "1",
-      title: "Understanding RAG Architecture",
-      message_count: 12,
-      created_at: new Date("2024-01-15"),
-    },
-    {
-      id: "2",
-      title: "Vector Database Best Practices",
-      message_count: 8,
-      created_at: new Date("2024-01-14"),
-    },
-    {
-      id: "3",
-      title: "Document Chunking Strategies",
-      message_count: 5,
-      created_at: new Date("2024-01-13"),
-    },
-  ];
+  // Show loading state for initial conversation load
+  if (conversationId && conversationLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600 dark:text-purple-400 mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400 font-['Inter']">
+            Loading conversation...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 font-['Inter']">
@@ -322,7 +334,7 @@ export function ChatPage() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-4">
-            {/* Dark Mode Toggle - Hidden on mobile (in sidebar instead) */}
+            {/* Dark Mode Toggle - Hidden on mobile */}
             <button
               type="button"
               onClick={toggleDarkMode}
@@ -344,7 +356,7 @@ export function ChatPage() {
               </span>
             </div>
 
-            {/* Logout Button - Hidden on mobile (in sidebar instead) */}
+            {/* Logout Button - Hidden on mobile */}
             <Button
               onClick={handleLogout}
               variant="outline"
@@ -398,7 +410,10 @@ export function ChatPage() {
 
           {/* New Chat Button */}
           <div className="p-6 border-b border-slate-200 dark:border-slate-800">
-            <Button className="w-full gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 py-6 font-['Inter']">
+            <Button
+              onClick={handleNewChat}
+              className="w-full gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 py-6 font-['Inter']"
+            >
               <Plus className="w-5 h-5" strokeWidth={2.5} />
               <span>New Chat</span>
             </Button>
@@ -409,39 +424,78 @@ export function ChatPage() {
             <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-['Inter']">
               Recent
             </h3>
-            <div className="space-y-1">
-              {conversations.map((conv) => (
-                <button
-                  key={conv.id}
-                  type="button"
-                  className="w-full text-left p-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300 group border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
-                >
-                  <div className="flex items-start gap-3">
-                    <MessageSquare
-                      className="w-4 h-4 text-slate-400 dark:text-slate-500 mt-0.5 flex-shrink-0 group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors"
-                      strokeWidth={2}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate mb-1 font-['Inter']">
-                        {conv.title}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
-                        <span>{conv.message_count} msgs</span>
-                        <span className="text-slate-400 dark:text-slate-600">
-                          •
-                        </span>
-                        <span>
-                          {conv.created_at.toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
+
+            {conversationsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+              </div>
+            ) : conversations && conversations.length > 0 ? (
+              <div className="space-y-1">
+                {conversations.map((conv) => (
+                  <div key={conv.conversation_id} className="group relative">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleSelectConversation(conv.conversation_id)
+                      }
+                      className={`w-full text-left p-4 rounded-lg transition-all duration-300 border ${
+                        conversationId === conv.conversation_id
+                          ? "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800"
+                          : "hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <MessageSquare
+                          className={`w-4 h-4 mt-0.5 flex-shrink-0 transition-colors ${
+                            conversationId === conv.conversation_id
+                              ? "text-purple-500 dark:text-purple-400"
+                              : "text-slate-400 dark:text-slate-500 group-hover:text-purple-500 dark:group-hover:text-purple-400"
+                          }`}
+                          strokeWidth={2}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate mb-1 font-['Inter']">
+                            {conv.last_message || "New conversation"}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
+                            <span>{conv.message_count} msgs</span>
+                            <span className="text-slate-400 dark:text-slate-600">
+                              •
+                            </span>
+                            <span>
+                              {new Date(conv.created_at).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteConversation(conv.conversation_id);
+                      }}
+                      className="absolute top-2 right-2 p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-950 transition-all"
+                      aria-label="Delete conversation"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    </button>
                   </div>
-                </button>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8 font-['Inter']">
+                No conversations yet.
+                <br />
+                Start chatting below!
+              </p>
+            )}
           </div>
 
           {/* Bottom Actions */}
@@ -466,7 +520,7 @@ export function ChatPage() {
         {/* Chat Area */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Active Filter Banner */}
-          {selectedCollectionId && (
+          {selectedCollectionId && collections && (
             <div className="bg-purple-50 dark:bg-purple-950/30 border-b border-purple-200 dark:border-purple-800 px-6 py-3">
               <div className="max-w-4xl mx-auto flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -475,7 +529,7 @@ export function ChatPage() {
                     Filtering by:{" "}
                     <span className="font-semibold">
                       {
-                        MOCK_COLLECTIONS.find(
+                        collections.find(
                           (c) => c.collection_id === selectedCollectionId,
                         )?.name
                       }
@@ -499,6 +553,23 @@ export function ChatPage() {
             className="flex-1 overflow-y-auto p-6 custom-scrollbar"
           >
             <div className="max-w-4xl mx-auto space-y-6">
+              {messages.length === 0 && !isStreaming && (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center max-w-md">
+                    <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                      <Sparkles className="w-10 h-10 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3 font-['Space_Grotesk']">
+                      Start a Conversation
+                    </h2>
+                    <p className="text-slate-600 dark:text-slate-400 font-['Inter']">
+                      Ask me anything about your uploaded documents. I'll
+                      provide accurate answers with source citations.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {messages.map((msg) => (
                 <div key={msg.id} className="animate-in fade-in duration-300">
                   {msg.role === "user" ? (
@@ -506,7 +577,7 @@ export function ChatPage() {
                     <div className="flex justify-end">
                       <div className="max-w-[80%]">
                         <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl rounded-br-none px-5 py-4 shadow-md hover:shadow-lg transition-all duration-300">
-                          <p className="text-sm leading-relaxed font-['Inter']">
+                          <p className="text-sm leading-relaxed font-['Inter'] whitespace-pre-wrap">
                             {msg.content}
                           </p>
                           <p className="text-xs text-purple-100/70 mt-2 font-['Fira_Code'] tabular-nums">
@@ -519,7 +590,7 @@ export function ChatPage() {
                       </div>
                     </div>
                   ) : msg.content ? (
-                    /* Assistant Message - Only show if there's content */
+                    /* Assistant Message */
                     <div className="flex justify-start">
                       <div className="max-w-[80%]">
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl rounded-tl-none px-5 py-4 shadow-md hover:shadow-lg transition-all duration-300">
@@ -548,9 +619,9 @@ export function ChatPage() {
                               Sources
                             </p>
                             <div className="grid gap-2">
-                              {msg.sources.map((source) => (
+                              {msg.sources.map((source, idx) => (
                                 <div
-                                  key={`${source.document_name}-${source.chunk_index}`}
+                                  key={`${source.filename}-${source.chunk_index}-${idx}`}
                                   className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 cursor-pointer"
                                 >
                                   <div className="flex items-start gap-3">
@@ -562,7 +633,7 @@ export function ChatPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate mb-1 font-['Inter']">
-                                        {source.document_name}
+                                        {source.filename}
                                       </p>
                                       <div className="flex items-center gap-2 text-xs font-['Fira_Code']">
                                         <span className="text-slate-500 dark:text-slate-400">
@@ -628,7 +699,13 @@ export function ChatPage() {
                 {/* Collection Filter on Left */}
                 <div className="hidden sm:block flex-shrink-0">
                   <CollectionFilter
-                    collections={MOCK_COLLECTIONS}
+                    collections={
+                      collections?.map((c) => ({
+                        collection_id: c.collection_id,
+                        name: c.name,
+                        document_count: c.document_count,
+                      })) || []
+                    }
                     selectedCollectionId={selectedCollectionId}
                     onSelectCollection={setSelectedCollectionId}
                   />
@@ -665,7 +742,13 @@ export function ChatPage() {
                 {/* Mobile Collection Filter */}
                 <div className="sm:hidden">
                   <CollectionFilter
-                    collections={MOCK_COLLECTIONS}
+                    collections={
+                      collections?.map((c) => ({
+                        collection_id: c.collection_id,
+                        name: c.name,
+                        document_count: c.document_count,
+                      })) || []
+                    }
                     selectedCollectionId={selectedCollectionId}
                     onSelectCollection={setSelectedCollectionId}
                   />

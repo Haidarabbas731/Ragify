@@ -41,7 +41,7 @@ export function useChatStream() {
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
-  const { token } = useAuthStore();
+  const { accessToken } = useAuthStore();
 
   /**
    * Start streaming a chat query
@@ -72,7 +72,7 @@ export function useChatStream() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             query,
@@ -179,7 +179,7 @@ export function useChatStream() {
         onError?.(errorMessage);
       }
     },
-    [token],
+    [accessToken],
   );
 
   /**

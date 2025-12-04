@@ -136,8 +136,10 @@ async def execute_rag_query(
                 SourceCitation(
                     document_id=src["document_id"],
                     document_name=src["document_name"],
+                    filename=src["filename"],
+                    chunk_index=src["chunk_index"],
                     chunk_text=src["chunk_text"],
-                    score=src["score"],
+                    relevance_score=src["relevance_score"],
                 )
                 for src in sources
             ],

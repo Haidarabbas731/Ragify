@@ -26,7 +26,7 @@ import { UploadZone } from "../components/documents/UploadZone";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { useDarkMode } from "../contexts/DarkModeContext";
-import { useDocuments } from "../hooks/useDocuments";
+import { useDeleteDocument, useDocuments } from "../hooks/useDocuments";
 import { useUserStats } from "../hooks/useUserStats";
 import { useAuthStore } from "../store/authStore";
 
@@ -48,12 +48,28 @@ export function DashboardPage() {
   const { data: statsData, isLoading, error } = useUserStats();
 
   // Fetch recent documents (5 most recent)
-  const { data: recentDocumentsData } = useDocuments({
-    page: 1,
-    limit: 5,
-    sort_by: "uploaded_at",
-    order: "desc",
-  });
+  const { data: recentDocumentsData, refetch: refetchDocuments } = useDocuments(
+    {
+      page: 1,
+      limit: 5,
+      sort_by: "uploaded_at",
+      order: "desc",
+    },
+  );
+
+  // Delete document mutation
+  const deleteDocumentMutation = useDeleteDocument();
+
+  const handleDeleteDocument = async (documentId: string) => {
+    try {
+      await deleteDocumentMutation.mutateAsync(documentId);
+      // Refetch documents and stats after deletion
+      refetchDocuments();
+    } catch (error) {
+      // Error is handled by the mutation hook
+      console.error("Failed to delete document:", error);
+    }
+  };
 
   // Show loading state
   if (isLoading) {
@@ -502,8 +518,9 @@ export function DashboardPage() {
             <DocumentList
               documents={recentDocumentsData?.documents || []}
               onDocumentClick={(id) => navigate(`/documents/${id}`)}
-              onDeleteDocument={(id) => console.log("Delete document:", id)}
+              onDeleteDocument={handleDeleteDocument}
               onRetryDocument={(id) => console.log("Retry document:", id)}
+              hideCheckboxes={true}
             />
           </div>
         </main>

@@ -352,3 +352,96 @@ export const retryAllFailedDocuments = async () => {
   const { data } = await api.post("/documents/retry-failed");
   return data;
 };
+
+// ============================================================================
+// Conversation API Methods
+// ============================================================================
+
+/**
+ * Get list of user conversations
+ * @param params - Pagination parameters (limit, offset)
+ * @returns List of conversations
+ */
+export const getConversations = async (params?: {
+  limit?: number;
+  offset?: number;
+}) => {
+  const { data } = await api.get("/conversations", { params });
+  return data;
+};
+
+/**
+ * Get single conversation with full message history
+ * @param conversationId - Conversation ID
+ * @returns Conversation with messages
+ */
+export const getConversation = async (conversationId: string) => {
+  const { data } = await api.get(`/conversations/${conversationId}`);
+  return data;
+};
+
+/**
+ * Delete a conversation
+ * @param conversationId - Conversation ID
+ */
+export const deleteConversation = async (conversationId: string) => {
+  await api.delete(`/conversations/${conversationId}`);
+};
+
+// ============================================================================
+// Collection API Methods
+// ============================================================================
+
+/**
+ * Get list of user collections
+ * @returns List of collections
+ */
+export const getCollections = async () => {
+  const { data } = await api.get("/collections");
+  return data;
+};
+
+/**
+ * Get single collection with details
+ * @param collectionId - Collection ID
+ * @returns Collection details
+ */
+export const getCollection = async (collectionId: string) => {
+  const { data } = await api.get(`/collections/${collectionId}`);
+  return data;
+};
+
+/**
+ * Create a new collection
+ * @param collectionData - Collection name and description
+ * @returns Created collection
+ */
+export const createCollection = async (collectionData: {
+  name: string;
+  description?: string;
+}) => {
+  const { data } = await api.post("/collections", collectionData);
+  return data;
+};
+
+/**
+ * Update collection metadata
+ * @param collectionId - Collection ID
+ * @param updates - Name and/or description updates
+ * @returns Updated collection
+ */
+export const updateCollection = async (
+  collectionId: string,
+  updates: { name?: string; description?: string },
+) => {
+  const { data } = await api.put(`/collections/${collectionId}`, updates);
+  return data;
+};
+
+/**
+ * Delete a collection
+ * @param collectionId - Collection ID
+ */
+export const deleteCollection = async (collectionId: string) => {
+  await api.delete(`/collections/${collectionId}`);
+};
