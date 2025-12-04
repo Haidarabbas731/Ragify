@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
@@ -8,6 +9,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.config import settings
 from app.models.document import Document
 from app.prompts.chat_prompt import (
+    DIRECT_RESPONSE_PROMPT,
     SYSTEM_PROMPT,
     format_context_with_metadata,
     format_user_prompt,
@@ -24,6 +26,165 @@ from app.services.llm_service import get_llm_service
 from app.services.milvus_service import get_milvus_service
 
 logger = logging.getLogger(__name__)
+
+
+async def classify_query_intent(query: str) -> tuple[str, str]:
+    """
+    Classify query intent using hybrid approach (regex + LLM fallback).
+
+    Args:
+        query: User's question
+
+    Returns:
+        tuple[str, str]: (intent_type, confidence)
+        - intent_type: 'direct' (skip RAG) or 'rag' (use RAG)
+        - confidence: 'high' (regex match) or 'medium' (LLM classification) or 'low' (fallback)
+    """
+    query_lower = query.lower().strip()
+
+    # STEP 1: Fast Regex Patterns (handles 80% of cases in <1ms)
+    # =========================================================
+
+    # Pattern 1: Greetings (very high confidence)
+    greeting_patterns = [
+        r"^(hi|hello|hey|greetings|good morning|good afternoon|good evening)[\s!?.]*$",
+        r"^(how are you|how\'s it going|what\'s up|sup)[\s!?.]*$",
+        r"^(thanks|thank you|thx|thank you very much)[\s!?.]*$",
+        r"^(bye|goodbye|see you|later|farewell)[\s!?.]*$",
+    ]
+    for pattern in greeting_patterns:
+        if re.match(pattern, query_lower):
+            logger.info(f"Intent: GREETING (regex match) - '{query[:50]}...'")
+            return ("direct", "high")
+
+    # Pattern 2: System/Capability Questions (high confidence)
+    system_patterns = [
+        r"^(what can you do|what are your capabilities|how do you work)",
+        r"^(who are you|what are you|tell me about yourself)",
+        r"^(help|how to use|usage|instructions)",
+        r"^(what (is|are) (this|your) (system|app|tool|ragify))",
+    ]
+    for pattern in system_patterns:
+        if re.search(pattern, query_lower):
+            logger.info(f"Intent: SYSTEM (regex match) - '{query[:50]}...'")
+            return ("direct", "high")
+
+    # Pattern 3: Document Keywords (high confidence for RAG)
+    document_keywords = [
+        "document",
+        "file",
+        "pdf",
+        "report",
+        "policy",
+        "contract",
+        "according to",
+        "in the document",
+        "based on",
+        "what does",
+        "explain",
+        "summarize",
+        "tell me about",
+        "find",
+        "search",
+        "show me",
+        "where",
+        "when",
+        "how many",
+        "list",
+        "describe",
+    ]
+    if any(keyword in query_lower for keyword in document_keywords):
+        logger.info(f"Intent: DOCUMENT (keyword match) - '{query[:50]}...'")
+        return ("rag", "high")
+
+    # STEP 2: LLM Fallback for Ambiguous Cases (handles remaining 20%)
+    # ================================================================
+
+    logger.info(f"Intent: UNCERTAIN - Using LLM classification for '{query[:50]}...'")
+
+    try:
+        # Use fast Gemini Flash model for quick classification
+        classification_prompt = f"""Classify this user query into ONE category:
+
+Query: "{query}"
+
+Categories:
+1. GREETING - Simple greetings, thank you, small talk
+2. SYSTEM - Questions about the system itself, capabilities, how to use
+3. DOCUMENT - Questions that require searching through documents or knowledge base
+
+Respond with ONLY ONE WORD: GREETING, SYSTEM, or DOCUMENT
+
+Classification:"""
+
+        # Fast LLM call (Gemini Flash 1.5 - ~200ms)
+        llm_service = await get_llm_service()
+        classification = await llm_service.generate_response(
+            system_prompt="You are a query classifier. Respond with only one word.",
+            user_prompt=classification_prompt,
+            max_tokens=10,  # type:ignore Only need 1 word
+            temperature=0.0,  # type:ignore Deterministic type:ignore
+            timeout=5,
+        )
+
+        classification = classification.strip().upper()
+
+        if classification in ["GREETING", "SYSTEM"]:
+            logger.info(f"Intent: {classification} (LLM fallback) - '{query[:50]}...'")
+            return ("direct", "medium")
+        else:  # DOCUMENT or anything else defaults to RAG (safer)
+            logger.info(f"Intent: DOCUMENT (LLM fallback) - '{query[:50]}...'")
+            return ("rag", "medium")
+
+    except Exception as e:
+        # STEP 3: Error Fallback - Default to RAG (safer than direct)
+        logger.warning(f"LLM classification failed: {e}. Defaulting to RAG.")
+        return ("rag", "low")
+
+
+async def _generate_direct_response(
+    query: str,
+    user_id: str,
+    db: AsyncSession,
+    conversation_id: str,
+) -> str:
+    """
+    Generate direct response without RAG retrieval (for greetings/system questions).
+
+    Args:
+        query: User's question
+        user_id: User ID
+        db: Database session
+        conversation_id: Conversation ID
+
+    Returns:
+        str: Direct response text
+    """
+    logger.info(f"Generating direct response for query: {query[:50]}...")
+
+    # Get conversation history for context
+    conversation_history = await get_last_messages(
+        db, conversation_id, limit=settings.CONVERSATION_HISTORY_LIMIT
+    )
+
+    # Build simple prompt without document context
+    history_section = ""
+    if conversation_history:
+        history_section = "\n\nPrevious conversation:\n"
+        for msg in conversation_history:
+            role = "User" if msg["role"] == "user" else "Assistant"
+            history_section += f"{role}: {msg['content']}\n"
+
+    user_prompt = f"{history_section}\n\nUser: {query}\n\nAssistant:"
+
+    # Call LLM with direct response prompt
+    llm_service = await get_llm_service()
+    response_text = await llm_service.generate_response(
+        DIRECT_RESPONSE_PROMPT, user_prompt, timeout=10
+    )
+
+    logger.info(f"Generated direct response ({len(response_text)} chars)")
+    return response_text
 
 
 async def execute_rag_query(
@@ -75,7 +236,30 @@ async def execute_rag_query(
         # Step 1: Get or create conversation
         conversation = await get_or_create_conversation(db, user_id, conversation_id)
 
-        # Step 2: Generate query embedding
+        # Step 2: Classify query intent (SMART ROUTING)
+        intent, confidence = await classify_query_intent(query)
+        logger.info(f"Query intent: {intent} (confidence: {confidence})")
+
+        # Step 3: Direct response path (skip RAG for greetings/system questions)
+        if intent == "direct":
+            response_text = await _generate_direct_response(
+                query, user_id, db, conversation.conversation_id
+            )
+
+            # Save to conversation (no sources)
+            await _save_to_conversation(
+                db, conversation.conversation_id, query, response_text, []
+            )
+
+            return ChatResponse(
+                answer=response_text,
+                sources=[],
+                conversation_id=conversation.conversation_id,
+                timestamp=datetime.now(UTC),
+            )
+
+        # Step 4: Continue with RAG pipeline for document questions
+        # Generate query embedding
         embedding_service = await get_embedding_service()
         query_embedding = await embedding_service.embed_query(query)
         logger.info(f"Generated query embedding ({len(query_embedding)} dims)")
@@ -225,7 +409,7 @@ async def _generate_no_results_response(user_id: str, db: AsyncSession) -> str:
 
     # Check if user has any active (processed) documents
     result = await db.exec(
-        select(func.count(Document.document_id))
+        select(func.count(Document.document_id))  # type:ignore
         .where(Document.user_id == user_id)
         .where(Document.status == "active")
         .where(Document.deleted_at.is_(None))  # type: ignore
@@ -319,12 +503,37 @@ async def execute_rag_query_stream(
     logger.info(f"Starting streaming RAG query for user {user_id}: {query[:100]}...")
 
     try:
-        # Steps 1-2: Get/create conversation and generate embedding
+        # Step 1: Get/create conversation
         conversation = await get_or_create_conversation(db, user_id, conversation_id)
+
+        # Step 2: Classify query intent (SMART ROUTING)
+        intent, confidence = await classify_query_intent(query)
+        logger.info(f"Streaming query intent: {intent} (confidence: {confidence})")
+
+        # Step 3: Direct response path (skip RAG for greetings/system questions)
+        if intent == "direct":
+            response_text = await _generate_direct_response(
+                query, user_id, db, conversation.conversation_id
+            )
+
+            # Save to conversation (no sources)
+            await _save_to_conversation(
+                db, conversation.conversation_id, query, response_text, []
+            )
+
+            # Yield response and metadata
+            yield response_text
+            yield {
+                "conversation_id": conversation.conversation_id,
+                "sources": [],
+            }
+            return
+
+        # Steps 4-5: Continue with RAG pipeline - generate embedding
         embedding_service = await get_embedding_service()
         query_embedding = await embedding_service.embed_query(query)
 
-        # Steps 3-4: Search Milvus and enrich chunks
+        # Steps 6-7: Search Milvus and enrich chunks
         milvus_service = await get_milvus_service()
         chunks = await milvus_service.search_similar(
             user_id=user_id,
