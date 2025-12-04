@@ -42,6 +42,10 @@ class RateLimitMiddleware:
 
         request = Request(scope, receive)
 
+        # Skip rate limiting for SSE endpoint (has its own timeout/connection management)
+        if request.url.path.endswith("/status-stream"):
+            return await self.app(scope, receive, send)
+
         # Skip rate limiting in test environment to avoid event loop issues
         if os.getenv("TESTING") == "true":
             return await self.app(scope, receive, send)
@@ -113,10 +117,16 @@ class RateLimitMiddleware:
                 limit_type="ip_based",
                 message="Too many requests from this IP address",
                 retry_after=ttl,
-                details={"limit": 300, "remaining": 0, "reset_at": int(time.time()) + ttl},
+                details={
+                    "limit": 300,
+                    "remaining": 0,
+                    "reset_at": int(time.time()) + ttl,
+                },
             )
 
-    async def check_user_rate_limit(self, request: Request, user, redis: Redis | None = None):
+    async def check_user_rate_limit(
+        self, request: Request, user, redis: Redis | None = None
+    ):
         """Check user-based rate limit (100/min)."""
         redis = redis or self.redis
         if redis is None:
@@ -136,10 +146,16 @@ class RateLimitMiddleware:
                 limit_type="user_based",
                 message="You have exceeded the rate limit",
                 retry_after=ttl,
-                details={"limit": 100, "remaining": 0, "reset_at": int(time.time()) + ttl},
+                details={
+                    "limit": 100,
+                    "remaining": 0,
+                    "reset_at": int(time.time()) + ttl,
+                },
             )
 
-    async def check_cost_limit(self, request: Request, user, redis: Redis | None = None):
+    async def check_cost_limit(
+        self, request: Request, user, redis: Redis | None = None
+    ):
         """Check cost-based rate limit (1000 units/hour)."""
         redis = redis or self.redis
         if redis is None:

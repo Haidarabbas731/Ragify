@@ -74,7 +74,7 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
       // Invalidate documents list to refresh (will show new status)
       console.log("[SSE] Invalidating documents query");
       queryClient.invalidateQueries({ queryKey: ["documents"] });
-      
+
       // Invalidate user stats to update counts and storage
       console.log("[SSE] Invalidating userStats query");
       queryClient.invalidateQueries({ queryKey: ["userStats"] });
@@ -91,7 +91,8 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
           description: update.error_message || "Unknown error",
         });
         console.log("[SSE] Error toast triggered");
-      }      setLastUpdate(update);
+      }
+      setLastUpdate(update);
     },
     [queryClient],
   );
