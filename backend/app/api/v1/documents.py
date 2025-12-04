@@ -450,24 +450,13 @@ async def stream_document_status(
     Raises:
         HTTPException: 401 if not authenticated
     """
-    print("=" * 80)
-    print("[SSE ENDPOINT] Function called!")
-    print(f"[SSE ENDPOINT] URL: {request.url}")
-    print(f"[SSE ENDPOINT] Headers: {dict(request.headers)}")
-    print(f"[SSE ENDPOINT] Query params: {dict(request.query_params)}")
-    print("=" * 80)
-
     # Manual token extraction and validation
-    print("[DEBUG SSE] stream_document_status called!")
-
     # Try to get token from query params OR Authorization header
     token = request.query_params.get("token")
     if not token:
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
             token = auth_header.removeprefix("Bearer ")
-
-    print(f"[DEBUG SSE] Token extracted: {token[:50] if token else None}...")
 
     if not token:
         raise HTTPException(status_code=401, detail="No token provided")
@@ -477,14 +466,12 @@ async def stream_document_status(
     from app.services.redis_service import is_jti_blocklisted
 
     token_data = decode_token(token)
-    print(f"[DEBUG SSE] Token decoded: {token_data.keys()}")
 
     if not token_data:
         raise HTTPException(status_code=401, detail="Invalid token")
 
     # Check if this is a refresh token (should be access token)
     is_refresh = token_data.get("refresh", False)
-    print(f"[DEBUG SSE] Is refresh token: {is_refresh}")
 
     if is_refresh:
         raise HTTPException(status_code=401, detail="Invalid token type")
@@ -507,8 +494,6 @@ async def stream_document_status(
 
     if not current_user.is_active:
         raise HTTPException(status_code=403, detail="User account is disabled")
-
-    print(f"[DEBUG SSE] User authenticated: {current_user.user_id}")
 
     async def event_generator():
         redis = await get_redis()
