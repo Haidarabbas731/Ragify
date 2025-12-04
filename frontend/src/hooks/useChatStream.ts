@@ -13,7 +13,11 @@ interface ChatStreamOptions {
   collectionId?: string;
   topK?: number;
   onChunk?: (chunk: string) => void;
-  onComplete?: (fullResponse: string, sources: SourceCitation[]) => void;
+  onComplete?: (
+    fullResponse: string,
+    sources: SourceCitation[],
+    conversationId: string,
+  ) => void;
   onError?: (error: string) => void;
 }
 
@@ -101,6 +105,7 @@ export function useChatStream() {
         const decoder = new TextDecoder();
         let fullResponse = "";
         let sources: SourceCitation[] = [];
+        let conversationIdFromStream = "";
 
         while (true) {
           const { done, value } = await reader.read();
@@ -127,13 +132,20 @@ export function useChatStream() {
                 }
 
                 if (data.done) {
-                  // Stream complete
+                  // Stream complete - extract metadata
+                  if (data.conversation_id) {
+                    conversationIdFromStream = data.conversation_id;
+                  }
+                  if (data.sources) {
+                    sources = data.sources;
+                  }
+
                   setState({
                     isStreaming: false,
                     currentResponse: fullResponse,
                     error: null,
                   });
-                  onComplete?.(fullResponse, sources);
+                  onComplete?.(fullResponse, sources, conversationIdFromStream);
                   return;
                 }
 
@@ -145,11 +157,6 @@ export function useChatStream() {
                     currentResponse: fullResponse,
                   }));
                   onChunk?.(data.chunk);
-                }
-
-                // Store sources if provided
-                if (data.sources) {
-                  sources = data.sources;
                 }
               } catch (parseError) {
                 console.error("Failed to parse SSE data:", parseError);
