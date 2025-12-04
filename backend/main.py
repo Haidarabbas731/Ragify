@@ -96,6 +96,11 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=[
+        "Content-Type",
+        "Cache-Control",
+        "X-Accel-Buffering",
+    ],  # Required for SSE (Server-Sent Events) - only expose necessary headers
 )
 
 

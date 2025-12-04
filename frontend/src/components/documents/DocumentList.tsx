@@ -41,6 +41,7 @@ interface DocumentListProps {
   onRetryDocument?: (documentId: string) => void;
   selectedDocuments?: Set<string>;
   onSelectionChange?: (documentId: string, selected: boolean) => void;
+  hideCheckboxes?: boolean;
 }
 
 // Mock data for demonstration
@@ -115,6 +116,7 @@ export function DocumentList({
   onRetryDocument,
   selectedDocuments = new Set(),
   onSelectionChange,
+  hideCheckboxes = false,
 }: DocumentListProps) {
   // Use prop documents if provided, otherwise fall back to mock data
   const documents = propDocuments || MOCK_DOCUMENTS;
@@ -236,11 +238,17 @@ export function DocumentList({
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
         {/* Table Header - Hidden on mobile */}
         <div className="hidden md:block border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
-          <div className="grid grid-cols-13 gap-4 px-6 py-3">
-            <div className="col-span-1 flex items-center">
-              {/* Checkbox header - checkboxes always visible */}
-            </div>
-            <div className="col-span-5 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
+          <div
+            className={`grid gap-4 px-6 py-3 ${hideCheckboxes ? "grid-cols-12" : "grid-cols-13"}`}
+          >
+            {!hideCheckboxes && (
+              <div className="col-span-1 flex items-center">
+                {/* Checkbox header */}
+              </div>
+            )}
+            <div
+              className={`${hideCheckboxes ? "col-span-5" : "col-span-5"} text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']`}
+            >
               Document
             </div>
             <div className="col-span-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
@@ -267,7 +275,7 @@ export function DocumentList({
               <div
                 key={doc.document_id}
                 role="presentation"
-                className={`md:grid md:grid-cols-13 md:gap-4 px-4 md:px-6 py-3 md:py-4 transition-all duration-200 ${
+                className={`md:grid ${hideCheckboxes ? "md:grid-cols-12" : "md:grid-cols-13"} md:gap-4 px-4 md:px-6 py-3 md:py-4 transition-all duration-200 ${
                   hoveredDoc === doc.document_id
                     ? "bg-slate-50 dark:bg-slate-800/50"
                     : isSelected
@@ -281,26 +289,28 @@ export function DocumentList({
                 <div className="flex md:hidden flex-col gap-3">
                   {/* Mobile Header: Checkbox + File Icon + Filename */}
                   <div className="flex items-start gap-3">
-                    {/* Checkbox - Always visible */}
-                    {/* biome-ignore lint/a11y/useKeyWithClickEvents: Wrapper div for layout, interaction is on checkbox input */}
-                    {/* biome-ignore lint/a11y/noStaticElementInteractions: Wrapper div for layout, interaction is on checkbox input */}
-                    <div
-                      className="flex items-center pt-0.5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          onSelectionChange?.(
-                            doc.document_id,
-                            e.target.checked,
-                          );
-                        }}
-                        className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
-                      />
-                    </div>
+                    {/* Checkbox - Conditional */}
+                    {!hideCheckboxes && (
+                      // biome-ignore lint/a11y/useKeyWithClickEvents: Wrapper div for layout, interaction is on checkbox input
+                      // biome-ignore lint/a11y/noStaticElementInteractions: Wrapper div for layout, interaction is on checkbox input
+                      <div
+                        className="flex items-center pt-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            onSelectionChange?.(
+                              doc.document_id,
+                              e.target.checked,
+                            );
+                          }}
+                          className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
+                        />
+                      </div>
+                    )}
 
                     {/* Clickable document info */}
                     <button
@@ -410,18 +420,20 @@ export function DocumentList({
                 </div>
 
                 {/* DESKTOP LAYOUT */}
-                {/* Checkbox Column - Always visible */}
-                <div className="hidden md:flex col-span-1 items-center">
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      onSelectionChange?.(doc.document_id, e.target.checked);
-                    }}
-                    className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
-                  />
-                </div>
+                {/* Checkbox Column - Conditional */}
+                {!hideCheckboxes && (
+                  <div className="hidden md:flex col-span-1 items-center">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onSelectionChange?.(doc.document_id, e.target.checked);
+                      }}
+                      className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
+                    />
+                  </div>
+                )}
 
                 {/* Document Name & Type - Always clickable */}
                 <button
