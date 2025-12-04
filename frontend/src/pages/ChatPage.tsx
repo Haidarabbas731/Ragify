@@ -78,9 +78,10 @@ export function ChatPage() {
   // Get conversation ID from URL
   const conversationId = searchParams.get("conversation");
 
-  // Refs for auto-scroll
+  // Refs for auto-scroll and input
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
 
   // Backend hooks
@@ -144,6 +145,48 @@ export function ChatPage() {
       scrollToBottom(true);
     }
   }, [isStreaming, isNearBottom, scrollToBottom]);
+
+  // Auto-focus textarea when typing anywhere on page (ChatGPT-like behavior)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input/textarea already
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Ignore modifier keys, special keys, and shortcuts
+      if (
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey ||
+        e.key === "Escape" ||
+        e.key === "Tab" ||
+        e.key === "Enter" ||
+        e.key === "Shift" ||
+        e.key === "Control" ||
+        e.key === "Alt" ||
+        e.key === "Meta" ||
+        e.key.startsWith("Arrow") ||
+        e.key.startsWith("F") // F1-F12
+      ) {
+        return;
+      }
+
+      // Focus textarea for any printable character
+      if (e.key.length === 1 && textareaRef.current) {
+        textareaRef.current.focus();
+        // Let the character be typed naturally
+      }
+    };
+
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
 
   // Initial scroll to bottom on mount
   useEffect(() => {
@@ -733,6 +776,7 @@ export function ChatPage() {
                 {/* Text Input */}
                 <div className="flex-1 flex items-center">
                   <textarea
+                    ref={textareaRef}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
