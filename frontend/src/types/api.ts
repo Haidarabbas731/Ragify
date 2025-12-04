@@ -186,3 +186,86 @@ export interface RetryAllResponse {
     error: string;
   }>;
 }
+
+// ----------------------------------------------------------------------------
+// Conversation Types
+// ----------------------------------------------------------------------------
+
+/**
+ * Chat message in a conversation
+ */
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  timestamp?: string;
+  sources?: SourceCitation[];
+}
+
+/**
+ * Source citation for chat responses
+ */
+export interface SourceCitation {
+  document_id: string;
+  document_name: string;
+  filename: string;
+  chunk_index: number;
+  chunk_text: string;
+  relevance_score: number;
+}
+
+/**
+ * Conversation list item (summary)
+ */
+export interface ConversationListItem {
+  conversation_id: string;
+  user_id: string;
+  message_count: number;
+  created_at: string;
+  updated_at: string;
+  last_message?: string | null;
+}
+
+/**
+ * Full conversation with messages
+ */
+export interface Conversation {
+  conversation_id: string;
+  user_id: string;
+  messages: ChatMessage[];
+  message_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// ----------------------------------------------------------------------------
+// Collection Types
+// ----------------------------------------------------------------------------
+
+/**
+ * Collection (folder for organizing documents)
+ */
+export interface Collection {
+  collection_id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  document_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Create collection request
+ */
+export interface CreateCollectionRequest {
+  name: string;
+  description?: string;
+}
+
+/**
+ * Update collection request
+ */
+export interface UpdateCollectionRequest {
+  name?: string;
+  description?: string;
+}
