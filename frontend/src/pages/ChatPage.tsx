@@ -266,9 +266,10 @@ export function ChatPage() {
         // If this was a new conversation, update URL with conversation_id
         if (!conversationId && newConversationId) {
           setSearchParams({ conversation: newConversationId });
-          // Invalidate conversations cache to show new conversation in sidebar
-          queryClient.invalidateQueries({ queryKey: ["conversations"] });
         }
+
+        // Always invalidate conversations cache to update message counts in sidebar
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
       },
       onError: (error) => {
         // Show error message
