@@ -82,7 +82,7 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
       // Show toast notification
       console.log("[SSE] Showing toast for status:", update.status);
       if (update.status === "active") {
-        toast.success(`✅ ${update.filename} processed successfully`, {
+        toast.success(`${update.filename} processed successfully`, {
           description: `${update.chunks_count} chunks created`,
         });
         console.log("[SSE] Success toast triggered");
