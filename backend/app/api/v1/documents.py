@@ -8,12 +8,21 @@ import json
 from datetime import UTC, datetime, timedelta
 
 from arq import ArqRedis
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.responses import StreamingResponse
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.dependencies import get_current_user, get_current_user_sse, get_db
+from app.api.dependencies import get_current_user, get_db
 from app.core.config import settings
 from app.models.collection import Collection
 from app.models.document import Document, DocumentStatus
@@ -396,76 +405,26 @@ async def bulk_upload_documents(
     }
 
 
-@router.get("/{document_id}", response_model=DocumentResponse)
-async def get_document(
-    document_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    """
-    Get document by ID with chunks.
+@router.options("/status-stream")
+async def status_stream_options():
+    """Handle CORS preflight request for SSE endpoint."""
+    from fastapi.responses import Response
 
-    Args:
-        document_id: Document ID
-        current_user: Authenticated user
-        db: Database session
-
-    Returns:
-        Document record with chunks from Milvus
-
-    Raises:
-        HTTPException: 404 if document not found or not owned by user
-    """
-    result = await db.exec(
-        select(Document).where(
-            Document.document_id == document_id,
-            Document.user_id == current_user.user_id,
-        )
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": settings.FRONTEND_URL,
+            "Access-Control-Allow-Methods": "GET, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Allow-Credentials": "true",
+        },
     )
-    document = result.one_or_none()
-
-    if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
-        )
-
-    # Fetch chunks from Milvus if document is active and has chunks
-    chunks_data = None
-    if document.status == DocumentStatus.ACTIVE.value and document.chunks_count > 0:
-        try:
-            from app.services.milvus_service import get_milvus_service
-
-            milvus = await get_milvus_service()
-            raw_chunks = await milvus.get_document_chunks(
-                document.document_id, current_user.user_id
-            )
-
-            # Transform to match DocumentChunk schema
-            chunks_data = [
-                {
-                    "chunk_id": chunk["chunk_id"],
-                    "content": chunk["chunk_text"],
-                    "chunk_index": chunk["chunk_index"],
-                }
-                for chunk in raw_chunks
-            ]
-        except Exception as e:
-            # Log error but don't fail the request
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to fetch chunks for document {document_id}: {e}")
-
-    # Convert document to dict and add chunks
-    doc_dict = document.model_dump()
-    doc_dict["chunks"] = chunks_data
-
-    return doc_dict
 
 
 @router.get("/status-stream")
 async def stream_document_status(
-    current_user: User = Depends(get_current_user_sse),
+    request: Request,
+    db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """
     Stream real-time document status updates via Server-Sent Events (SSE).
@@ -482,7 +441,8 @@ async def stream_document_status(
         - Client should reconnect with exponential backoff
 
     Args:
-        current_user: Authenticated user
+        request: FastAPI request object
+        db: Database session
 
     Returns:
         StreamingResponse with text/event-stream media type
@@ -490,6 +450,65 @@ async def stream_document_status(
     Raises:
         HTTPException: 401 if not authenticated
     """
+    print("=" * 80)
+    print("[SSE ENDPOINT] Function called!")
+    print(f"[SSE ENDPOINT] URL: {request.url}")
+    print(f"[SSE ENDPOINT] Headers: {dict(request.headers)}")
+    print(f"[SSE ENDPOINT] Query params: {dict(request.query_params)}")
+    print("=" * 80)
+
+    # Manual token extraction and validation
+    print("[DEBUG SSE] stream_document_status called!")
+
+    # Try to get token from query params OR Authorization header
+    token = request.query_params.get("token")
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header.removeprefix("Bearer ")
+
+    print(f"[DEBUG SSE] Token extracted: {token[:50] if token else None}...")
+
+    if not token:
+        raise HTTPException(status_code=401, detail="No token provided")
+
+    # Decode and validate token
+    from app.core.security import decode_token
+    from app.services.redis_service import is_jti_blocklisted
+
+    token_data = decode_token(token)
+    print(f"[DEBUG SSE] Token decoded: {token_data.keys()}")
+
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Check if this is a refresh token (should be access token)
+    is_refresh = token_data.get("refresh", False)
+    print(f"[DEBUG SSE] Is refresh token: {is_refresh}")
+
+    if is_refresh:
+        raise HTTPException(status_code=401, detail="Invalid token type")
+
+    # Check if token is blocklisted
+    jti = token_data.get("jti")
+    if jti and await is_jti_blocklisted(jti):
+        raise HTTPException(status_code=401, detail="Token has been revoked")
+
+    # Get user from database
+    user_id = token_data.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    current_user = result.scalar_one_or_none()
+
+    if not current_user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    if not current_user.is_active:
+        raise HTTPException(status_code=403, detail="User account is disabled")
+
+    print(f"[DEBUG SSE] User authenticated: {current_user.user_id}")
 
     async def event_generator():
         redis = await get_redis()
@@ -549,87 +568,12 @@ async def stream_document_status(
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
             "Connection": "keep-alive",
+            "Access-Control-Allow-Origin": settings.FRONTEND_URL,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
     )
-
-
-@router.get("", response_model=DocumentsListResponse)
-async def list_documents(
-    params: DocumentListParams = Depends(),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> dict:
-    """
-    List user's documents with pagination and filters.
-
-    Users can only see their own documents.
-
-    Args:
-        params: Query parameters (page, limit, collection_id, status_filter)
-        current_user: Authenticated user
-        db: Database session
-
-    Returns:
-        Paginated list of user's documents
-    """
-    # Build query - exclude deleted documents, filter by current user
-    query = select(Document).where(
-        Document.status != DocumentStatus.DELETED.value,
-        Document.user_id == current_user.user_id,
-    )
-
-    if params.collection_id:
-        validate_uuid(params.collection_id, "collection_id")
-        query = query.where(Document.collection_id == params.collection_id)
-
-    if params.status_filter:
-        query = query.where(Document.status == params.status_filter)
-
-    # Count total
-    count_query = select(Document.document_id).where(
-        Document.status != DocumentStatus.DELETED.value,
-        Document.user_id == current_user.user_id,
-    )
-
-    if params.collection_id:
-        count_query = count_query.where(Document.collection_id == params.collection_id)
-    if params.status_filter:
-        count_query = count_query.where(Document.status == params.status_filter)
-
-    total_result = await db.exec(count_query)
-    total = len(total_result.all())
-
-    # Validate and apply sorting
-    allowed_sort_fields = {"uploaded_at", "filename", "size_bytes", "processed_at"}
-    sort_field = (
-        params.sort_by if params.sort_by in allowed_sort_fields else "uploaded_at"
-    )
-    sort_order = params.order if params.order in {"asc", "desc"} else "desc"
-
-    # Get sort column
-    sort_column = getattr(Document, sort_field)
-
-    # Paginate with dynamic sorting
-    offset = (params.page - 1) * params.limit
-    if sort_order == "asc":
-        query = (
-            query.offset(offset).limit(params.limit).order_by(sort_column.asc())
-        )  # type:ignore
-    else:
-        query = (
-            query.offset(offset).limit(params.limit).order_by(sort_column.desc())
-        )  # type:ignore
-
-    result = await db.exec(query)
-    documents = result.all()
-
-    return {
-        "documents": list(documents),
-        "total": total,
-        "page": params.page,
-        "limit": params.limit,
-        "pages": (total + params.limit - 1) // params.limit,
-    }
 
 
 @router.get("/search", response_model=DocumentsListResponse)
@@ -717,59 +661,83 @@ async def search_documents(
     }
 
 
-@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_document(
-    document_id: str,
+@router.get("", response_model=DocumentsListResponse)
+async def list_documents(
+    params: DocumentListParams = Depends(),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    arq: ArqRedis = Depends(get_arq_redis),
-) -> None:
+) -> dict:
     """
-    Soft delete a document.
+    List user's documents with pagination and filters.
 
-    Sets status=DELETED and enqueues cleanup job.
-    Storage quota is freed immediately.
+    Users can only see their own documents.
 
     Args:
-        document_id: Document ID
+        params: Query parameters (page, limit, collection_id, status_filter)
         current_user: Authenticated user
         db: Database session
-        arq: ARQ Redis connection
 
-    Raises:
-        HTTPException: 404 if document not found
+    Returns:
+        Paginated list of user's documents
     """
-    result = await db.exec(
-        select(Document).where(
-            Document.document_id == document_id,
-            Document.user_id == current_user.user_id,
-        )
+    # Build query - exclude deleted documents, filter by current user
+    query = select(Document).where(
+        Document.status != DocumentStatus.DELETED.value,
+        Document.user_id == current_user.user_id,
     )
-    document = result.one_or_none()
 
-    if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
-        )
+    if params.collection_id:
+        validate_uuid(params.collection_id, "collection_id")
+        query = query.where(Document.collection_id == params.collection_id)
 
-    # Soft delete
-    document.status = DocumentStatus.DELETED.value
-    document.deleted_at = datetime.now(UTC)
+    if params.status_filter:
+        query = query.where(Document.status == params.status_filter)
 
-    # Free storage quota immediately
-    current_user.storage_used_bytes -= document.size_bytes
-    if current_user.storage_used_bytes < 0:
-        current_user.storage_used_bytes = 0
+    # Count total
+    count_query = select(Document.document_id).where(
+        Document.status != DocumentStatus.DELETED.value,
+        Document.user_id == current_user.user_id,
+    )
 
-    db.add(document)
-    db.add(current_user)
-    await db.commit()
+    if params.collection_id:
+        count_query = count_query.where(Document.collection_id == params.collection_id)
+    if params.status_filter:
+        count_query = count_query.where(Document.status == params.status_filter)
 
-    # Enqueue cleanup job (will delete from B2 and Milvus)
-    try:
-        await arq.enqueue_job("cleanup_deleted_document", document_id=document_id)
-    except Exception as e:
-        print(f"Warning: Failed to enqueue cleanup job for {document_id}: {e}")
+    total_result = await db.exec(count_query)
+    total = len(total_result.all())
+
+    # Validate and apply sorting
+    allowed_sort_fields = {"uploaded_at", "filename", "size_bytes", "processed_at"}
+    sort_field = (
+        params.sort_by if params.sort_by in allowed_sort_fields else "uploaded_at"
+    )
+    sort_order = params.order if params.order in {"asc", "desc"} else "desc"
+
+    # Get sort column
+    sort_column = getattr(Document, sort_field)
+
+    # Paginate with dynamic sorting
+    offset = (params.page - 1) * params.limit
+    if sort_order == "asc":
+        query = (
+            query.offset(offset).limit(params.limit).order_by(sort_column.asc())
+        )  # type:ignore
+    else:
+        query = (
+            query.offset(offset).limit(params.limit).order_by(sort_column.desc())
+        )  # type:ignore
+
+    result = await db.exec(query)
+    documents = result.all()
+
+    return {
+        "documents": list(documents),
+        "total": total,
+        "page": params.page,
+        "limit": params.limit,
+        "pages": (total + params.limit - 1) // params.limit,
+    }
 
 
 @router.post("/batch-delete", response_model=BatchDeleteResponse)
@@ -1244,3 +1212,128 @@ async def update_document_metadata(
     await db.refresh(document)
 
     return document
+
+
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    arq: ArqRedis = Depends(get_arq_redis),
+) -> None:
+    """
+    Soft delete a document.
+
+    Sets status=DELETED and enqueues cleanup job.
+    Storage quota is freed immediately.
+
+    Args:
+        document_id: Document ID
+        current_user: Authenticated user
+        db: Database session
+        arq: ARQ Redis connection
+
+    Raises:
+        HTTPException: 404 if document not found
+    """
+    result = await db.exec(
+        select(Document).where(
+            Document.document_id == document_id,
+            Document.user_id == current_user.user_id,
+        )
+    )
+    document = result.one_or_none()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+
+    # Soft delete
+    document.status = DocumentStatus.DELETED.value
+    document.deleted_at = datetime.now(UTC)
+
+    # Free storage quota immediately
+    current_user.storage_used_bytes -= document.size_bytes
+    if current_user.storage_used_bytes < 0:
+        current_user.storage_used_bytes = 0
+
+    db.add(document)
+    db.add(current_user)
+    await db.commit()
+
+    # Enqueue cleanup job (will delete from B2 and Milvus)
+    try:
+        await arq.enqueue_job("cleanup_deleted_document", document_id=document_id)
+    except Exception as e:
+        print(f"Warning: Failed to enqueue cleanup job for {document_id}: {e}")
+
+
+@router.get("/{document_id}", response_model=DocumentResponse)
+async def get_document(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Get document by ID with chunks.
+
+    Args:
+        document_id: Document ID
+        current_user: Authenticated user
+        db: Database session
+
+    Returns:
+        Document record with chunks from Milvus
+
+    Raises:
+        HTTPException: 404 if document not found or not owned by user
+    """
+    result = await db.exec(
+        select(Document).where(
+            Document.document_id == document_id,
+            Document.user_id == current_user.user_id,
+        )
+    )
+    document = result.one_or_none()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+        )
+
+    # Fetch chunks from Milvus if document is active and has chunks
+    chunks_data = None
+    if document.status == DocumentStatus.ACTIVE.value and document.chunks_count > 0:
+        try:
+            from app.services.milvus_service import get_milvus_service
+
+            milvus = await get_milvus_service()
+            raw_chunks = await milvus.get_document_chunks(
+                document.document_id, current_user.user_id
+            )
+
+            # Transform to match DocumentChunk schema
+            chunks_data = [
+                {
+                    "chunk_id": chunk["chunk_id"],
+                    "content": chunk["chunk_text"],
+                    "chunk_index": chunk["chunk_index"],
+                }
+                for chunk in raw_chunks
+            ]
+        except Exception as e:
+            # Log error but don't fail the request
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to fetch chunks for document {document_id}: {e}")
+
+    # Convert document to dict and add chunks
+    doc_dict = document.model_dump()
+    doc_dict["chunks"] = chunks_data
+
+    return doc_dict
+
+
+# Force reload

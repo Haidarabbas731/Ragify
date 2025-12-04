@@ -240,8 +240,11 @@ async def get_current_user_sse(
     Raises:
         HTTPException: 401/403 if authentication fails
     """
+    print("[DEBUG SSE] get_current_user_sse called")
+
     # Try query parameter first (EventSource compatibility)
     token = request.query_params.get("token")
+    print(f"[DEBUG SSE] Token from query params: {token[:20] if token else None}...")
 
     # Fallback to Authorization header
     if not token:
@@ -265,7 +268,10 @@ async def get_current_user_sse(
         ) from e
 
     # Check token type (refresh field: False = access token, True = refresh token)
-    is_refresh = token_data.get("refresh", True)  # type:ignore
+    is_refresh = token_data.get("refresh", False)  # type:ignore
+    print(f"[DEBUG SSE] Token data keys: {token_data.keys()}")
+    print(f"[DEBUG SSE] is_refresh value: {is_refresh}")
+    print(f"[DEBUG SSE] refresh field: {token_data.get('refresh')}")
     if is_refresh:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
