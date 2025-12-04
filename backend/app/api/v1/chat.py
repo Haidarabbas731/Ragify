@@ -73,6 +73,10 @@ async def chat_query(
             # Return streaming response (SSE)
             async def stream_generator():
                 try:
+                    # Variables to store metadata from stream
+                    conversation_id_result = None
+                    sources_result = []
+
                     async for chunk in execute_rag_query_stream(
                         query=request.query,
                         user_id=current_user.user_id,
@@ -81,11 +85,24 @@ async def chat_query(
                         collection_id=request.collection_id,
                         top_k=request.top_k,
                     ):
-                        # Format as SSE (Server-Sent Events)
-                        yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+                        # Check if this is metadata (dict) or text chunk (str)
+                        if isinstance(chunk, dict):
+                            # Store metadata for final message
+                            if "conversation_id" in chunk:
+                                conversation_id_result = chunk["conversation_id"]
+                            if "sources" in chunk:
+                                sources_result = chunk["sources"]
+                        else:
+                            # Format text chunk as SSE (Server-Sent Events)
+                            yield f"data: {json.dumps({'chunk': chunk})}\n\n"
 
-                    # Send final message to indicate completion
-                    yield "data: {\"done\": true}\n\n"
+                    # Send final message with metadata
+                    final_data = {
+                        "done": True,
+                        "conversation_id": conversation_id_result,
+                        "sources": sources_result,
+                    }
+                    yield f"data: {json.dumps(final_data)}\n\n"
 
                 except Exception as e:
                     logger.error(f"Streaming error: {e}")
