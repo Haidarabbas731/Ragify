@@ -143,8 +143,10 @@ async def test_execute_rag_query_success(
                 {
                     "document_id": mock_chunks[0]["document_id"],
                     "document_name": "test_document.pdf",
+                    "filename": "test_document.pdf",
+                    "chunk_index": 0,
                     "chunk_text": mock_chunks[0]["chunk_text"],
-                    "score": mock_chunks[0]["score"],
+                    "relevance_score": mock_chunks[0]["score"],
                 }
             ],
         )
@@ -526,17 +528,25 @@ async def test_execute_rag_query_stream_success(
 
         # Execute streaming query
         chunks_received = []
+        metadata = None
         async for chunk in execute_rag_query_stream(
             query="What is the vacation policy?",
             user_id=mock_user_id,
             db=session,
             conversation_id=mock_conversation.conversation_id,
         ):
-            chunks_received.append(chunk)
+            # Last chunk is metadata dict
+            if isinstance(chunk, dict):
+                metadata = chunk
+            else:
+                chunks_received.append(chunk)
 
         # Assertions
         assert len(chunks_received) == 5
         assert "".join(chunks_received) == "You get 15 vacation days."
+        assert metadata is not None
+        assert "conversation_id" in metadata
+        assert "sources" in metadata
         mock_save.assert_called_once()
 
 
