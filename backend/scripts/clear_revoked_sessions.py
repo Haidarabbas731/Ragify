@@ -34,7 +34,7 @@ async def clear_all_revoked_sessions():
                 break
 
         if not keys:
-            print("✅ No revoked user sessions found in Redis")
+            print("No revoked user sessions found in Redis")
             return
 
         print(f"🔍 Found {len(keys)} revoked user session keys")
@@ -46,7 +46,7 @@ async def clear_all_revoked_sessions():
             result = await redis.delete(key)
             deleted += result
 
-        print(f"✅ Cleared {deleted} user session revocation flags")
+        print(f"Cleared {deleted} user session revocation flags")
         print("Users can now login again!")
 
     finally:
