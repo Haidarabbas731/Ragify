@@ -445,3 +445,136 @@ export const updateCollection = async (
 export const deleteCollection = async (collectionId: string) => {
   await api.delete(`/collections/${collectionId}`);
 };
+
+// ============================================================================
+// Admin API Methods
+// ============================================================================
+
+/**
+ * Get system-wide statistics (admin only)
+ * @returns System statistics
+ */
+export const getAdminStats = async () => {
+  const { data } = await api.get("/admin/stats");
+  return data;
+};
+
+/**
+ * List all users with pagination and filters (admin only)
+ * @param params - Query parameters for filtering and pagination
+ * @returns Paginated user list
+ */
+export const getAdminUsers = async (params?: {
+  page?: number;
+  limit?: number;
+  status_filter?: string;
+  role?: string;
+  sort_by?: string;
+  order?: "asc" | "desc";
+}) => {
+  const { data } = await api.get("/admin/users", { params });
+  return data;
+};
+
+/**
+ * Get detailed user information (admin only)
+ * @param userId - User ID
+ * @returns User details with statistics
+ */
+export const getAdminUserDetails = async (userId: string) => {
+  const { data } = await api.get(`/admin/users/${userId}`);
+  return data;
+};
+
+/**
+ * Suspend a user account (admin only)
+ * @param userId - User ID to suspend
+ * @param reason - Reason for suspension
+ * @returns Success message
+ */
+export const suspendUser = async (userId: string, reason: string) => {
+  const { data } = await api.post(`/admin/users/${userId}/suspend`, { reason });
+  return data;
+};
+
+/**
+ * Activate a suspended user account (admin only)
+ * @param userId - User ID to activate
+ * @returns Success message
+ */
+export const activateUser = async (userId: string) => {
+  const { data } = await api.post(`/admin/users/${userId}/activate`);
+  return data;
+};
+
+/**
+ * Delete a user account (admin only)
+ * @param userId - User ID to delete
+ * @returns Success message
+ */
+export const deleteAdminUser = async (userId: string) => {
+  const { data } = await api.delete(`/admin/users/${userId}`);
+  return data;
+};
+
+/**
+ * List all invite codes (admin only)
+ * @returns List of invite codes
+ */
+export const getAdminInviteCodes = async () => {
+  const { data } = await api.get("/admin/invite-codes");
+  return data;
+};
+
+/**
+ * Create a new invite code (admin only)
+ * @param codeData - Invite code creation data
+ * @returns Created invite code
+ */
+export const createInviteCode = async (codeData: {
+  max_uses?: number;
+  expires_at?: string;
+  description?: string;
+}) => {
+  const { data } = await api.post("/admin/invite-codes", codeData);
+  return data;
+};
+
+/**
+ * Deactivate an invite code (admin only)
+ * @param codeId - Invite code ID
+ * @returns Success message
+ */
+export const deactivateInviteCode = async (codeId: string) => {
+  const { data } = await api.post(`/admin/invite-codes/${codeId}/deactivate`);
+  return data;
+};
+
+/**
+ * List audit logs (admin only)
+ * @param params - Query parameters for pagination
+ * @returns Paginated audit log list
+ */
+export const getAdminAuditLogs = async (params?: {
+  page?: number;
+  limit?: number;
+}) => {
+  const { data } = await api.get("/admin/audit-logs", { params });
+  return data;
+};
+
+/**
+ * List all documents across all users (admin only)
+ * @param params - Query parameters for filtering and pagination
+ * @returns Paginated document list
+ */
+export const getAdminDocuments = async (params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  sort_by?: string;
+  order?: "asc" | "desc";
+}) => {
+  const { data } = await api.get("/admin/documents", { params });
+  return data;
+};
