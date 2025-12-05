@@ -7,13 +7,21 @@ import {
   AlertTriangle,
   Eye,
   Filter,
+  Loader2,
   Search,
+  Shield,
   Trash2,
   UserCheck,
   Users as UsersIcon,
   UserX,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  useActivateUser,
+  useAdminUsers,
+  useDeleteUser,
+  useSuspendUser,
+} from "../../hooks/useAdmin";
 
 interface User {
   user_id: string;
@@ -26,60 +34,6 @@ interface User {
   created_at: string;
 }
 
-// Mock data with 5 users
-const MOCK_USERS: User[] = [
-  {
-    user_id: "48436b5c-d48f-4112-98de-cb8612468218",
-    email: "admin@test.com",
-    role: "admin",
-    status: "active",
-    document_count: 15,
-    storage_used_bytes: 524288000, // 500MB
-    last_login_at: "2025-12-02T15:30:00Z",
-    created_at: "2025-11-01T10:00:00Z",
-  },
-  {
-    user_id: "a3f2d9e1-8c7b-4a6e-9d5f-2e1c3b4a5d6e",
-    email: "user@example.com",
-    role: "user",
-    status: "active",
-    document_count: 8,
-    storage_used_bytes: 134217728, // 128MB
-    last_login_at: "2025-12-02T14:20:00Z",
-    created_at: "2025-11-15T09:30:00Z",
-  },
-  {
-    user_id: "b5e7c9a3-1d4f-4e8a-9c6b-3f2e1d5c4a7b",
-    email: "john.doe@company.com",
-    role: "user",
-    status: "active",
-    document_count: 23,
-    storage_used_bytes: 838860800, // 800MB
-    last_login_at: "2025-12-01T18:45:00Z",
-    created_at: "2025-10-20T14:15:00Z",
-  },
-  {
-    user_id: "c7d9e1f3-5a8b-4c6d-9e7f-1a2b3c4d5e6f",
-    email: "suspended.user@example.com",
-    role: "user",
-    status: "suspended",
-    document_count: 3,
-    storage_used_bytes: 52428800, // 50MB
-    last_login_at: "2025-11-25T10:30:00Z",
-    created_at: "2025-11-10T11:20:00Z",
-  },
-  {
-    user_id: "d9f1e3c5-7b4a-4d8e-9f1a-2c3d4e5f6a7b",
-    email: "power.user@tech.io",
-    role: "user",
-    status: "active",
-    document_count: 42,
-    storage_used_bytes: 943718400, // 900MB
-    last_login_at: "2025-12-02T16:10:00Z",
-    created_at: "2025-09-05T08:00:00Z",
-  },
-];
-
 export function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "user" | "admin">("all");
@@ -91,16 +45,35 @@ export function AdminUsers() {
     type: "suspend" | "activate" | "delete";
     user: User;
   } | null>(null);
+  const [suspendReason, setSuspendReason] = useState("");
+  const [page, setPage] = useState(1);
+  const limit = 20;
 
-  // Filter users based on search and filters
-  const filteredUsers = MOCK_USERS.filter((user) => {
+  // Fetch users from backend
+  const { data, isLoading, error, refetch } = useAdminUsers({
+    page,
+    limit,
+    status_filter: statusFilter === "all" ? undefined : statusFilter,
+    role: roleFilter === "all" ? undefined : roleFilter,
+    sort_by: "created_at",
+    order: "desc",
+  });
+
+  // Get mutations
+  const suspendMutation = useSuspendUser();
+  const activateMutation = useActivateUser();
+  const deleteMutation = useDeleteUser();
+
+  const allUsers: User[] = data?.users || [];
+  const totalUsers = data?.total || 0;
+  const totalPages = data?.pages || 1;
+
+  // Client-side search filtering (only on email)
+  const filteredUsers = allUsers.filter((user) => {
     const matchesSearch = user.email
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    const matchesStatus =
-      statusFilter === "all" || user.status === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch;
   });
 
   // Format bytes to MB/GB
@@ -138,24 +111,73 @@ export function AdminUsers() {
     return formatDate(dateString);
   };
 
-  // Action handlers (mock)
+  // Action handlers
   const handleSuspend = (user: User) => {
-    console.log("Suspend user:", user.email);
-    setConfirmDialog(null);
-    // TODO: API call
+    if (!suspendReason.trim()) {
+      return;
+    }
+    suspendMutation.mutate(
+      { userId: user.user_id, reason: suspendReason },
+      {
+        onSuccess: () => {
+          setConfirmDialog(null);
+          setSuspendReason("");
+        },
+      },
+    );
   };
 
   const handleActivate = (user: User) => {
-    console.log("Activate user:", user.email);
-    setConfirmDialog(null);
-    // TODO: API call
+    activateMutation.mutate(user.user_id, {
+      onSuccess: () => {
+        setConfirmDialog(null);
+      },
+    });
   };
 
   const handleDelete = (user: User) => {
-    console.log("Delete user:", user.email);
-    setConfirmDialog(null);
-    // TODO: API call
+    deleteMutation.mutate(user.user_id, {
+      onSuccess: () => {
+        setConfirmDialog(null);
+      },
+    });
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-600 dark:text-cyan-400" />
+        <p className="text-sm text-gray-600 dark:text-slate-400 font-mono">
+          LOADING_USER_DATA...
+        </p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-6 px-4">
+        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-800 border-2 border-red-200 dark:border-red-900/50 rounded-lg p-8 max-w-md w-full text-center shadow-lg">
+          <Shield className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 font-mono mb-2">
+            ACCESS_ERROR
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-slate-400 font-mono mb-6">
+            Failed to load user data
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="px-6 py-2.5 bg-blue-600 dark:bg-cyan-500 hover:bg-blue-700 dark:hover:bg-cyan-600 text-white font-mono text-sm rounded transition-colors"
+          >
+            RETRY
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
@@ -168,13 +190,14 @@ export function AdminUsers() {
                 USER_MANAGEMENT
               </h1>
               <p className="text-sm text-gray-600 dark:text-slate-400 mt-1 font-mono">
-                View, suspend, and manage user accounts
+                View, suspend, and manage user accounts - {totalUsers} total
+                users
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs font-mono">
               <div className="px-3 py-1.5 bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded text-gray-600 dark:text-slate-400">
                 <UsersIcon className="w-4 h-4 inline mr-2" />
-                {filteredUsers.length} USERS
+                PAGE {page} / {totalPages}
               </div>
             </div>
           </div>
@@ -349,6 +372,31 @@ export function AdminUsers() {
             ))
           )}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-4 py-2 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded font-mono text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              PREVIOUS
+            </button>
+            <span className="px-4 py-2 font-mono text-sm text-gray-600 dark:text-slate-400">
+              Page {page} of {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-4 py-2 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded font-mono text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              NEXT
+            </button>
+          </div>
+        )}
       </div>
 
       {/* User Details Modal */}
@@ -520,14 +568,40 @@ export function AdminUsers() {
                   </>
                 )}
               </p>
+              {confirmDialog.type === "suspend" && (
+                <div className="mt-4">
+                  <label
+                    htmlFor="suspend-reason"
+                    className="block text-sm font-mono text-gray-700 dark:text-slate-300 mb-2"
+                  >
+                    Reason for suspension:
+                  </label>
+                  <textarea
+                    id="suspend-reason"
+                    value={suspendReason}
+                    onChange={(e) => setSuspendReason(e.target.value)}
+                    placeholder="Enter reason (required)..."
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800/50 border border-gray-300 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-amber-500 dark:focus:border-amber-400 transition-colors resize-none"
+                    rows={3}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Dialog Footer */}
             <div className="px-6 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setConfirmDialog(null)}
-                className="px-4 py-2 bg-gray-200 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-700 transition-colors"
+                onClick={() => {
+                  setConfirmDialog(null);
+                  setSuspendReason("");
+                }}
+                disabled={
+                  suspendMutation.isPending ||
+                  activateMutation.isPending ||
+                  deleteMutation.isPending
+                }
+                className="px-4 py-2 bg-gray-200 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 CANCEL
               </button>
@@ -542,7 +616,13 @@ export function AdminUsers() {
                     handleActivate(confirmDialog.user);
                   }
                 }}
-                className={`px-4 py-2 border rounded font-mono text-sm transition-colors ${
+                disabled={
+                  (confirmDialog.type === "suspend" && !suspendReason.trim()) ||
+                  suspendMutation.isPending ||
+                  activateMutation.isPending ||
+                  deleteMutation.isPending
+                }
+                className={`px-4 py-2 border rounded font-mono text-sm transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                   confirmDialog.type === "delete"
                     ? "bg-red-600 dark:bg-red-500 border-red-700 dark:border-red-600 text-white hover:bg-red-700 dark:hover:bg-red-600"
                     : confirmDialog.type === "suspend"
@@ -550,9 +630,20 @@ export function AdminUsers() {
                       : "bg-emerald-600 dark:bg-emerald-500 border-emerald-700 dark:border-emerald-600 text-white hover:bg-emerald-700 dark:hover:bg-emerald-600"
                 }`}
               >
-                {confirmDialog.type === "delete" && "DELETE"}
-                {confirmDialog.type === "suspend" && "SUSPEND"}
-                {confirmDialog.type === "activate" && "ACTIVATE"}
+                {(confirmDialog.type === "delete" &&
+                  deleteMutation.isPending) ||
+                (confirmDialog.type === "suspend" &&
+                  suspendMutation.isPending) ||
+                (confirmDialog.type === "activate" &&
+                  activateMutation.isPending) ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : null}
+                {confirmDialog.type === "delete" &&
+                  (deleteMutation.isPending ? "DELETING..." : "DELETE")}
+                {confirmDialog.type === "suspend" &&
+                  (suspendMutation.isPending ? "SUSPENDING..." : "SUSPEND")}
+                {confirmDialog.type === "activate" &&
+                  (activateMutation.isPending ? "ACTIVATING..." : "ACTIVATE")}
               </button>
             </div>
           </div>
