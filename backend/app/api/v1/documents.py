@@ -411,12 +411,13 @@ async def status_stream_options():
     from fastapi.responses import Response
 
     return Response(
-        status_code=200,
+        status_code=204,
         headers={
             "Access-Control-Allow-Origin": settings.FRONTEND_URL,
             "Access-Control-Allow-Methods": "GET, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, Cache-Control, X-Requested-With",
             "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Max-Age": "86400",
         },
     )
 

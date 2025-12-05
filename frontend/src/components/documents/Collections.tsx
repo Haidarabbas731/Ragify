@@ -1,8 +1,8 @@
 /**
  * Collections Component - Archive Vault
  * Production-grade collection management with full CRUD operations
- * Aesthetic: Industrial elegance with refined brutalism
- * Fonts: JetBrains Mono (headings), IBM Plex Sans (body), Courier New (metadata)
+ * Aesthetic: Modern minimalist with elegant cards
+ * Typography: System fonts for better performance and native feel
  */
 
 import {
@@ -38,11 +38,14 @@ export function Collections({
   onSelectCollection,
   selectedCollectionId,
 }: CollectionsProps) {
-  // Real backend integration
-  const { data: collections = [], isLoading, error } = useCollections();
+  // Real backend integration - now returns {collections, total_documents}
+  const { data, isLoading, error } = useCollections();
   const createMutation = useCreateCollection();
   const updateMutation = useUpdateCollection();
   const deleteMutation = useDeleteCollection();
+
+  const collections = data?.collections || [];
+  const totalDocuments = data?.total_documents || 0;
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -98,22 +101,18 @@ export function Collections({
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 mx-auto bg-red-100 dark:bg-red-950 rounded-lg flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto bg-red-100 dark:bg-red-950 rounded-xl flex items-center justify-center">
             <X className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2 font-['JetBrains_Mono']">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
               Failed to load collections
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 font-['IBM_Plex_Sans']">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               {(error as Error).message || "An error occurred"}
             </p>
           </div>
-          <Button
-            onClick={() => window.location.reload()}
-            variant="outline"
-            className="font-['IBM_Plex_Sans']"
-          >
+          <Button onClick={() => window.location.reload()} variant="outline">
             Retry
           </Button>
         </div>
@@ -127,7 +126,7 @@ export function Collections({
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 text-slate-400 dark:text-slate-500 animate-spin mx-auto" />
-          <p className="text-sm text-slate-600 dark:text-slate-400 font-['IBM_Plex_Sans']">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             Loading collections...
           </p>
         </div>
@@ -135,37 +134,28 @@ export function Collections({
     );
   }
 
-  const totalDocuments = collections.reduce(
-    (sum, col) => sum + col.document_count,
-    0,
-  );
-
   return (
     <div className="space-y-8 animate-fadeInUp">
       {/* Header */}
-      <div className="flex items-start justify-between border-b-4 border-slate-900 dark:border-slate-100 pb-6">
-        <div className="space-y-3">
-          <h1 className="text-5xl font-black text-slate-900 dark:text-slate-100 font-['JetBrains_Mono'] tracking-tighter uppercase leading-none">
-            Archive Vault
+      <div className="flex items-start justify-between pb-6 border-b border-slate-200 dark:border-slate-800">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+            Collections
           </h1>
-          <p className="text-base text-slate-600 dark:text-slate-400 font-['IBM_Plex_Sans'] max-w-2xl">
-            Organize your knowledge into curated collections. Each vault
-            preserves documents in isolated contexts for targeted retrieval.
+          <p className="text-base text-slate-600 dark:text-slate-400 max-w-2xl">
+            Organize your knowledge into curated collections for better document management and targeted retrieval.
           </p>
-          <div className="flex items-center gap-4 text-sm font-['Courier_New'] text-slate-500 dark:text-slate-400">
+          <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400 pt-2">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-              <span>
-                {collections.length} collection
-                {collections.length !== 1 ? "s" : ""}
+              <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+              <span className="font-medium">
+                {collections.length} collection{collections.length !== 1 ? "s" : ""}
               </span>
             </div>
-            <span>•</span>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-blue-500 rounded-full" />
-              <span>
-                {totalDocuments} total document
-                {totalDocuments !== 1 ? "s" : ""}
+              <div className="w-2 h-2 bg-blue-500 rounded-full" />
+              <span className="font-medium">
+                {totalDocuments} document{totalDocuments !== 1 ? "s" : ""}
               </span>
             </div>
           </div>
@@ -173,10 +163,11 @@ export function Collections({
         <Button
           onClick={() => setIsCreateModalOpen(true)}
           disabled={createMutation.isPending}
-          className="gap-3 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 shadow-lg hover:shadow-2xl transition-all duration-300 font-['JetBrains_Mono'] font-bold text-sm uppercase tracking-wider px-6 py-6 border-2 border-slate-900 dark:border-slate-100 hover:scale-105"
+          className="gap-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold"
+          size="lg"
         >
           <Plus className="w-5 h-5" />
-          Create Vault
+          New Collection
         </Button>
       </div>
 
@@ -186,36 +177,29 @@ export function Collections({
         <button
           type="button"
           onClick={() => onSelectCollection?.(null)}
-          className={`group relative bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 border-4 rounded-none p-8 text-left transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${
+          className={`group relative bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
             selectedCollectionId === null
-              ? "border-slate-900 dark:border-slate-100 shadow-xl shadow-slate-900/20 dark:shadow-slate-100/20 scale-105"
-              : "border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600"
+              ? "ring-2 ring-slate-900 dark:ring-slate-100 shadow-lg"
+              : "ring-1 ring-slate-200 dark:ring-slate-800 hover:ring-slate-300 dark:hover:ring-slate-700"
           }`}
           style={{
             animation: "slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5 dark:opacity-10 pointer-events-none">
-            <div
-              className="w-full h-full"
-              style={{
-                backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, currentColor 10px, currentColor 11px)`,
-              }}
-            />
-          </div>
+          {/* Background Gradient Orb */}
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 dark:from-blue-500/10 dark:to-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Icon */}
-          <div className="relative mb-6">
+          <div className="relative mb-4">
             <div
-              className={`w-16 h-16 rounded-none flex items-center justify-center transition-all duration-300 border-4 ${
+              className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
                 selectedCollectionId === null
-                  ? "bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100"
-                  : "bg-transparent border-slate-400 dark:border-slate-600 group-hover:border-slate-500 dark:group-hover:border-slate-500"
+                  ? "bg-slate-900 dark:bg-slate-100 shadow-lg"
+                  : "bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700"
               }`}
             >
               <Archive
-                className={`w-8 h-8 transition-colors ${
+                className={`w-7 h-7 transition-colors ${
                   selectedCollectionId === null
                     ? "text-white dark:text-slate-900"
                     : "text-slate-600 dark:text-slate-400"
@@ -225,33 +209,32 @@ export function Collections({
           </div>
 
           {/* Content */}
-          <div className="relative">
+          <div className="relative space-y-3">
             <h3
-              className={`text-2xl font-black mb-2 font-['JetBrains_Mono'] tracking-tight uppercase transition-colors ${
+              className={`text-xl font-bold transition-colors ${
                 selectedCollectionId === null
                   ? "text-slate-900 dark:text-slate-100"
                   : "text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-slate-100"
               }`}
             >
-              Master Archive
+              All Documents
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 font-['IBM_Plex_Sans'] mb-6 leading-relaxed">
-              Unified view of all documents across every collection in your
-              vault system
+            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              Unified view of all documents across every collection
             </p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-black text-slate-900 dark:text-slate-100 font-['JetBrains_Mono'] tabular-nums">
+            <div className="flex items-baseline gap-2 pt-2">
+              <span className="text-3xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
                 {totalDocuments}
               </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-['Courier_New'] uppercase tracking-wider">
-                documents
+              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-medium">
+                total
               </span>
             </div>
           </div>
 
           {/* Selection Indicator */}
           {selectedCollectionId === null && (
-            <div className="absolute top-4 right-4 w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+            <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-lg shadow-emerald-500/50" />
           )}
         </button>
 
@@ -259,41 +242,34 @@ export function Collections({
         {collections.map((collection, index) => (
           <div
             key={collection.collection_id}
-            className={`group relative bg-white dark:bg-slate-900 border-4 rounded-none p-8 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl ${
+            className={`group relative bg-white dark:bg-slate-900 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
               selectedCollectionId === collection.collection_id
-                ? "border-slate-900 dark:border-slate-100 shadow-xl shadow-slate-900/20 dark:shadow-slate-100/20 scale-105"
-                : "border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600"
+                ? "ring-2 ring-slate-900 dark:ring-slate-100 shadow-lg"
+                : "ring-1 ring-slate-200 dark:ring-slate-800 hover:ring-slate-300 dark:hover:ring-slate-700"
             }`}
             style={{
               animation: `slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1}s both`,
             }}
           >
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-5 dark:opacity-10 pointer-events-none">
-              <div
-                className="w-full h-full"
-                style={{
-                  backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 10px, currentColor 10px, currentColor 11px)`,
-                }}
-              />
-            </div>
+            {/* Background Gradient Orb */}
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 dark:from-violet-500/10 dark:to-fuchsia-500/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header */}
-            <div className="relative flex items-start justify-between mb-6">
+            <div className="relative flex items-start justify-between mb-4">
               <button
                 type="button"
                 onClick={() => onSelectCollection?.(collection.collection_id)}
                 className="flex-1 text-left"
               >
                 <div
-                  className={`w-16 h-16 rounded-none flex items-center justify-center transition-all duration-300 border-4 ${
+                  className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
                     selectedCollectionId === collection.collection_id
-                      ? "bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100"
-                      : "bg-transparent border-slate-400 dark:border-slate-600 group-hover:border-slate-500 dark:group-hover:border-slate-500"
+                      ? "bg-slate-900 dark:bg-slate-100 shadow-lg"
+                      : "bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700"
                   }`}
                 >
                   <FolderOpen
-                    className={`w-8 h-8 transition-colors ${
+                    className={`w-7 h-7 transition-colors ${
                       selectedCollectionId === collection.collection_id
                         ? "text-white dark:text-slate-900"
                         : "text-slate-600 dark:text-slate-400"
@@ -302,8 +278,8 @@ export function Collections({
                 </div>
               </button>
 
-              {/* Actions - Always visible on hover */}
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {/* Actions */}
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -312,7 +288,7 @@ export function Collections({
                     setIsEditModalOpen(true);
                   }}
                   disabled={updateMutation.isPending}
-                  className="p-2 border-2 border-slate-300 dark:border-slate-700 hover:border-slate-900 dark:hover:border-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200"
+                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   aria-label="Edit collection"
                 >
                   <Edit2 className="w-4 h-4 text-slate-600 dark:text-slate-400" />
@@ -324,7 +300,7 @@ export function Collections({
                     setDeleteDialog({ isOpen: true, collection });
                   }}
                   disabled={deleteMutation.isPending}
-                  className="p-2 border-2 border-red-300 dark:border-red-700 hover:border-red-600 dark:hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-all duration-200"
+                  className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
                   aria-label="Delete collection"
                 >
                   <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
@@ -336,10 +312,10 @@ export function Collections({
             <button
               type="button"
               onClick={() => onSelectCollection?.(collection.collection_id)}
-              className="w-full text-left mb-6 relative"
+              className="w-full text-left space-y-3 relative"
             >
               <h3
-                className={`text-2xl font-black mb-3 font-['JetBrains_Mono'] tracking-tight uppercase transition-colors line-clamp-2 ${
+                className={`text-xl font-bold transition-colors line-clamp-2 ${
                   selectedCollectionId === collection.collection_id
                     ? "text-slate-900 dark:text-slate-100"
                     : "text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-slate-100"
@@ -348,25 +324,25 @@ export function Collections({
                 {collection.name}
               </h3>
               {collection.description && (
-                <p className="text-sm text-slate-600 dark:text-slate-400 font-['IBM_Plex_Sans'] line-clamp-3 leading-relaxed">
+                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
                   {collection.description}
                 </p>
               )}
             </button>
 
             {/* Stats & Metadata */}
-            <div className="relative pt-6 border-t-2 border-slate-200 dark:border-slate-800 space-y-3">
+            <div className="relative pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-slate-900 dark:text-slate-100 font-['JetBrains_Mono'] tabular-nums">
+                <span className="text-3xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
                   {collection.document_count}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-['Courier_New'] uppercase tracking-wider">
+                <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-medium">
                   documents
                 </span>
               </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 font-['Courier_New'] space-y-1">
+              <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1 font-mono">
                 <div className="flex items-center justify-between">
-                  <span className="opacity-60">CREATED</span>
+                  <span>Created</span>
                   <span className="tabular-nums">
                     {new Date(collection.created_at).toLocaleDateString(
                       "en-US",
@@ -379,7 +355,7 @@ export function Collections({
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="opacity-60">MODIFIED</span>
+                  <span>Modified</span>
                   <span className="tabular-nums">
                     {new Date(collection.updated_at).toLocaleDateString(
                       "en-US",
@@ -396,7 +372,7 @@ export function Collections({
 
             {/* Selection Indicator */}
             {selectedCollectionId === collection.collection_id && (
-              <div className="absolute top-4 right-4 w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+              <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-lg shadow-emerald-500/50" />
             )}
           </div>
         ))}
@@ -542,7 +518,7 @@ function CollectionModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      toast.error("Vault name is required");
+      toast.error("Collection name is required");
       return;
     }
     if (isPending) return;
@@ -562,37 +538,27 @@ function CollectionModal({
         type="button"
         onClick={handleClose}
         disabled={isPending}
-        className="absolute inset-0 bg-black/70 backdrop-blur-md cursor-default"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-default"
         aria-label="Close modal"
       />
 
       {/* Modal */}
       <div
-        className={`relative w-full max-w-2xl bg-white dark:bg-slate-900 border-4 border-slate-900 dark:border-slate-100 rounded-none shadow-2xl overflow-hidden ${
+        className={`relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden ${
           isAnimatingOut ? "animate-scaleOut" : "animate-scaleIn"
         }`}
       >
-        {/* Decorative Corner Pattern */}
-        <div className="absolute top-0 right-0 w-32 h-32 opacity-10 pointer-events-none">
-          <div
-            className="w-full h-full"
-            style={{
-              backgroundImage: `repeating-linear-gradient(45deg, currentColor, currentColor 2px, transparent 2px, transparent 10px)`,
-            }}
-          />
-        </div>
-
         {/* Header */}
-        <div className="border-b-4 border-slate-900 dark:border-slate-100 bg-slate-100 dark:bg-slate-800 px-8 py-6 relative">
+        <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 px-6 py-5 relative">
           <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100 font-['JetBrains_Mono'] tracking-tighter uppercase">
-              {mode === "create" ? "Initialize Vault" : "Modify Vault"}
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              {mode === "create" ? "Create Collection" : "Edit Collection"}
             </h2>
             <button
               type="button"
               onClick={handleClose}
               disabled={isPending}
-              className="p-2 border-2 border-slate-300 dark:border-slate-700 hover:border-slate-900 dark:hover:border-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200 disabled:opacity-50"
+              className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
               aria-label="Close"
             >
               <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
@@ -601,22 +567,22 @@ function CollectionModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Name Input */}
           <div>
             <Label
               htmlFor="collection-name"
-              className="text-slate-900 dark:text-slate-100 font-['JetBrains_Mono'] font-bold uppercase text-sm tracking-wider mb-3 block"
+              className="text-slate-900 dark:text-slate-100 font-semibold text-sm mb-2 block"
             >
-              Vault Designation *
+              Collection Name <span className="text-red-500">*</span>
             </Label>
             <Input
               id="collection-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Research Papers, Work Documents, Archive 2024"
-              className="font-['IBM_Plex_Sans'] bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-100 text-slate-900 dark:text-slate-100 text-base py-6 rounded-none"
+              placeholder="e.g., Research Papers, Work Documents, Personal Notes"
+              className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-base h-11 font-sans"
               autoFocus
               disabled={isPending}
             />
@@ -626,10 +592,10 @@ function CollectionModal({
           <div>
             <Label
               htmlFor="collection-description"
-              className="text-slate-900 dark:text-slate-100 font-['JetBrains_Mono'] font-bold uppercase text-sm tracking-wider mb-3 block"
+              className="text-slate-900 dark:text-slate-100 font-semibold text-sm mb-2 block"
             >
-              Vault Description
-              <span className="text-slate-500 dark:text-slate-400 ml-2 normal-case text-xs">
+              Description
+              <span className="text-slate-500 dark:text-slate-400 ml-2 font-normal">
                 (Optional)
               </span>
             </Label>
@@ -637,36 +603,38 @@ function CollectionModal({
               id="collection-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the purpose, content type, or organizational context of this vault..."
+              placeholder="Describe the purpose or content of this collection..."
               rows={4}
-              className="font-['IBM_Plex_Sans'] bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 focus:border-slate-900 dark:focus:border-slate-100 text-slate-900 dark:text-slate-100 text-base rounded-none resize-none"
+              className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-base resize-none font-sans"
               disabled={isPending}
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-4 pt-6">
+          <div className="flex items-center gap-3 pt-4">
             <Button
               type="button"
               onClick={handleClose}
               disabled={isPending}
               variant="outline"
-              className="flex-1 font-['JetBrains_Mono'] font-bold uppercase tracking-wider border-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-900 dark:hover:border-slate-100 py-6 rounded-none"
+              className="flex-1 font-semibold"
+              size="lg"
             >
-              Abort
+              Cancel
             </Button>
             <Button
               type="submit"
               disabled={isPending}
-              className="flex-1 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-['JetBrains_Mono'] font-bold uppercase tracking-wider py-6 border-2 border-slate-900 dark:border-slate-100 rounded-none disabled:opacity-50"
+              className="flex-1 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold disabled:opacity-50"
+              size="lg"
             >
               {isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Processing...
+                  {mode === "create" ? "Creating..." : "Saving..."}
                 </>
               ) : mode === "create" ? (
-                "Initialize"
+                "Create Collection"
               ) : (
                 "Save Changes"
               )}
@@ -687,7 +655,7 @@ function CollectionModal({
         @keyframes scaleIn {
           from {
             opacity: 0;
-            transform: scale(0.9) translateY(-30px);
+            transform: scale(0.95) translateY(-20px);
           }
           to {
             opacity: 1;
@@ -701,7 +669,7 @@ function CollectionModal({
           }
           to {
             opacity: 0;
-            transform: scale(0.9) translateY(-30px);
+            transform: scale(0.95) translateY(-20px);
           }
         }
         .animate-fadeIn { animation: fadeIn 250ms ease-out; }
