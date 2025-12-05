@@ -3,6 +3,7 @@
  */
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { toast } from "sonner";
 import type { TokenResponse } from "../types/auth";
 
 // Create axios instance with base configuration
@@ -137,6 +138,15 @@ api.interceptors.response.use(
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }
+    }
+
+    // Handle specific HTTP error codes with user-friendly messages
+    if (error.response?.status === 413) {
+      toast.error("File too large. Maximum size is 50MB.");
+    } else if (error.response?.status === 429) {
+      toast.error("Rate limit exceeded. Please try again later.");
+    } else if (error.response?.status === 504) {
+      toast.error("Request timed out. Please try again.");
     }
 
     return Promise.reject(error);
