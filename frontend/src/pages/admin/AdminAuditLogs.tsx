@@ -1,6 +1,7 @@
 /**
  * Admin Audit Logs - Security Audit Trail Command Center
  * Timeline-style audit log interface with amber/orange security theme
+ * Backend Integration: Uses useAdminAuditLogs() hook for real-time audit trail
  */
 
 import {
@@ -11,6 +12,7 @@ import {
   Clock,
   Filter,
   Key,
+  Loader2,
   Search,
   Shield,
   Trash2,
@@ -19,6 +21,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
+import { useAdminAuditLogs } from "@/hooks/useAdmin";
 
 interface AuditLog {
   log_id: string;
@@ -38,169 +41,29 @@ interface AuditLog {
   created_at: string;
 }
 
-// Mock data - 10 audit logs
-const MOCK_LOGS: AuditLog[] = [
-  {
-    log_id: "log-001",
-    admin_user_id: "admin-001",
-    admin_email: "admin@test.com",
-    action: "user_suspended",
-    target_type: "user",
-    target_id: "user-456",
-    details: {
-      user_email: "suspended.user@example.com",
-      reason: "Violation of terms of service",
-      duration: "indefinite",
-    },
-    created_at: "2025-12-03T10:30:00Z",
-  },
-  {
-    log_id: "log-002",
-    admin_user_id: "admin-001",
-    admin_email: "admin@test.com",
-    action: "invite_code_created",
-    target_type: "invite_code",
-    target_id: "BETA-2025-XYZ",
-    details: {
-      code: "BETA-2025-XYZ",
-      max_uses: 50,
-      expires_at: "2025-12-31T23:59:59Z",
-      description: "Beta tester program Q4 2025",
-    },
-    created_at: "2025-12-03T09:15:00Z",
-  },
-  {
-    log_id: "log-003",
-    admin_user_id: "admin-001",
-    admin_email: "admin@test.com",
-    action: "document_deleted",
-    target_type: "document",
-    target_id: "doc-789",
-    details: {
-      filename: "confidential_report.pdf",
-      user_email: "user@example.com",
-      size_bytes: 2457600,
-      reason: "Contained sensitive data",
-    },
-    created_at: "2025-12-03T08:45:00Z",
-  },
-  {
-    log_id: "log-004",
-    admin_user_id: "admin-001",
-    admin_email: "admin@test.com",
-    action: "user_activated",
-    target_type: "user",
-    target_id: "user-123",
-    details: {
-      user_email: "john.doe@company.com",
-      reason: "Appeal approved",
-      previous_status: "suspended",
-    },
-    created_at: "2025-12-02T16:20:00Z",
-  },
-  {
-    log_id: "log-005",
-    admin_user_id: "admin-001",
-    admin_email: "admin@test.com",
-    action: "invite_code_revoked",
-    target_type: "invite_code",
-    target_id: "OLD-CODE-ABC",
-    details: {
-      code: "OLD-CODE-ABC",
-      current_uses: 12,
-      max_uses: 100,
-      reason: "Security concern - code leaked",
-    },
-    created_at: "2025-12-02T14:10:00Z",
-  },
-  {
-    log_id: "log-006",
-    admin_user_id: "admin-001",
-    admin_email: "admin@test.com",
-    action: "user_deleted",
-    target_type: "user",
-    target_id: "user-999",
-    details: {
-      user_email: "deleted.user@test.com",
-      reason: "User requested account deletion (GDPR)",
-      document_count: 5,
-      storage_freed_bytes: 104857600,
-    },
-    created_at: "2025-12-02T11:30:00Z",
-  },
-  {
-    log_id: "log-007",
-    admin_user_id: "admin-001",
-    admin_email: "admin@test.com",
-    action: "invite_code_created",
-    target_type: "invite_code",
-    target_id: "TEAM-INTERNAL-2025",
-    details: {
-      code: "TEAM-INTERNAL-2025",
-      max_uses: 10,
-      expires_at: null,
-      description: "Internal team onboarding",
-    },
-    created_at: "2025-12-01T15:45:00Z",
-  },
-  {
-    log_id: "log-008",
-    admin_user_id: "admin-001",
-    admin_email: "admin@test.com",
-    action: "user_suspended",
-    target_type: "user",
-    target_id: "user-777",
-    details: {
-      user_email: "spam.bot@badactor.com",
-      reason: "Automated spam activity detected",
-      duration: "permanent",
-    },
-    created_at: "2025-12-01T10:20:00Z",
-  },
-  {
-    log_id: "log-009",
-    admin_user_id: "admin-001",
-    admin_email: "admin@test.com",
-    action: "document_deleted",
-    target_type: "document",
-    target_id: "doc-555",
-    details: {
-      filename: "malicious_script.txt",
-      user_email: "suspicious@user.com",
-      size_bytes: 512000,
-      reason: "Malware detection",
-    },
-    created_at: "2025-11-30T18:30:00Z",
-  },
-  {
-    log_id: "log-010",
-    admin_user_id: "admin-001",
-    admin_email: "admin@test.com",
-    action: "invite_code_revoked",
-    target_type: "invite_code",
-    target_id: "EXPIRED-TEST",
-    details: {
-      code: "EXPIRED-TEST",
-      current_uses: 0,
-      max_uses: 5,
-      reason: "Testing completed",
-    },
-    created_at: "2025-11-30T12:00:00Z",
-  },
-];
-
 export function AdminAuditLogs() {
   const [searchQuery, setSearchQuery] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const limit = 20;
 
-  // Filter logs
-  const filteredLogs = MOCK_LOGS.filter((log) => {
+  // Fetch real audit logs from backend
+  const { data, isLoading, error } = useAdminAuditLogs({ page, limit });
+
+  // Extract logs and pagination from API response
+  const allLogs: AuditLog[] = data?.logs || [];
+  const totalLogs = data?.total || 0;
+  const totalPages = data?.pages || 1;
+
+  // Client-side filtering (search and action filter)
+  const filteredLogs = allLogs.filter((log) => {
     const matchesSearch =
-      log.admin_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.target_id.toLowerCase().includes(searchQuery.toLowerCase());
+      log.admin_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.target_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      JSON.stringify(log.details)
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
     const matchesAction = actionFilter === "all" || log.action === actionFilter;
     return matchesSearch && matchesAction;
   });
@@ -271,6 +134,44 @@ export function AdminAuditLogs() {
       .join(" ");
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-amber-600 dark:text-amber-400 mx-auto" />
+          <p className="text-sm text-gray-600 dark:text-slate-400 font-mono">
+            LOADING_AUDIT_TRAIL...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md">
+          <Shield className="w-12 h-12 text-red-600 dark:text-red-400 mx-auto" />
+          <p className="text-sm text-red-600 dark:text-red-400 font-mono font-bold">
+            ERROR_LOADING_AUDIT_LOGS
+          </p>
+          <p className="text-xs text-gray-600 dark:text-slate-400 font-mono">
+            {(error as Error).message || "Failed to fetch audit logs"}
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white font-mono text-sm rounded hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors"
+          >
+            RETRY
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
       {/* Header */}
@@ -282,13 +183,13 @@ export function AdminAuditLogs() {
                 AUDIT_LOGS
               </h1>
               <p className="text-sm text-gray-600 dark:text-slate-400 mt-1 font-mono">
-                Security and compliance audit trail
+                Security audit trail - {totalLogs} total events
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               <span className="text-xs font-mono text-gray-600 dark:text-slate-400">
-                {filteredLogs.length} EVENTS
+                PAGE {page} / {totalPages}
               </span>
             </div>
           </div>
