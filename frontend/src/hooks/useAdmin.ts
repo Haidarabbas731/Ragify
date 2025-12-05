@@ -204,6 +204,12 @@ export const useDeactivateInviteCode = () => {
   });
 };
 
+/**
+ * Alias for useDeactivateInviteCode (revoke = deactivate)
+ * @returns Mutation function and state for revoking invite codes
+ */
+export const useRevokeInviteCode = useDeactivateInviteCode;
+
 // ============================================================================
 // Audit Logs
 // ============================================================================
