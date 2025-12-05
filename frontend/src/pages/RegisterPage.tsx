@@ -1,10 +1,11 @@
 /**
- * Register Page - Gateway to Knowledge
- * Glass morphism aesthetic with password strength indicator
+ * Register Page - Structured Onboarding
+ * Full-page form with minimal aesthetic, different from login
+ * Fonts: Fira Code (main), IBM Plex Sans (secondary)
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Brain, Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -38,11 +39,11 @@ const checkPasswordStrength = (password: string): number => {
 };
 
 const getStrengthColor = (score: number): string => {
-  if (score === 0) return "bg-transparent";
-  if (score <= 2) return "bg-gradient-to-r from-red-500 to-orange-500";
-  if (score === 3) return "bg-gradient-to-r from-orange-500 to-yellow-500";
-  if (score === 4) return "bg-gradient-to-r from-yellow-500 to-lime-500";
-  return "bg-gradient-to-r from-lime-500 to-green-500";
+  if (score === 0) return "bg-stone-300 dark:bg-zinc-700";
+  if (score <= 2) return "bg-red-500";
+  if (score === 3) return "bg-orange-500";
+  if (score === 4) return "bg-lime-500";
+  return "bg-green-500";
 };
 
 const getStrengthLabel = (score: number): string => {
@@ -180,61 +181,164 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-cyan-50 to-blue-50 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900 p-4">
-      {/* Animated background gradient orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-400/20 dark:bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-400/20 dark:bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-      </div>
+    <div className="min-h-screen bg-white dark:bg-zinc-950 flex">
+      {/* Left Side - Progress Indicator */}
+      <div className="hidden lg:flex lg:w-2/5 bg-zinc-950 dark:bg-zinc-900 relative overflow-hidden flex-col justify-between p-16">
+        {/* Grid pattern */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)`,
+            backgroundSize: "50px 50px",
+          }}
+        />
 
-      {/* Register Card */}
-      <div className="relative w-full max-w-md">
-        {/* Glass morphism card */}
-        <div className="relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-slate-700/50 p-8 md:p-10">
-          {/* Gradient border effect */}
-          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-cyan-500/20 via-blue-500/20 to-purple-500/20 dark:from-cyan-500/10 dark:via-blue-500/10 dark:to-purple-500/10 blur-xl -z-10" />
+        <div className="relative z-10">
+          {/* Logo */}
+          <div className="w-10 h-10 bg-white mb-12" />
 
-          {/* Brand Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-50 animate-pulse" />
-              <div className="relative bg-gradient-to-br from-cyan-500 to-blue-600 p-4 rounded-2xl">
-                <Brain className="h-8 w-8 text-white" />
+          {/* Progress Steps */}
+          <div className="space-y-8">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                <span
+                  className="text-zinc-950 font-bold"
+                  style={{ fontFamily: "'Fira Code', monospace" }}
+                >
+                  01
+                </span>
+              </div>
+              <div className="pt-2">
+                <h3
+                  className="text-white font-semibold mb-1"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
+                  Create Account
+                </h3>
+                <p
+                  className="text-zinc-400 text-sm"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
+                  Enter your details to get started
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 opacity-40">
+              <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0">
+                <span
+                  className="text-white font-bold"
+                  style={{ fontFamily: "'Fira Code', monospace" }}
+                >
+                  02
+                </span>
+              </div>
+              <div className="pt-2">
+                <h3
+                  className="text-white font-semibold mb-1"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
+                  Upload Documents
+                </h3>
+                <p
+                  className="text-zinc-400 text-sm"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
+                  Add your knowledge base files
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 opacity-40">
+              <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0">
+                <span
+                  className="text-white font-bold"
+                  style={{ fontFamily: "'Fira Code', monospace" }}
+                >
+                  03
+                </span>
+              </div>
+              <div className="pt-2">
+                <h3
+                  className="text-white font-semibold mb-1"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
+                  Start Chatting
+                </h3>
+                <p
+                  className="text-zinc-400 text-sm"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
+                  Query your documents with AI
+                </p>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Bottom Quote */}
+        <div className="relative z-10">
+          <div className="w-12 h-1 bg-white mb-4" />
+          <p
+            className="text-white text-sm leading-relaxed"
+            style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+          >
+            Secure, private, and powerful. Your documents stay yours.
+          </p>
+        </div>
+      </div>
+
+      {/* Right Side - Form */}
+      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+        <div className="w-full max-w-lg">
+          {/* Mobile Logo */}
+          <div className="lg:hidden mb-8">
+            <div className="w-8 h-8 bg-zinc-950 dark:bg-white mb-4" />
+          </div>
 
           {/* Heading */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-black mb-3 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 dark:from-cyan-400 dark:via-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-['Fira_Code'] tracking-tight leading-tight drop-shadow-sm">
-              Join the Knowledge
-            </h1>
-            <p className="text-base text-slate-600 dark:text-slate-400 font-['DM_Sans'] font-medium tracking-wide">
-              Create your account to get started
+          <div className="mb-10">
+            <h2
+              className="text-4xl font-bold text-zinc-950 dark:text-white mb-2"
+              style={{ fontFamily: "'Fira Code', monospace" }}
+            >
+              Create Account
+            </h2>
+            <p
+              className="text-zinc-600 dark:text-zinc-400"
+              style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              Fill in your details to get started
             </p>
           </div>
 
           {/* Register Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Email Field */}
             <div className="space-y-2">
               <Label
                 htmlFor="email"
-                className="text-sm text-slate-700 dark:text-slate-300 font-semibold font-['DM_Sans'] tracking-wide uppercase"
+                className="text-xs uppercase tracking-widest text-zinc-700 dark:text-zinc-300 font-semibold"
+                style={{ fontFamily: "'Fira Code', monospace" }}
               >
-                Email Address
+                Email
               </Label>
               <Input
                 {...register("email")}
                 id="email"
                 type="email"
                 autoComplete="email"
-                placeholder="you@example.com"
-                className="h-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['DM_Sans']"
+                placeholder="your@email.com"
+                className="h-12 border-2 border-zinc-300 dark:border-zinc-700 focus:border-zinc-950 dark:focus:border-white focus:ring-0 bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-colors"
+                style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                 disabled={isSubmitting}
               />
               {errors.email && (
-                <p className="text-sm text-red-500 font-['DM_Sans']">
+                <p
+                  className="text-sm text-red-600 dark:text-red-400"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
                   {errors.email.message}
                 </p>
               )}
@@ -244,7 +348,8 @@ export function RegisterPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="password"
-                className="text-sm text-slate-700 dark:text-slate-300 font-semibold font-['DM_Sans'] tracking-wide uppercase"
+                className="text-xs uppercase tracking-widest text-zinc-700 dark:text-zinc-300 font-semibold"
+                style={{ fontFamily: "'Fira Code', monospace" }}
               >
                 Password
               </Label>
@@ -255,14 +360,16 @@ export function RegisterPage() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   placeholder="••••••••"
-                  className="h-12 pr-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['DM_Sans']"
+                  className="h-12 border-2 border-zinc-300 dark:border-zinc-700 focus:border-zinc-950 dark:focus:border-white focus:ring-0 bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 pr-12 transition-colors"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                   disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-500 hover:text-zinc-950 dark:hover:text-white transition-colors"
                   disabled={isSubmitting}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -274,39 +381,80 @@ export function RegisterPage() {
 
               {/* Password Strength Indicator */}
               {password && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-xs font-['DM_Sans']">
-                    <span className="text-slate-600 dark:text-slate-400">
-                      Password Strength
-                    </span>
-                    <span
-                      className={`font-semibold ${
-                        passwordStrength <= 2
-                          ? "text-red-500"
-                          : passwordStrength === 3
-                            ? "text-yellow-500"
-                            : passwordStrength === 4
-                              ? "text-lime-500"
-                              : "text-green-500"
-                      }`}
+                <div className="space-y-2 mt-3">
+                  <div className="flex gap-1">
+                    {/* biome-ignore lint/suspicious/noArrayIndexKey: static array length never changes */}
+                    {[...Array(5)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 transition-all duration-300 ${
+                          i < passwordStrength
+                            ? getStrengthColor(passwordStrength)
+                            : "bg-zinc-200 dark:bg-zinc-800"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  {passwordStrength > 0 && (
+                    <p
+                      className="text-xs text-zinc-600 dark:text-zinc-400"
+                      style={{ fontFamily: "'Fira Code', monospace" }}
                     >
-                      {getStrengthLabel(passwordStrength)}
-                    </span>
+                      Strength: {getStrengthLabel(passwordStrength)}
+                    </p>
+                  )}
+
+                  {/* Password Requirements Checklist */}
+                  <div className="space-y-1 mt-2">
+                    {[
+                      {
+                        label: "8+ characters",
+                        test: passwordRequirements.minLength,
+                      },
+                      {
+                        label: "Uppercase letter",
+                        test: passwordRequirements.uppercase,
+                      },
+                      {
+                        label: "Lowercase letter",
+                        test: passwordRequirements.lowercase,
+                      },
+                      { label: "Number", test: passwordRequirements.number },
+                      {
+                        label: "Special character",
+                        test: passwordRequirements.special,
+                      },
+                    ].map(({ label, test }) => (
+                      <div
+                        key={label}
+                        className="flex items-center gap-2 text-xs"
+                      >
+                        {test.test(password) ? (
+                          <Check className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <X className="w-3 h-3 text-zinc-400 dark:text-zinc-600" />
+                        )}
+                        <span
+                          className={
+                            test.test(password)
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-zinc-500 dark:text-zinc-500"
+                          }
+                          style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                        >
+                          {label}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ease-out ${getStrengthColor(passwordStrength)}`}
-                      style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-['DM_Sans'] mt-1">
-                    Use 8+ characters with uppercase, lowercase, number & symbol
-                  </p>
                 </div>
               )}
 
               {errors.password && (
-                <p className="text-sm text-red-500 font-['DM_Sans']">
+                <p
+                  className="text-sm text-red-600 dark:text-red-400"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
                   {errors.password.message}
                 </p>
               )}
@@ -316,9 +464,9 @@ export function RegisterPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="inviteCode"
-                className="text-sm text-slate-700 dark:text-slate-300 font-semibold font-['DM_Sans'] tracking-wide uppercase flex items-center gap-2"
+                className="text-xs uppercase tracking-widest text-zinc-700 dark:text-zinc-300 font-semibold"
+                style={{ fontFamily: "'Fira Code', monospace" }}
               >
-                <KeyRound className="h-4 w-4 text-cyan-500" />
                 Invite Code
               </Label>
               <Input
@@ -327,22 +475,29 @@ export function RegisterPage() {
                 type="text"
                 placeholder="KB-XXXX-XXXX-XXXX"
                 maxLength={17}
-                className="h-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['Fira_Code'] tracking-wider uppercase text-center font-semibold"
+                className="h-12 border-2 border-zinc-300 dark:border-zinc-700 focus:border-zinc-950 dark:focus:border-white focus:ring-0 bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 uppercase tracking-widest text-center font-bold transition-colors"
+                style={{ fontFamily: "'Fira Code', monospace" }}
                 disabled={isSubmitting}
               />
               {errors.inviteCode && (
-                <p className="text-sm text-red-500 font-['DM_Sans']">
+                <p
+                  className="text-sm text-red-600 dark:text-red-400"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
                   {errors.inviteCode.message}
                 </p>
               )}
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-['DM_Sans']">
+              <p
+                className="text-xs text-zinc-500 dark:text-zinc-500"
+                style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+              >
                 Don't have a code?{" "}
                 <button
                   type="button"
                   onClick={() =>
                     toast.info("Contact your administrator for an invite code")
                   }
-                  className="text-cyan-600 dark:text-cyan-400 hover:underline inline"
+                  className="text-zinc-950 dark:text-white underline hover:no-underline"
                 >
                   Request access
                 </button>
@@ -353,7 +508,8 @@ export function RegisterPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-cyan-500/30 dark:shadow-cyan-500/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-['DM_Sans'] mt-6"
+              className="w-full h-12 bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 font-semibold transition-all duration-300 hover:translate-y-[-2px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 mt-8 group"
+              style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
             >
               {isSubmitting ? (
                 <>
@@ -361,29 +517,35 @@ export function RegisterPage() {
                   Creating account...
                 </>
               ) : (
-                "Create Account"
+                <>
+                  Create Account
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </>
               )}
             </Button>
           </form>
 
           {/* Login Link */}
-          <div className="mt-8 text-center">
-            <p className="text-slate-600 dark:text-slate-400 font-['DM_Sans']">
+          <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
+            <p
+              className="text-zinc-600 dark:text-zinc-400 text-center"
+              style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 font-semibold transition-colors"
+                className="text-zinc-950 dark:text-white font-semibold underline underline-offset-4 hover:no-underline transition-all"
               >
                 Sign in
               </Link>
             </p>
           </div>
         </div>
-
-        {/* Decorative floating elements */}
-        <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full blur-2xl opacity-20 animate-pulse" />
-        <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full blur-2xl opacity-20 animate-pulse delay-500" />
       </div>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+      `}</style>
     </div>
   );
 }
