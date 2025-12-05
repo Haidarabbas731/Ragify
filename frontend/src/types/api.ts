@@ -255,6 +255,14 @@ export interface Collection {
 }
 
 /**
+ * Response for list collections endpoint (includes total doc count)
+ */
+export interface CollectionListResponse {
+  collections: Collection[];
+  total_documents: number;
+}
+
+/**
  * Create collection request
  */
 export interface CreateCollectionRequest {

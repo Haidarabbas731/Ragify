@@ -9,16 +9,17 @@ import {
 } from "@/lib/api";
 import type {
   Collection,
+  CollectionListResponse,
   CreateCollectionRequest,
   UpdateCollectionRequest,
 } from "@/types/api";
 
 /**
- * Hook to fetch list of collections
- * @returns React Query result with collections list
+ * Hook to fetch list of collections with total document count
+ * @returns React Query result with collections list and total documents
  */
 export const useCollections = () => {
-  return useQuery<Collection[]>({
+  return useQuery<CollectionListResponse>({
     queryKey: ["collections"],
     queryFn: () => getCollections(),
     staleTime: 1000 * 60 * 5, // 5 minutes

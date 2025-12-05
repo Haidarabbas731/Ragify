@@ -7,6 +7,51 @@
 
 ---
 
+## 🔧 RECENT FIXES (December 5, 2025)
+
+### **SECURITY UPDATE:** Fixed Collections API 500 Error
+- **Issue:** Backend Collections API was returning 500 error due to `ValueError: "Collection" object has no field "document_count"`
+- **Root Cause:** Code was attempting to directly modify SQLModel `Collection` object by setting `document_count` attribute, which doesn't exist in the model
+- **Fix:** Updated `backend/app/api/v1/collections.py`:
+  - Modified `list_collections` endpoint to convert SQLModel to dict, add `document_count`, then create `CollectionResponse` object
+  - Modified `get_collection` endpoint with same pattern
+  - Both endpoints now properly use the `CollectionResponse` schema which includes the `document_count` field
+- **Files Modified:**
+  - `backend/app/api/v1/collections.py` (lines 100-110, 145-157)
+- **Status:** ✅ FIXED - Collections page now loads successfully
+
+### **IMPROVEMENT:** Enhanced CORS Configuration for SSE
+- **Issue:** SSE endpoint OPTIONS preflight was returning 200 instead of 204
+- **Fix:** Updated `backend/app/api/v1/documents.py`:
+  - Changed status code from 200 to 204 (proper preflight response)
+  - Added additional CORS headers: `Cache-Control`, `X-Requested-With`
+  - Added `Access-Control-Max-Age: 86400` for better caching
+- **Files Modified:**
+  - `backend/app/api/v1/documents.py` (lines 408-421)
+- **Status:** ✅ IMPROVED - SSE connections now work reliably
+
+### **IMPROVEMENT:** Modern Collections Page Design
+- **Issue:** User complained about square/brutalist card design and basic sans-serif typography
+- **Fix:** Updated `frontend/src/components/documents/Collections.tsx`:
+  - Replaced square cards (`rounded-none`, `border-4`) with modern rounded cards (`rounded-2xl`, `ring-1`)
+  - Changed from brutalist style to elegant minimalist design
+  - Replaced font-family strings with system fonts for better performance
+  - Added subtle gradient orbs for visual interest
+  - Improved hover states and animations
+  - Better spacing and typography hierarchy
+- **Files Modified:**
+  - `frontend/src/components/documents/Collections.tsx` (header comments, all card components)
+- **Status:** ✅ IMPROVED - Modern, polished design with better UX
+
+### **Verification:**
+- ✅ Collections API returns 200 status
+- ✅ SSE connection opens successfully (visible in console logs)
+- ✅ No CORS errors in browser console
+- ✅ Cards display with modern rounded design
+- ✅ Improved typography and visual hierarchy
+
+---
+
 ## ⚠️ IMPORTANT GIT RULES (READ FIRST)
 
 **PRD Reference:** Section 11.8 (Development Workflow & Git Strategy)

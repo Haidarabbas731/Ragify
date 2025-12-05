@@ -83,13 +83,14 @@ export function ChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
-
+ 
   // Backend hooks
   const { data: conversations, isLoading: conversationsLoading } =
     useConversations({ limit: 50, offset: 0 });
   const { data: conversationData, isLoading: conversationLoading } =
     useConversation(conversationId || undefined);
-  const { data: collections } = useCollections();
+  const { data: collectionsData } = useCollections();
+  const collections = collectionsData?.collections || [];
   const deleteConversationMutation = useDeleteConversation();
 
   // Streaming hook
@@ -582,7 +583,7 @@ export function ChatPage() {
         {/* Chat Area */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Active Filter Banner */}
-          {selectedCollectionId && collections && (
+          {selectedCollectionId && collections.length > 0 && (
             <div className="bg-purple-50 dark:bg-purple-950/30 border-b border-purple-200 dark:border-purple-800 px-6 py-3">
               <div className="max-w-4xl mx-auto flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -761,13 +762,11 @@ export function ChatPage() {
                 {/* Collection Filter on Left */}
                 <div className="hidden sm:block flex-shrink-0">
                   <CollectionFilter
-                    collections={
-                      collections?.map((c) => ({
-                        collection_id: c.collection_id,
-                        name: c.name,
-                        document_count: c.document_count,
-                      })) || []
-                    }
+                    collections={collections.map((c) => ({
+                      collection_id: c.collection_id,
+                      name: c.name,
+                      document_count: c.document_count,
+                    }))}
                     selectedCollectionId={selectedCollectionId}
                     onSelectCollection={setSelectedCollectionId}
                   />
@@ -806,11 +805,11 @@ export function ChatPage() {
                 <div className="sm:hidden">
                   <CollectionFilter
                     collections={
-                      collections?.map((c) => ({
+                      collections.map((c) => ({
                         collection_id: c.collection_id,
                         name: c.name,
                         document_count: c.document_count,
-                      })) || []
+                      }))
                     }
                     selectedCollectionId={selectedCollectionId}
                     onSelectCollection={setSelectedCollectionId}
