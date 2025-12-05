@@ -10,76 +10,30 @@ import {
   Copy,
   Filter,
   Key,
+  Loader2,
   Plus,
+  Shield,
   Trash2,
   X,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  useAdminInviteCodes,
+  useCreateInviteCode,
+  useRevokeInviteCode,
+} from "../../hooks/useAdmin";
 
 interface InviteCode {
+  invite_code_id?: string;
   code: string;
   status: "active" | "expired" | "fully_used" | "revoked";
   max_uses: number;
   current_uses: number;
   expires_at: string | null;
-  created_by: string;
+  created_by: string | null;
   created_at: string;
   description: string | null;
 }
-
-// Mock data
-const MOCK_CODES: InviteCode[] = [
-  {
-    code: "ADMIN2025XKJF",
-    status: "active",
-    max_uses: 10,
-    current_uses: 3,
-    expires_at: "2025-12-31T23:59:59Z",
-    created_by: "admin@test.com",
-    created_at: "2025-12-01T10:00:00Z",
-    description: "Holiday promotion codes",
-  },
-  {
-    code: "BETA-TESTER-99",
-    status: "active",
-    max_uses: 50,
-    current_uses: 42,
-    expires_at: null,
-    created_by: "admin@test.com",
-    created_at: "2025-11-15T14:30:00Z",
-    description: "Beta testing program",
-  },
-  {
-    code: "TEAM-INTERNAL",
-    status: "fully_used",
-    max_uses: 5,
-    current_uses: 5,
-    expires_at: null,
-    created_by: "admin@test.com",
-    created_at: "2025-11-01T09:00:00Z",
-    description: "Internal team access",
-  },
-  {
-    code: "EXPIRED-CODE",
-    status: "expired",
-    max_uses: 20,
-    current_uses: 8,
-    expires_at: "2025-11-30T23:59:59Z",
-    created_by: "admin@test.com",
-    created_at: "2025-10-15T12:00:00Z",
-    description: null,
-  },
-  {
-    code: "REVOKED-TEST",
-    status: "revoked",
-    max_uses: 100,
-    current_uses: 12,
-    expires_at: null,
-    created_by: "admin@test.com",
-    created_at: "2025-09-20T16:45:00Z",
-    description: "Test code - revoked for security",
-  },
-];
 
 export function AdminInviteCodes() {
   const [statusFilter, setStatusFilter] = useState<
@@ -99,8 +53,20 @@ export function AdminInviteCodes() {
     description: "",
   });
 
+  // Fetch invite codes from backend
+  const {
+    data: inviteCodes = [],
+    isLoading,
+    error,
+    refetch,
+  } = useAdminInviteCodes();
+
+  // Get mutations
+  const createMutation = useCreateInviteCode();
+  const revokeMutation = useRevokeInviteCode();
+
   // Filter codes
-  const filteredCodes = MOCK_CODES.filter(
+  const filteredCodes = inviteCodes.filter(
     (code) => statusFilter === "all" || code.status === statusFilter,
   );
 
@@ -124,17 +90,38 @@ export function AdminInviteCodes() {
 
   // Handle revoke
   const handleRevoke = (code: InviteCode) => {
-    console.log("Revoke code:", code.code);
-    setConfirmDialog(null);
-    // TODO: API call
+    if (!code.invite_code_id) return;
+    revokeMutation.mutate(code.invite_code_id, {
+      onSuccess: () => {
+        setConfirmDialog(null);
+      },
+    });
   };
 
   // Handle create
   const handleCreate = () => {
-    console.log("Create code:", formData);
-    setCreateDialogOpen(false);
-    setFormData({ max_uses: 10, expires_at: "", description: "" });
-    // TODO: API call
+    const payload: {
+      max_uses: number;
+      expires_at?: string;
+      description?: string;
+    } = {
+      max_uses: formData.max_uses,
+    };
+
+    if (formData.expires_at) {
+      payload.expires_at = new Date(formData.expires_at).toISOString();
+    }
+
+    if (formData.description.trim()) {
+      payload.description = formData.description.trim();
+    }
+
+    createMutation.mutate(payload, {
+      onSuccess: () => {
+        setCreateDialogOpen(false);
+        setFormData({ max_uses: 10, expires_at: "", description: "" });
+      },
+    });
   };
 
   // Get status badge colors
@@ -151,6 +138,42 @@ export function AdminInviteCodes() {
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-12 h-12 animate-spin text-purple-600 dark:text-purple-400" />
+        <p className="text-sm text-gray-600 dark:text-slate-400 font-mono">
+          LOADING_INVITE_CODES...
+        </p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-6 px-4">
+        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-800 border-2 border-red-200 dark:border-red-900/50 rounded-lg p-8 max-w-md w-full text-center shadow-lg">
+          <Shield className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 font-mono mb-2">
+            ACCESS_ERROR
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-slate-400 font-mono mb-6">
+            Failed to load invite codes
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="px-6 py-2.5 bg-purple-600 dark:bg-purple-500 hover:bg-purple-700 dark:hover:bg-purple-600 text-white font-mono text-sm rounded transition-colors"
+          >
+            RETRY
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
       {/* Header */}
@@ -162,7 +185,8 @@ export function AdminInviteCodes() {
                 INVITE_CODES
               </h1>
               <p className="text-sm text-gray-600 dark:text-slate-400 mt-1 font-mono">
-                Create and manage registration invite codes
+                Create and manage registration invite codes -{" "}
+                {inviteCodes.length} total codes
               </p>
             </div>
             <button
@@ -429,16 +453,21 @@ export function AdminInviteCodes() {
               <button
                 type="button"
                 onClick={() => setCreateDialogOpen(false)}
-                className="px-4 py-2 bg-gray-200 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-700 transition-colors"
+                disabled={createMutation.isPending}
+                className="px-4 py-2 bg-gray-200 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 CANCEL
               </button>
               <button
                 type="button"
                 onClick={handleCreate}
-                className="px-4 py-2 bg-blue-600 dark:bg-cyan-500 border border-blue-700 dark:border-cyan-600 rounded font-mono text-sm text-white hover:bg-blue-700 dark:hover:bg-cyan-600 transition-colors"
+                disabled={createMutation.isPending}
+                className="px-4 py-2 bg-blue-600 dark:bg-cyan-500 border border-blue-700 dark:border-cyan-600 rounded font-mono text-sm text-white hover:bg-blue-700 dark:hover:bg-cyan-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                CREATE_CODE
+                {createMutation.isPending && (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                )}
+                {createMutation.isPending ? "CREATING..." : "CREATE_CODE"}
               </button>
             </div>
           </div>
@@ -489,16 +518,21 @@ export function AdminInviteCodes() {
               <button
                 type="button"
                 onClick={() => setConfirmDialog(null)}
-                className="px-4 py-2 bg-gray-200 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-700 transition-colors"
+                disabled={revokeMutation.isPending}
+                className="px-4 py-2 bg-gray-200 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 CANCEL
               </button>
               <button
                 type="button"
                 onClick={() => handleRevoke(confirmDialog.code)}
-                className="px-4 py-2 bg-red-600 dark:bg-red-500 border border-red-700 dark:border-red-600 text-white rounded font-mono text-sm hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
+                disabled={revokeMutation.isPending}
+                className="px-4 py-2 bg-red-600 dark:bg-red-500 border border-red-700 dark:border-red-600 text-white rounded font-mono text-sm hover:bg-red-700 dark:hover:bg-red-600 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                REVOKE
+                {revokeMutation.isPending && (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                )}
+                {revokeMutation.isPending ? "REVOKING..." : "REVOKE"}
               </button>
             </div>
           </div>
