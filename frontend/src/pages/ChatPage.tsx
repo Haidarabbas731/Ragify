@@ -1,9 +1,9 @@
 /**
  * Chat Page - Conversation Hub with Real Backend Integration
- * Clean, modern chat interface matching the dashboard design system
- * Fonts: Space Grotesk (headings), Inter (UI), Fira Code (metadata)
- * Color: Purple/indigo palette complementing dashboard's blue-purple theme
- * Style: Clean, professional, conversation-focused
+ * Clean, modern chat interface with OKLCH purple theme
+ * Fonts: Geist (sans), Geist Mono (mono)
+ * Color: Purple OKLCH unified design system
+ * Style: Zero-distraction, conversation-focused
  * Features: Real-time streaming, conversation management, collection filtering
  */
 
@@ -83,7 +83,7 @@ export function ChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
-  
+
   // Track newly created conversations to prevent loading blink on URL transition
   const newlyCreatedConversationRef = useRef<string | null>(null);
 
@@ -116,10 +116,12 @@ export function ChatPage() {
         }),
       );
       setMessages(displayMessages);
-      
+
       // Clear the newly created conversation ref after data loads
       // This restores normal loading behavior for subsequent navigation
-      if (newlyCreatedConversationRef.current === conversationData.conversation_id) {
+      if (
+        newlyCreatedConversationRef.current === conversationData.conversation_id
+      ) {
         newlyCreatedConversationRef.current = null;
       }
     } else if (!conversationId) {
@@ -323,7 +325,10 @@ export function ChatPage() {
           // Track this conversation as newly created to skip loading screen
           newlyCreatedConversationRef.current = newConversationId;
           // Use replace to avoid browser history pollution and smooth transition
-          setSearchParams({ conversation: newConversationId }, { replace: true });
+          setSearchParams(
+            { conversation: newConversationId },
+            { replace: true },
+          );
         }
 
         // Always invalidate conversations cache to update message counts in sidebar
@@ -360,8 +365,8 @@ export function ChatPage() {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-600 dark:text-purple-400 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400 font-['Inter']">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400 font-sans">
             Loading conversation...
           </p>
         </div>
@@ -370,7 +375,7 @@ export function ChatPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 font-['Inter']">
+    <div className="h-screen flex flex-col bg-slate-50 dark:bg-slate-950 font-sans">
       {/* Top Navigation Bar */}
       <nav className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-4 sm:px-6 h-16">
@@ -402,10 +407,10 @@ export function ChatPage() {
 
             {/* Logo & Brand */}
             <Link to="/dashboard" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-                <MessageSquare className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                <MessageSquare className="w-6 h-6 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400 bg-clip-text text-transparent font-['Space_Grotesk'] tracking-tight">
+              <span className="text-xl font-bold text-primary font-sans tracking-tight">
                 Chat
               </span>
             </Link>
@@ -430,7 +435,7 @@ export function ChatPage() {
             {/* User Menu - Hidden on mobile */}
             <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-transparent">
               <User className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-['Inter']">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-sans">
                 {user?.email}
               </span>
             </div>
@@ -440,7 +445,7 @@ export function ChatPage() {
               onClick={handleLogout}
               variant="outline"
               size="sm"
-              className="hidden lg:flex gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-['Inter'] font-medium"
+              className="hidden lg:flex gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-sans font-medium"
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
@@ -474,7 +479,7 @@ export function ChatPage() {
         >
           {/* Mobile Header */}
           <div className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 font-['Space_Grotesk']">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 font-sans">
               Conversations
             </h2>
             <button
@@ -491,7 +496,7 @@ export function ChatPage() {
           <div className="p-6 border-b border-slate-200 dark:border-slate-800">
             <Button
               onClick={handleNewChat}
-              className="w-full gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 py-6 font-['Inter']"
+              className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 py-6 font-sans"
             >
               <Plus className="w-5 h-5" strokeWidth={2.5} />
               <span>New Chat</span>
@@ -500,13 +505,13 @@ export function ChatPage() {
 
           {/* Conversations List */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-['Inter']">
+            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-sans">
               Recent
             </h3>
 
             {conversationsLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : conversations && conversations.length > 0 ? (
               <div className="space-y-1">
@@ -519,7 +524,7 @@ export function ChatPage() {
                       }
                       className={`w-full text-left p-4 rounded-lg transition-all duration-300 border ${
                         conversationId === conv.conversation_id
-                          ? "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800"
+                          ? "bg-primary/10 dark:bg-primary/20 border-primary/50"
                           : "hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent hover:border-slate-200 dark:hover:border-slate-700"
                       }`}
                     >
@@ -527,16 +532,16 @@ export function ChatPage() {
                         <MessageSquare
                           className={`w-4 h-4 mt-0.5 flex-shrink-0 transition-colors ${
                             conversationId === conv.conversation_id
-                              ? "text-purple-500 dark:text-purple-400"
-                              : "text-slate-400 dark:text-slate-500 group-hover:text-purple-500 dark:group-hover:text-purple-400"
+                              ? "text-primary"
+                              : "text-slate-400 dark:text-slate-500 group-hover:text-primary"
                           }`}
                           strokeWidth={2}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate mb-1 font-['Inter']">
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate mb-1 font-sans">
                             {conv.last_message || "New conversation"}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
+                          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-mono">
                             <span>{conv.message_count} msgs</span>
                             <span className="text-slate-400 dark:text-slate-600">
                               •
@@ -569,7 +574,7 @@ export function ChatPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8 font-['Inter']">
+              <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8 font-sans">
                 No conversations yet.
                 <br />
                 Start chatting below!
@@ -581,14 +586,14 @@ export function ChatPage() {
           <div className="p-6 border-t border-slate-200 dark:border-slate-800 space-y-1">
             <Link
               to="/dashboard"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-sans transition-all hover:scale-[1.02]"
             >
               <HardDrive className="w-5 h-5" />
               <span>Dashboard</span>
             </Link>
             <Link
               to="/documents"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-sans transition-all hover:scale-[1.02]"
             >
               <FolderOpen className="w-5 h-5" />
               <span>Documents</span>
@@ -600,11 +605,11 @@ export function ChatPage() {
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Active Filter Banner */}
           {selectedCollectionId && collections.length > 0 && (
-            <div className="bg-purple-50 dark:bg-purple-950/30 border-b border-purple-200 dark:border-purple-800 px-6 py-3">
+            <div className="bg-primary/10 dark:bg-primary/20 border-b border-primary/50 px-6 py-3">
               <div className="max-w-4xl mx-auto flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  <span className="text-sm font-medium text-purple-700 dark:text-purple-300 font-['Inter']">
+                  <FolderOpen className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-primary font-sans">
                     Filtering by:{" "}
                     <span className="font-semibold">
                       {
@@ -618,7 +623,7 @@ export function ChatPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedCollectionId(null)}
-                  className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium font-['Inter'] transition-colors"
+                  className="text-xs text-primary hover:text-primary/80 font-medium font-sans transition-colors"
                 >
                   Clear filter
                 </button>
@@ -638,10 +643,10 @@ export function ChatPage() {
                     <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
                       <Sparkles className="w-10 h-10 text-white" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3 font-['Space_Grotesk']">
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3 font-sans">
                       Start a Conversation
                     </h2>
-                    <p className="text-slate-600 dark:text-slate-400 font-['Inter']">
+                    <p className="text-slate-600 dark:text-slate-400 font-sans">
                       Ask me anything about your uploaded documents. I'll
                       provide accurate answers with source citations.
                     </p>
@@ -655,11 +660,11 @@ export function ChatPage() {
                     /* User Message */
                     <div className="flex justify-end">
                       <div className="max-w-[80%]">
-                        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl rounded-br-none px-5 py-4 shadow-md hover:shadow-lg transition-all duration-300">
-                          <p className="text-sm leading-relaxed font-['Inter'] whitespace-pre-wrap">
+                        <div className="bg-primary text-primary-foreground rounded-xl rounded-br-none px-5 py-4 shadow-md hover:shadow-lg transition-all duration-300">
+                          <p className="text-sm leading-relaxed font-sans whitespace-pre-wrap">
                             {msg.content}
                           </p>
-                          <p className="text-xs text-purple-100/70 mt-2 font-['Fira_Code'] tabular-nums">
+                          <p className="text-xs text-primary-foreground/70 mt-2 font-mono tabular-nums">
                             {msg.timestamp.toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
@@ -674,15 +679,15 @@ export function ChatPage() {
                       <div className="max-w-[80%]">
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl rounded-tl-none px-5 py-4 shadow-md hover:shadow-lg transition-all duration-300">
                           <div className="flex items-center gap-2 mb-3">
-                            <Sparkles className="w-4 h-4 text-purple-500 dark:text-purple-400" />
-                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
+                            <Sparkles className="w-4 h-4 text-primary" />
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-sans">
                               AI Assistant
                             </span>
                           </div>
-                          <div className="prose prose-slate dark:prose-invert prose-sm max-w-none prose-headings:font-['Space_Grotesk'] prose-p:font-['Inter'] prose-a:text-purple-600 dark:prose-a:text-purple-400 prose-code:font-['Fira_Code']">
+                          <div className="prose prose-slate dark:prose-invert prose-sm max-w-none prose-headings:font-sans prose-p:font-sans prose-a:text-primary prose-code:font-mono">
                             <MarkdownContent content={msg.content} />
                           </div>
-                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 font-['Fira_Code'] tabular-nums">
+                          <p className="text-xs text-slate-400 dark:text-slate-500 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 font-mono tabular-nums">
                             {msg.timestamp.toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
@@ -693,7 +698,7 @@ export function ChatPage() {
                         {/* Source Citations */}
                         {msg.sources && msg.sources.length > 0 && (
                           <div className="mt-3 space-y-2">
-                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2 font-['Inter']">
+                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2 font-sans">
                               <FileText className="w-3.5 h-3.5" />
                               Sources
                             </p>
@@ -701,27 +706,27 @@ export function ChatPage() {
                               {msg.sources.map((source, idx) => (
                                 <div
                                   key={`${source.filename}-${source.chunk_index}-${idx}`}
-                                  className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 cursor-pointer"
+                                  className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700 hover:border-primary/50 dark:hover:border-primary/50 transition-all duration-300 cursor-pointer"
                                 >
                                   <div className="flex items-start gap-3">
-                                    <div className="p-2 bg-purple-100 dark:bg-purple-950 rounded-lg">
+                                    <div className="p-2 bg-primary/10 dark:bg-primary/20 rounded-lg">
                                       <FileText
-                                        className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400"
+                                        className="w-3.5 h-3.5 text-primary"
                                         strokeWidth={2}
                                       />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate mb-1 font-['Inter']">
+                                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate mb-1 font-sans">
                                         {source.filename}
                                       </p>
-                                      <div className="flex items-center gap-2 text-xs font-['Fira_Code']">
+                                      <div className="flex items-center gap-2 text-xs font-mono">
                                         <span className="text-slate-500 dark:text-slate-400">
                                           chunk {source.chunk_index}
                                         </span>
                                         <span className="text-slate-400 dark:text-slate-600">
                                           •
                                         </span>
-                                        <span className="font-semibold text-purple-600 dark:text-purple-400 tabular-nums">
+                                        <span className="font-semibold text-primary tabular-nums">
                                           {(
                                             source.relevance_score * 100
                                           ).toFixed(0)}
@@ -747,17 +752,17 @@ export function ChatPage() {
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl rounded-tl-none px-5 py-4 shadow-md">
                     <div className="flex items-center gap-3">
                       <div className="flex gap-1.5">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" />
+                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                         <div
-                          className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"
+                          className="w-2 h-2 bg-primary rounded-full animate-pulse"
                           style={{ animationDelay: "0.2s" }}
                         />
                         <div
-                          className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"
+                          className="w-2 h-2 bg-primary rounded-full animate-pulse"
                           style={{ animationDelay: "0.4s" }}
                         />
                       </div>
-                      <span className="text-sm text-slate-600 dark:text-slate-400 font-['Inter']">
+                      <span className="text-sm text-slate-600 dark:text-slate-400 font-sans">
                         Thinking...
                       </span>
                     </div>
@@ -797,7 +802,7 @@ export function ChatPage() {
                     onKeyDown={handleKeyPress}
                     placeholder="Ask anything about your documents..."
                     rows={1}
-                    className="w-full h-[44px] px-4 py-[10px] text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:focus:border-purple-400 text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 transition-all font-['Inter'] leading-[1.2] box-border"
+                    className="w-full h-[44px] px-4 py-[10px] text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 transition-all font-sans leading-[1.2] box-border"
                   />
                 </div>
 
@@ -805,10 +810,10 @@ export function ChatPage() {
                 <Button
                   onClick={handleSendMessage}
                   disabled={!message.trim() || isStreaming}
-                  className="!h-[44px] !min-h-[44px] !py-0 px-5 flex items-center justify-center bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-400 dark:disabled:from-slate-700 dark:disabled:to-slate-800 disabled:cursor-not-allowed text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:shadow-none font-['Inter'] font-semibold flex-shrink-0"
+                  className="!h-[44px] !min-h-[44px] !py-0 px-5 flex items-center justify-center bg-primary hover:bg-primary/90 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-primary-foreground rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:shadow-none font-sans font-semibold flex-shrink-0"
                 >
                   {isStreaming ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Send className="w-4 h-4" strokeWidth={2.5} />
                   )}
@@ -830,7 +835,7 @@ export function ChatPage() {
                   />
                 </div>
                 {/* Help Text */}
-                <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block font-['Inter']">
+                <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block font-sans">
                   Press Enter to send, Shift+Enter for new line
                 </p>
               </div>
