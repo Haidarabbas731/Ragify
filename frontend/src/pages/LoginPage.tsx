@@ -1,10 +1,11 @@
 /**
- * Login Page - Portal to Knowledge
- * Ethereal Tech Garden aesthetic with glass morphism
+ * Login Page - Minimalist Editorial
+ * Bold typography, negative space, no gradients
+ * Fonts: Fira Code (main), IBM Plex Sans (secondary)
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Brain, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -61,78 +62,113 @@ export function LoginPage() {
   // Show loading state during auth initialization
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-cyan-50 to-blue-50 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900">
-        <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 dark:bg-zinc-950">
+        <Loader2 className="h-8 w-8 animate-spin text-stone-900 dark:text-zinc-100" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-cyan-50 to-blue-50 dark:from-slate-950 dark:via-blue-950 dark:to-slate-900 p-4">
-      {/* Animated background gradient orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-400/20 dark:bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-400/20 dark:bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+    <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 flex">
+      {/* Left Side - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-stone-900 dark:bg-zinc-900 relative overflow-hidden">
+        {/* Subtle texture overlay */}
+        <div
+          className="absolute inset-0 opacity-5"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
+
+        <div className="relative z-10 flex flex-col justify-between p-16 text-white">
+          {/* Logo/Brand */}
+          <div>
+            <div className="w-12 h-12 border-4 border-white mb-6" />
+            <h1
+              className="text-5xl font-bold mb-4 leading-tight"
+              style={{ fontFamily: "'Fira Code', monospace" }}
+            >
+              Knowledge
+              <br />
+              Base
+            </h1>
+          </div>
+
+          {/* Quote */}
+          <div className="max-w-md">
+            <p
+              className="text-lg leading-relaxed text-stone-300 mb-4"
+              style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              "Information is the currency of the future. Your documents are
+              your wealth."
+            </p>
+            <div className="w-16 h-0.5 bg-white" />
+          </div>
+        </div>
       </div>
 
-      {/* Login Card */}
-      <div className="relative w-full max-w-md">
-        {/* Glass morphism card */}
-        <div className="relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-slate-700/50 p-8 md:p-10">
-          {/* Gradient border effect */}
-          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-cyan-500/20 via-blue-500/20 to-purple-500/20 dark:from-cyan-500/10 dark:via-blue-500/10 dark:to-purple-500/10 blur-xl -z-10" />
-
-          {/* Brand Icon */}
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-50 animate-pulse" />
-              <div className="relative bg-gradient-to-br from-cyan-500 to-blue-600 p-4 rounded-2xl">
-                <Brain className="h-8 w-8 text-white" />
-              </div>
-            </div>
+      {/* Right Side - Form */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          {/* Mobile Logo */}
+          <div className="lg:hidden mb-12">
+            <div className="w-10 h-10 border-4 border-stone-900 dark:border-zinc-100 mb-4" />
           </div>
 
           {/* Heading */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-black mb-3 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 dark:from-cyan-400 dark:via-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-['Fira_Code'] tracking-tight leading-tight drop-shadow-sm">
-              Welcome Back
-            </h1>
-            <p className="text-base text-slate-600 dark:text-slate-400 font-['DM_Sans'] font-medium tracking-wide">
-              Sign in to access your knowledge base
+          <div className="mb-12">
+            <h2
+              className="text-5xl font-bold text-stone-900 dark:text-zinc-100 mb-3"
+              style={{ fontFamily: "'Fira Code', monospace" }}
+            >
+              Sign in
+            </h2>
+            <p
+              className="text-lg text-stone-600 dark:text-zinc-400"
+              style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
+              Access your knowledge base
             </p>
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             {/* Email Field */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label
                 htmlFor="email"
-                className="text-sm text-slate-700 dark:text-slate-300 font-semibold font-['DM_Sans'] tracking-wide uppercase"
+                className="text-xs uppercase tracking-widest text-stone-700 dark:text-zinc-300 font-medium"
+                style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
               >
-                Email Address
+                Email
               </Label>
               <Input
                 {...register("email")}
                 id="email"
                 type="email"
                 autoComplete="email"
-                placeholder="you@example.com"
-                className="h-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['DM_Sans']"
+                placeholder="your@email.com"
+                className="h-14 border-0 border-b-2 border-stone-300 dark:border-zinc-700 rounded-none focus:border-stone-900 dark:focus:border-zinc-100 focus:ring-0 bg-transparent text-stone-900 dark:text-zinc-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 text-lg transition-colors"
+                style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                 disabled={isSubmitting}
               />
               {errors.email && (
-                <p className="text-sm text-red-500 font-['DM_Sans']">
+                <p
+                  className="text-sm text-red-600 dark:text-red-400"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
                   {errors.email.message}
                 </p>
               )}
             </div>
 
             {/* Password Field */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label
                 htmlFor="password"
-                className="text-sm text-slate-700 dark:text-slate-300 font-semibold font-['DM_Sans'] tracking-wide uppercase"
+                className="text-xs uppercase tracking-widest text-stone-700 dark:text-zinc-300 font-medium"
+                style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
               >
                 Password
               </Label>
@@ -143,14 +179,16 @@ export function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="h-12 pr-12 bg-white/50 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-cyan-500/20 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-300 font-['DM_Sans']"
+                  className="h-14 border-0 border-b-2 border-stone-300 dark:border-zinc-700 rounded-none focus:border-stone-900 dark:focus:border-zinc-100 focus:ring-0 bg-transparent text-stone-900 dark:text-zinc-100 placeholder:text-stone-400 dark:placeholder:text-zinc-600 text-lg pr-12 transition-colors"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                   disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-stone-500 dark:text-zinc-500 hover:text-stone-900 dark:hover:text-zinc-100 transition-colors"
                   disabled={isSubmitting}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -160,7 +198,10 @@ export function LoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-sm text-red-500 font-['DM_Sans']">
+                <p
+                  className="text-sm text-red-600 dark:text-red-400"
+                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                >
                   {errors.password.message}
                 </p>
               )}
@@ -170,7 +211,8 @@ export function LoginPage() {
             <div className="flex justify-end">
               <Link
                 to="/forgot-password"
-                className="text-sm text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 font-medium transition-colors font-['DM_Sans']"
+                className="text-sm text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 underline underline-offset-4 transition-colors"
+                style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
               >
                 Forgot password?
               </Link>
@@ -180,7 +222,8 @@ export function LoginPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-cyan-500/30 dark:shadow-cyan-500/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-['DM_Sans']"
+              className="w-full h-14 bg-stone-900 dark:bg-zinc-100 hover:bg-stone-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 font-medium text-lg transition-all duration-300 hover:translate-y-[-2px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 group"
+              style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
             >
               {isSubmitting ? (
                 <>
@@ -188,29 +231,35 @@ export function LoginPage() {
                   Signing in...
                 </>
               ) : (
-                "Sign In"
+                <>
+                  Sign In
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </>
               )}
             </Button>
           </form>
 
           {/* Sign Up Link */}
-          <div className="mt-8 text-center">
-            <p className="text-slate-600 dark:text-slate-400 font-['DM_Sans']">
+          <div className="mt-12 pt-8 border-t border-stone-200 dark:border-zinc-800">
+            <p
+              className="text-stone-600 dark:text-zinc-400 text-center"
+              style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+            >
               Don't have an account?{" "}
               <Link
                 to="/register"
-                className="text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 font-semibold transition-colors"
+                className="text-stone-900 dark:text-zinc-100 font-medium underline underline-offset-4 hover:no-underline transition-all"
               >
-                Sign up
+                Create one now
               </Link>
             </p>
           </div>
         </div>
-
-        {/* Decorative floating elements */}
-        <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full blur-2xl opacity-20 animate-pulse" />
-        <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full blur-2xl opacity-20 animate-pulse delay-500" />
       </div>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+      `}</style>
     </div>
   );
 }
