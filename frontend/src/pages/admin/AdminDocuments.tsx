@@ -16,9 +16,11 @@ import {
   Filter,
   Loader2,
   Search,
+  Shield,
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { useAdminDocuments } from "../../hooks/useAdmin";
 
 interface AdminDocument {
   document_id: string;
@@ -34,125 +36,8 @@ interface AdminDocument {
   error_message: string | null;
 }
 
-// Mock data - 8 documents
-const MOCK_DOCUMENTS: AdminDocument[] = [
-  {
-    document_id: "doc-001",
-    user_id: "user-001",
-    user_email: "admin@test.com",
-    filename: "Product_Requirements_2025.pdf",
-    file_type: "pdf",
-    size_bytes: 2457600, // 2.4MB
-    status: "active",
-    chunks_count: 45,
-    uploaded_at: "2025-12-02T10:30:00Z",
-    processed_at: "2025-12-02T10:31:00Z",
-    error_message: null,
-  },
-  {
-    document_id: "doc-002",
-    user_id: "user-002",
-    user_email: "user@example.com",
-    filename: "Meeting_Notes.docx",
-    file_type: "docx",
-    size_bytes: 524288, // 512KB
-    status: "active",
-    chunks_count: 12,
-    uploaded_at: "2025-12-02T09:15:00Z",
-    processed_at: "2025-12-02T09:16:00Z",
-    error_message: null,
-  },
-  {
-    document_id: "doc-003",
-    user_id: "user-003",
-    user_email: "john.doe@company.com",
-    filename: "Research_Paper_Draft.pdf",
-    file_type: "pdf",
-    size_bytes: 5242880, // 5MB
-    status: "processing",
-    chunks_count: 0,
-    uploaded_at: "2025-12-02T11:00:00Z",
-    processed_at: null,
-    error_message: null,
-  },
-  {
-    document_id: "doc-004",
-    user_id: "user-002",
-    user_email: "user@example.com",
-    filename: "API_Documentation.md",
-    file_type: "md",
-    size_bytes: 102400, // 100KB
-    status: "active",
-    chunks_count: 8,
-    uploaded_at: "2025-12-01T16:45:00Z",
-    processed_at: "2025-12-01T16:46:00Z",
-    error_message: null,
-  },
-  {
-    document_id: "doc-005",
-    user_id: "user-004",
-    user_email: "power.user@tech.io",
-    filename: "corrupted_file.pdf",
-    file_type: "pdf",
-    size_bytes: 1048576, // 1MB
-    status: "error",
-    chunks_count: 0,
-    uploaded_at: "2025-12-01T14:20:00Z",
-    processed_at: null,
-    error_message: "Failed to extract text: File corrupted",
-  },
-  {
-    document_id: "doc-006",
-    user_id: "user-001",
-    user_email: "admin@test.com",
-    filename: "Technical_Specs.txt",
-    file_type: "txt",
-    size_bytes: 51200, // 50KB
-    status: "active",
-    chunks_count: 5,
-    uploaded_at: "2025-11-30T12:00:00Z",
-    processed_at: "2025-11-30T12:01:00Z",
-    error_message: null,
-  },
-  {
-    document_id: "doc-007",
-    user_id: "user-003",
-    user_email: "john.doe@company.com",
-    filename: "Old_Archive_2024.pdf",
-    file_type: "pdf",
-    size_bytes: 3145728, // 3MB
-    status: "deleted",
-    chunks_count: 0,
-    uploaded_at: "2025-11-15T08:30:00Z",
-    processed_at: "2025-11-15T08:31:00Z",
-    error_message: null,
-  },
-  {
-    document_id: "doc-008",
-    user_id: "user-004",
-    user_email: "power.user@tech.io",
-    filename: "User_Guide_v2.docx",
-    file_type: "docx",
-    size_bytes: 1572864, // 1.5MB
-    status: "active",
-    chunks_count: 28,
-    uploaded_at: "2025-11-28T15:10:00Z",
-    processed_at: "2025-11-28T15:11:00Z",
-    error_message: null,
-  },
-];
-
-const MOCK_USERS = [
-  { id: "all", email: "All Users" },
-  { id: "user-001", email: "admin@test.com" },
-  { id: "user-002", email: "user@example.com" },
-  { id: "user-003", email: "john.doe@company.com" },
-  { id: "user-004", email: "power.user@tech.io" },
-];
-
 export function AdminDocuments() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [userFilter, setUserFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "processing" | "active" | "error" | "deleted"
   >("all");
@@ -164,16 +49,27 @@ export function AdminDocuments() {
     userEmail?: string;
   } | null>(null);
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const limit = 20;
 
-  // Filter documents
-  const filteredDocs = MOCK_DOCUMENTS.filter((doc) => {
+  // Fetch documents from backend
+  const { data, isLoading, error, refetch } = useAdminDocuments({
+    page,
+    limit,
+    status: statusFilter === "all" ? undefined : statusFilter,
+    sort_by: "uploaded_at",
+    order: "desc",
+  });
+
+  const allDocs: AdminDocument[] = data?.documents || [];
+  const totalDocs = data?.total || 0;
+  const totalPages = data?.pages || 1;
+
+  // Client-side search filtering (only on filename)
+  const filteredDocs = allDocs.filter((doc) => {
     const matchesSearch = doc.filename
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
-    const matchesUser = userFilter === "all" || doc.user_id === userFilter;
-    const matchesStatus = statusFilter === "all" || doc.status === statusFilter;
-    return matchesSearch && matchesUser && matchesStatus;
+    return matchesSearch;
   });
 
   // Format bytes
@@ -250,6 +146,42 @@ export function AdminDocuments() {
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="w-12 h-12 animate-spin text-indigo-600 dark:text-purple-400" />
+        <p className="text-sm text-gray-600 dark:text-slate-400 font-mono">
+          LOADING_DOCUMENTS...
+        </p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col items-center justify-center gap-6 px-4">
+        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-800 border-2 border-red-200 dark:border-red-900/50 rounded-lg p-8 max-w-md w-full text-center shadow-lg">
+          <Shield className="w-16 h-16 text-red-500 dark:text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 font-mono mb-2">
+            ACCESS_ERROR
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-slate-400 font-mono mb-6">
+            Failed to load documents
+          </p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="px-6 py-2.5 bg-indigo-600 dark:bg-purple-500 hover:bg-indigo-700 dark:hover:bg-purple-600 text-white font-mono text-sm rounded transition-colors"
+          >
+            RETRY
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
       {/* Header */}
@@ -261,12 +193,13 @@ export function AdminDocuments() {
                 DOCUMENTS_BROWSER
               </h1>
               <p className="text-sm text-gray-600 dark:text-slate-400 mt-1 font-mono">
-                Browse and manage all user documents
+                Browse and manage all user documents - {totalDocs} total
+                documents
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs font-mono">
               <div className="px-3 py-1.5 bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded text-gray-600 dark:text-slate-400">
-                {filteredDocs.length} DOCUMENTS
+                PAGE {page} / {totalPages}
               </div>
             </div>
           </div>
@@ -276,7 +209,7 @@ export function AdminDocuments() {
       <div className="p-8">
         {/* Filters */}
         <div className="mb-6 bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500" />
@@ -287,22 +220,6 @@ export function AdminDocuments() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 dark:focus:border-purple-500 transition-colors"
               />
-            </div>
-
-            {/* User Filter */}
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500 z-10" />
-              <select
-                value={userFilter}
-                onChange={(e) => setUserFilter(e.target.value)}
-                className="w-full pl-10 pr-8 py-2 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:border-indigo-400 dark:focus:border-purple-500 transition-colors appearance-none cursor-pointer"
-              >
-                {MOCK_USERS.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.email}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Status Filter */}
@@ -502,6 +419,31 @@ export function AdminDocuments() {
               </div>
             </div>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded font-mono text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                PREVIOUS
+              </button>
+              <span className="px-4 py-2 font-mono text-sm text-gray-600 dark:text-slate-400">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-4 py-2 bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded font-mono text-sm text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                NEXT
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
