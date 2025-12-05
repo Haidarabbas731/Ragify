@@ -5243,6 +5243,196 @@ Successfully created a production-grade Change Password component with security-
 
 ---
 
+## 📝 AVATAR UPLOAD - FUTURE ENHANCEMENT (December 5, 2025)
+
+### Status: ⏳ DEFERRED - Low Priority (Post-MVP)
+
+**Current State:**
+- ✅ Profile page displays user information correctly
+- ✅ "Change Avatar" button exists in UI ([ProfilePage.tsx:240](frontend/src/pages/ProfilePage.tsx#L240))
+- ❌ Avatar upload is non-functional (button is just a placeholder)
+- ❌ User data shows `avatar: null` ([ProfilePage.tsx:80](frontend/src/pages/ProfilePage.tsx#L80))
+
+**Why Deferred:**
+- Profile functionality is complete without avatar upload
+- Requires backend changes (DB migration, new endpoint, file storage)
+- Not blocking any core workflows
+- Can be added later without breaking existing features
+
+**Implementation Requirements (When Prioritized):**
+
+### Backend Changes Required:
+
+1. **Database Migration:**
+   ```python
+   # Add avatar_url column to users table
+   # File: backend/app/models/user.py
+   class User(SQLModel, table=True):
+       # ... existing fields ...
+       avatar_url: str | None = Field(default=None, max_length=500)
+   ```
+
+2. **API Endpoint:**
+   ```python
+   # New endpoint in backend/app/api/v1/users.py
+   @router.post("/me/avatar", response_model=AvatarUploadResponse)
+   async def upload_avatar(
+       file: UploadFile = File(...),
+       current_user: User = Depends(get_current_user),
+       db: AsyncSession = Depends(get_db),
+   ):
+       """
+       Upload user avatar image.
+
+       - Max size: 5MB
+       - Allowed formats: JPEG, PNG, WebP
+       - Stored in Backblaze B2 (similar to document uploads)
+       - Returns avatar URL
+       """
+   ```
+
+3. **File Storage:**
+   - Use existing Backblaze B2 integration
+   - Create separate bucket or folder: `avatars/{user_id}/avatar.{ext}`
+   - Resize/compress images to 256x256px (optimize storage)
+   - Delete old avatar when uploading new one
+
+4. **Validation:**
+   - File type: `image/jpeg`, `image/png`, `image/webp`
+   - Max size: 5MB (smaller than documents)
+   - Image dimensions: Minimum 100x100px, maximum 2000x2000px
+
+### Frontend Changes Required:
+
+1. **Avatar Upload Component:**
+   ```typescript
+   // New component: frontend/src/components/profile/AvatarUpload.tsx
+   interface AvatarUploadProps {
+     currentAvatarUrl: string | null;
+     onUploadSuccess: (newAvatarUrl: string) => void;
+   }
+
+   export function AvatarUpload({ currentAvatarUrl, onUploadSuccess }: AvatarUploadProps) {
+     // Features:
+     // - Image preview before upload
+     // - Drag-and-drop support
+     // - File validation (type, size)
+     // - Cropping tool (optional - nice to have)
+     // - Upload progress bar
+     // - Delete avatar option
+     // - Fallback to initials (current behavior)
+   }
+   ```
+
+2. **API Integration:**
+   ```typescript
+   // Add to frontend/src/lib/api.ts
+   export const uploadAvatar = async (file: File) => {
+     const formData = new FormData();
+     formData.append('file', file);
+     const { data } = await api.post('/users/me/avatar', formData, {
+       headers: { 'Content-Type': 'multipart/form-data' },
+     });
+     return data;
+   };
+
+   export const deleteAvatar = async () => {
+     await api.delete('/users/me/avatar');
+   };
+   ```
+
+3. **React Query Hook:**
+   ```typescript
+   // Add to frontend/src/hooks/useProfile.ts
+   export const useUploadAvatar = () => {
+     const queryClient = useQueryClient();
+     return useMutation({
+       mutationFn: uploadAvatar,
+       onSuccess: () => {
+         queryClient.invalidateQueries({ queryKey: ['profile'] });
+         toast.success('Avatar updated successfully');
+       },
+       onError: (error) => {
+         toast.error('Failed to upload avatar');
+       },
+     });
+   };
+   ```
+
+4. **Update ProfilePage.tsx:**
+   - Replace "Change Avatar" button with `<AvatarUpload />` component
+   - Display avatar image when available
+   - Maintain fallback to initials (current behavior)
+
+### Design Considerations:
+
+**Avatar Display:**
+- Circular crop (current design already shows circle)
+- Show in navbar when logged in
+- Show in profile page (larger version)
+- Show in admin user lists (if admin feature)
+- Fallback to initials (already implemented)
+
+**User Experience:**
+- Click to select file or drag-and-drop
+- Instant preview after selection
+- Upload button to confirm
+- Cancel option
+- Delete avatar option (revert to initials)
+- Loading state during upload
+
+**Error Handling:**
+- File too large (>5MB) → Toast notification
+- Invalid format → Toast notification
+- Upload failure → Toast with retry option
+- Network error → Proper error message
+
+### Technical Notes:
+
+**Storage Estimate:**
+- Assumption: 10,000 users, 50% upload avatars
+- Size per avatar: ~50KB (compressed 256x256)
+- Total storage: 5,000 × 50KB = 250MB (negligible)
+
+**Security:**
+- Validate file type on backend (don't trust frontend MIME type)
+- Scan for malicious content (optional - use image processing library)
+- Rate limit: Max 5 avatar uploads per hour per user
+- Delete old avatar after successful upload (prevent storage bloat)
+
+**Performance:**
+- Use CDN for avatar URLs (Backblaze B2 has built-in CDN)
+- Cache avatar URLs in frontend (React Query stale time)
+- Lazy load avatars in user lists
+
+### Libraries to Consider:
+
+- **Image Cropping:** `react-easy-crop` or `react-image-crop`
+- **Image Compression:** `browser-image-compression` (client-side)
+- **File Upload:** `react-dropzone` (already used in UploadZone)
+
+### Testing Checklist (When Implemented):
+
+- [ ] File validation (type, size) works
+- [ ] Image preview displays correctly
+- [ ] Upload progress shows
+- [ ] Avatar displays in profile page
+- [ ] Avatar displays in navbar
+- [ ] Delete avatar works (reverts to initials)
+- [ ] Error handling works (file too large, invalid type)
+- [ ] Dark/light mode support
+- [ ] Mobile responsive
+- [ ] Accessibility (keyboard navigation, screen readers)
+
+**Related Files:**
+- Frontend: [ProfilePage.tsx:240](frontend/src/pages/ProfilePage.tsx#L240) (Change Avatar button placeholder)
+- Backend: [user.py](backend/app/models/user.py) (User model - needs avatar_url field)
+- Backend: [users.py](backend/app/api/v1/users.py) (Users API - needs upload endpoint)
+
+**Priority:** LOW - Nice-to-have feature, not blocking MVP or core functionality.
+
+---
+
 ## 📝 CHUNKS DISPLAY UPDATE (December 3, 2025)
 
 ### Issue: Document Chunks Not Showing in Detail Page
