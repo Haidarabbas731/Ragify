@@ -143,13 +143,15 @@ export function Collections({
             Collections
           </h1>
           <p className="text-base text-slate-600 dark:text-slate-400 max-w-2xl">
-            Organize your knowledge into curated collections for better document management and targeted retrieval.
+            Organize your knowledge into curated collections for better document
+            management and targeted retrieval.
           </p>
           <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400 pt-2">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-emerald-500 rounded-full" />
               <span className="font-medium">
-                {collections.length} collection{collections.length !== 1 ? "s" : ""}
+                {collections.length} collection
+                {collections.length !== 1 ? "s" : ""}
               </span>
             </div>
             <div className="flex items-center gap-2">

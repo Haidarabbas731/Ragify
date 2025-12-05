@@ -83,7 +83,10 @@ export function ChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
- 
+  
+  // Track newly created conversations to prevent loading blink on URL transition
+  const newlyCreatedConversationRef = useRef<string | null>(null);
+
   // Backend hooks
   const { data: conversations, isLoading: conversationsLoading } =
     useConversations({ limit: 50, offset: 0 });
@@ -113,9 +116,17 @@ export function ChatPage() {
         }),
       );
       setMessages(displayMessages);
+      
+      // Clear the newly created conversation ref after data loads
+      // This restores normal loading behavior for subsequent navigation
+      if (newlyCreatedConversationRef.current === conversationData.conversation_id) {
+        newlyCreatedConversationRef.current = null;
+      }
     } else if (!conversationId) {
       // New conversation - clear messages
       setMessages([]);
+      // Clear ref when starting new conversation
+      newlyCreatedConversationRef.current = null;
     }
   }, [conversationData, conversationId]);
 
@@ -309,7 +320,10 @@ export function ChatPage() {
 
         // If this was a new conversation, update URL with conversation_id
         if (!conversationId && newConversationId) {
-          setSearchParams({ conversation: newConversationId });
+          // Track this conversation as newly created to skip loading screen
+          newlyCreatedConversationRef.current = newConversationId;
+          // Use replace to avoid browser history pollution and smooth transition
+          setSearchParams({ conversation: newConversationId }, { replace: true });
         }
 
         // Always invalidate conversations cache to update message counts in sidebar
@@ -340,7 +354,9 @@ export function ChatPage() {
   };
 
   // Show loading state for initial conversation load
-  if (conversationId && conversationLoading) {
+  // Skip loading for newly created conversations to prevent blink on URL transition
+  const isJustCreated = newlyCreatedConversationRef.current === conversationId;
+  if (conversationId && conversationLoading && !isJustCreated) {
     return (
       <div className="h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="text-center">
@@ -804,13 +820,11 @@ export function ChatPage() {
                 {/* Mobile Collection Filter */}
                 <div className="sm:hidden">
                   <CollectionFilter
-                    collections={
-                      collections.map((c) => ({
-                        collection_id: c.collection_id,
-                        name: c.name,
-                        document_count: c.document_count,
-                      }))
-                    }
+                    collections={collections.map((c) => ({
+                      collection_id: c.collection_id,
+                      name: c.name,
+                      document_count: c.document_count,
+                    }))}
                     selectedCollectionId={selectedCollectionId}
                     onSelectCollection={setSelectedCollectionId}
                   />
