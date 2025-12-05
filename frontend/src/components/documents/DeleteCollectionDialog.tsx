@@ -13,6 +13,7 @@ interface DeleteCollectionDialogProps {
   documentCount: number;
   onConfirm: () => void;
   onCancel: () => void;
+  isPending?: boolean;
 }
 
 export function DeleteCollectionDialog({
@@ -21,6 +22,7 @@ export function DeleteCollectionDialog({
   documentCount,
   onConfirm,
   onCancel,
+  isPending = false,
 }: DeleteCollectionDialogProps) {
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -34,22 +36,19 @@ export function DeleteCollectionDialog({
   }, [isOpen]);
 
   const handleCancel = useCallback(() => {
+    if (isPending) return;
     setIsAnimatingOut(true);
     setTimeout(() => {
       onCancel();
       setIsAnimatingOut(false);
     }, 200);
-  }, [onCancel]);
+  }, [onCancel, isPending]);
 
   const handleConfirm = useCallback(() => {
-    if (confirmText.toUpperCase() === "DELETE") {
-      setIsAnimatingOut(true);
-      setTimeout(() => {
-        onConfirm();
-        setIsAnimatingOut(false);
-      }, 200);
+    if (confirmText.toUpperCase() === "DELETE" && !isPending) {
+      onConfirm();
     }
-  }, [confirmText, onConfirm]);
+  }, [confirmText, onConfirm, isPending]);
 
   // Handle Escape key
   useEffect(() => {
@@ -65,7 +64,7 @@ export function DeleteCollectionDialog({
 
   if (!isOpen) return null;
 
-  const isDeleteEnabled = confirmText.toUpperCase() === "DELETE";
+  const isDeleteEnabled = confirmText.toUpperCase() === "DELETE" && !isPending;
 
   return (
     <div
@@ -211,7 +210,8 @@ export function DeleteCollectionDialog({
           <button
             type="button"
             onClick={handleCancel}
-            className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm rounded-lg transition-all font-['Inter'] hover:scale-[1.02] active:scale-[0.98]"
+            disabled={isPending}
+            className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm rounded-lg transition-all font-['Inter'] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
@@ -225,7 +225,11 @@ export function DeleteCollectionDialog({
                 : "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
             }`}
           >
-            {isDeleteEnabled ? "Delete Collection" : "Locked"}
+            {isPending
+              ? "Deleting..."
+              : isDeleteEnabled
+                ? "Delete Collection"
+                : "Locked"}
           </button>
         </div>
       </div>
