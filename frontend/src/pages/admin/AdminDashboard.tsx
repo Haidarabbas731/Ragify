@@ -2,6 +2,7 @@
  * Admin Dashboard - Command Center
  * Professional analytics dashboard with light/dark mode support
  * Light: Clean data dashboard | Dark: Terminal/Command Center aesthetic
+ * Backend Integration: Uses useAdminStats() hook for real-time system statistics
  */
 
 import {
@@ -10,40 +11,35 @@ import {
   FileText,
   HardDrive,
   Key,
+  Loader2,
   MessageSquare,
   TrendingUp,
   Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAdminStats } from "@/hooks/useAdmin";
 
 export function AdminDashboard() {
-  // Mock data - will be replaced with real API calls
-  const stats = {
-    totalUsers: 147,
-    activeUsers7d: 89,
-    totalDocuments: 3421,
-    documentsProcessing: 12,
-    documentsFailed: 3,
-    totalConversations: 8934,
-    totalStorageGB: 234.7,
-    storageQuotaGB: 1000,
-  };
+  // Fetch real system stats from backend
+  const { data: apiStats, isLoading, error } = useAdminStats();
 
+  // Transform API response to match component expectations
+  const stats = apiStats
+    ? {
+        totalUsers: apiStats.total_users || 0,
+        activeUsers: apiStats.active_users || 0,
+        totalDocuments: apiStats.total_documents || 0,
+        totalConversations: apiStats.total_conversations || 0,
+        totalStorageGB: apiStats.total_storage_gb || 0,
+      }
+    : null;
+
+  // TODO: Recent users will be fetched from /admin/users endpoint with limit=3
   const recentUsers = [
     {
-      email: "user@example.com",
+      email: "Loading...",
       role: "user",
-      registeredAt: "2024-12-01T15:30:00Z",
-    },
-    {
-      email: "admin@test.com",
-      role: "admin",
-      registeredAt: "2024-12-01T14:20:00Z",
-    },
-    {
-      email: "john.doe@company.com",
-      role: "user",
-      registeredAt: "2024-12-01T12:15:00Z",
+      registeredAt: new Date().toISOString(),
     },
   ];
 
@@ -57,6 +53,44 @@ export function AdminDashboard() {
     if (diffHours < 24) return `${diffHours}h ago`;
     return date.toLocaleDateString();
   };
+
+  // Show loading state
+  if (isLoading || !stats) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 dark:text-cyan-400 mx-auto" />
+          <p className="text-sm text-gray-600 dark:text-slate-400 font-mono">
+            LOADING_SYSTEM_STATS...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md">
+          <AlertTriangle className="w-12 h-12 text-red-600 dark:text-red-400 mx-auto" />
+          <p className="text-sm text-red-600 dark:text-red-400 font-mono font-bold">
+            ERROR_LOADING_STATS
+          </p>
+          <p className="text-xs text-gray-600 dark:text-slate-400 font-mono">
+            {(error as Error).message || "Failed to fetch system statistics"}
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 dark:bg-cyan-500 text-white font-mono text-sm rounded hover:bg-blue-700 dark:hover:bg-cyan-600 transition-colors"
+          >
+            RETRY
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-gray-900 dark:text-slate-100">
@@ -105,7 +139,7 @@ export function AdminDashboard() {
                   {stats.totalUsers}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-slate-400 font-mono">
-                  {stats.activeUsers7d} active (7d)
+                  {stats.activeUsers} active
                 </p>
               </div>
             </div>
@@ -127,18 +161,9 @@ export function AdminDashboard() {
                 <p className="text-4xl font-bold font-mono tabular-nums text-purple-600 dark:text-blue-400">
                   {stats.totalDocuments.toLocaleString()}
                 </p>
-                <div className="flex items-center gap-2 text-xs font-mono">
-                  {stats.documentsProcessing > 0 && (
-                    <span className="text-amber-600 dark:text-amber-400">
-                      {stats.documentsProcessing} processing
-                    </span>
-                  )}
-                  {stats.documentsFailed > 0 && (
-                    <span className="text-red-600 dark:text-red-400">
-                      {stats.documentsFailed} failed
-                    </span>
-                  )}
-                </div>
+                <p className="text-sm text-gray-600 dark:text-slate-400 font-mono">
+                  Across all users
+                </p>
               </div>
             </div>
           </div>
@@ -180,31 +205,14 @@ export function AdminDashboard() {
               </div>
               <div className="space-y-2">
                 <p className="text-4xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {stats.totalStorageGB}
+                  {stats.totalStorageGB.toFixed(2)}
                   <span className="text-xl text-gray-500 dark:text-slate-500">
                     GB
                   </span>
                 </p>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-mono text-gray-600 dark:text-slate-400">
-                    <span>
-                      {(
-                        (stats.totalStorageGB / stats.storageQuotaGB) *
-                        100
-                      ).toFixed(1)}
-                      % used
-                    </span>
-                    <span>{stats.storageQuotaGB}GB limit</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${(stats.totalStorageGB / stats.storageQuotaGB) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
+                <p className="text-sm text-gray-600 dark:text-slate-400 font-mono">
+                  Total storage used
+                </p>
               </div>
             </div>
           </div>
@@ -342,33 +350,6 @@ export function AdminDashboard() {
             </div>
           </div>
         </div>
-
-        {/* System Health Alert (if issues exist) */}
-        {(stats.documentsFailed > 0 || stats.documentsProcessing > 10) && (
-          <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-mono font-semibold text-amber-700 dark:text-amber-400">
-                  SYSTEM_ALERTS
-                </p>
-                <ul className="mt-2 space-y-1 text-xs font-mono text-amber-700 dark:text-slate-300">
-                  {stats.documentsFailed > 0 && (
-                    <li>
-                      • {stats.documentsFailed} documents failed processing
-                    </li>
-                  )}
-                  {stats.documentsProcessing > 10 && (
-                    <li>
-                      • {stats.documentsProcessing} documents in processing
-                      queue
-                    </li>
-                  )}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
