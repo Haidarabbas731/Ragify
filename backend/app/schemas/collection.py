@@ -29,3 +29,13 @@ class CollectionResponse(BaseModel):
     document_count: int = 0
     created_at: datetime
     updated_at: datetime
+
+
+class CollectionListResponse(BaseModel):
+    """Schema for collections list with total document count."""
+
+    collections: list[CollectionResponse]
+    total_documents: int = Field(
+        ...,
+        description="Total count of all active documents (including unassigned)",
+    )

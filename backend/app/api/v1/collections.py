@@ -12,6 +12,7 @@ from app.models.document import Document
 from app.models.user import User
 from app.schemas.collection import (
     CollectionCreate,
+    CollectionListResponse,
     CollectionResponse,
     CollectionUpdate,
 )
@@ -69,7 +70,7 @@ async def create_collection_endpoint(
         ) from e
 
 
-@router.get("/collections", response_model=list[CollectionResponse])
+@router.get("/collections", response_model=CollectionListResponse)
 async def list_collections(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
@@ -78,9 +79,10 @@ async def list_collections(
     List all collections for the current user with document counts.
 
     Returns collections ordered by creation date (newest first) with
-    accurate document counts excluding deleted documents.
+    accurate document counts excluding deleted documents, plus total count
+    of ALL active documents (including those not assigned to any collection).
     """
-    # Single optimized query with LEFT JOIN to get collections + document counts
+    # Query 1: Get collections with document counts (only docs assigned to collections)
     query = (
         select(
             Collection,
@@ -89,7 +91,7 @@ async def list_collections(
         .outerjoin(
             Document,
             (Collection.collection_id == Document.collection_id)  # type:ignore
-            & (Document.status != "DELETED"),
+            & (Document.status == "active"),  # Only count active documents
         )
         .where(Collection.user_id == current_user.user_id)
         .group_by(Collection.collection_id)
@@ -99,13 +101,25 @@ async def list_collections(
     result = await db.exec(query)
     rows = result.all()
 
-    # Build response with document counts
+    # Build collections list with document counts
     collections_with_counts = []
     for collection, doc_count in rows:
-        collection.document_count = doc_count or 0
-        collections_with_counts.append(collection)
+        # Convert SQLModel to dict and add document_count
+        collection_dict = collection.model_dump()
+        collection_dict["document_count"] = doc_count or 0
+        collections_with_counts.append(CollectionResponse(**collection_dict))
 
-    return collections_with_counts
+    # Query 2: Get total count of ALL active documents (including unassigned)
+    total_docs_query = select(func.count(Document.document_id)).where(  # type:ignore
+        (Document.user_id == current_user.user_id) & (Document.status == "active"),
+    )
+    total_docs_result = await db.exec(total_docs_query)
+    total_documents = total_docs_result.one()
+
+    return CollectionListResponse(
+        collections=collections_with_counts,
+        total_documents=total_documents,
+    )
 
 
 @router.get("/collections/{collection_id}", response_model=CollectionResponse)
@@ -130,7 +144,7 @@ async def get_collection(
         .outerjoin(
             Document,
             (Collection.collection_id == Document.collection_id)  # type:ignore
-            & (Document.status != "DELETED"),
+            & (Document.status == "active"),  # Only count active documents
         )
         .where(
             Collection.collection_id == collection_id,
@@ -149,9 +163,11 @@ async def get_collection(
         )
 
     collection, doc_count = row
-    collection.document_count = doc_count or 0
+    # Convert SQLModel to dict and add document_count
+    collection_dict = collection.model_dump()
+    collection_dict["document_count"] = doc_count or 0
 
-    return collection
+    return CollectionResponse(**collection_dict)
 
 
 @router.put("/collections/{collection_id}", response_model=CollectionResponse)
