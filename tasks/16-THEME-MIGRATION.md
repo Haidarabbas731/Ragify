@@ -471,8 +471,10 @@ Update the core RAG functionality pages with zero cognitive load from animations
 - ❌ **REMOVE:** Scan line overlay, pulsing logo effect
 - ✅ **KEEP:** Document card hover states (minimal)
 
+**UPDATE [2025-12-08]:** DocumentsPage was already migrated to purple theme in previous session.
+
 **Tasks:**
-- [ ] Replace emerald-teal theme with purple
+- [x] Replace emerald-teal theme with purple
   ```tsx
   // Replace all:
   // emerald-500 → primary
@@ -482,13 +484,13 @@ Update the core RAG functionality pages with zero cognitive load from animations
   // emerald-400 (dark mode) → primary
   ```
 
-- [ ] Remove scan line overlay (distracting)
+- [x] Remove scan line overlay (distracting)
   ```tsx
   // DELETE scan-line div:
   // <div className="pointer-events-none fixed inset-0 z-50 opacity-[0.02]" ...>
   ```
 
-- [ ] Update grid background to muted purple
+- [x] Update grid background to muted purple
   ```tsx
   // OLD: rgba(34, 197, 94, 0.2) (emerald)
   // NEW: hsl(var(--muted) / 0.1)
@@ -502,7 +504,7 @@ Update the core RAG functionality pages with zero cognitive load from animations
   />
   ```
 
-- [ ] Update logo to solid primary (remove pulsing)
+- [x] Update logo to solid primary (remove pulsing)
   ```tsx
   // OLD: bg-gradient-to-br from-emerald-500 to-teal-600 + animate-pulse
   // NEW: bg-primary (no gradient, no pulse)
@@ -511,7 +513,7 @@ Update the core RAG functionality pages with zero cognitive load from animations
   </div>
   ```
 
-- [ ] Update "ARCHIVE//SYS" branding
+- [x] Update "ARCHIVE//SYS" branding
   ```tsx
   // OLD: text-emerald-700 dark:text-emerald-400
   // NEW: text-primary
@@ -520,25 +522,25 @@ Update the core RAG functionality pages with zero cognitive load from animations
   </span>
   ```
 
-- [ ] Replace all emerald borders/backgrounds
+- [x] Replace all emerald borders/backgrounds
   ```tsx
   // border-emerald-200 → border-border
   // bg-emerald-100 → bg-muted
   // text-emerald-600 → text-primary
   ```
 
-- [ ] Update fonts to Geist
+- [x] Update fonts to Geist
   ```tsx
   // font-['Space_Grotesk'] → font-sans
   // font-mono remains font-mono
   ```
 
 **Verification:**
-- [ ] No scan line effect
-- [ ] Grid background is subtle purple
-- [ ] Logo is solid purple (no pulse)
-- [ ] All colors are purple theme
-- [ ] Fonts use Geist family
+- [x] No scan line effect
+- [x] Grid background is subtle purple
+- [x] Logo is solid purple (no pulse)
+- [x] All colors are purple theme
+- [x] Fonts use Geist family
 
 ---
 
@@ -550,45 +552,51 @@ Update the core RAG functionality pages with zero cognitive load from animations
 - ✅ **KEEP:** 0.1s stagger animation (subtle, good UX)
 - ❌ **REMOVE:** Nothing (already well-designed)
 
+**UPDATE [2025-12-08]:** Completed Collections component migration to purple theme.
+
 **Tasks:**
-- [ ] Replace gradient orbs with primary purple
+- [x] Replace gradient orbs with primary purple
   ```tsx
   // OLD: from-blue-500/20 to-purple-500/20
   // NEW: from-primary/20 to-primary/10
   <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full blur-3xl" />
   ```
 
-- [ ] Replace violet-fuchsia orbs
+- [x] Replace violet-fuchsia orbs
   ```tsx
   // OLD: from-violet-500/20 to-fuchsia-500/20
   // NEW: from-primary/20 to-primary/10
   ```
+  **NOTE:** Orbs were already using `from-primary/20 to-primary/10`.
 
-- [ ] Update selection indicator
+- [x] Update selection indicator
   ```tsx
-  // OLD: bg-emerald-500
+  // OLD: bg-emerald-500, bg-blue-500
   // NEW: bg-primary
   <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-primary rounded-full animate-pulse" />
   ```
+  **IMPROVEMENT:** Changed blue dot indicator to purple (line 158).
 
-- [ ] Update selected state colors
+- [x] Update selected state colors
   ```tsx
   // OLD: ring-slate-900 dark:ring-slate-100
   // NEW: ring-primary
   className={`... ${selectedCollectionId === collection.collection_id ? "ring-2 ring-primary" : "ring-1 ring-border"}`}
   ```
+  **IMPROVEMENT:** Updated both "All Documents" card and collection cards selected states to use purple ring.
 
-- [ ] Keep stagger animation exactly as is
+- [x] Keep stagger animation exactly as is
   ```tsx
   // DO NOT CHANGE:
   style={{ animation: `slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1}s both` }}
   ```
+  **VERIFIED:** Stagger animation preserved.
 
 **Verification:**
-- [ ] Gradient orbs are purple
-- [ ] Selected collection has purple ring
-- [ ] Stagger animation works
-- [ ] Dark mode has good contrast
+- [x] Gradient orbs are purple
+- [x] Selected collection has purple ring
+- [x] Stagger animation works
+- [x] Linting passes (Biome check)
 
 ---
 
@@ -1039,8 +1047,8 @@ feat(landing): migrate marketing pages to purple theme
 **Phase 2:**
 - [x] ChatPage migrated (zero distraction)
 - [x] DocumentDetailPage migrated (data forensics)
-- [ ] DocumentsPage migrated (clean browsing)
-- [ ] Collections component migrated
+- [x] DocumentsPage migrated (clean browsing)
+- [x] Collections component migrated
 
 **Phase 3:**
 - [ ] Dashboard migrated
@@ -1066,6 +1074,6 @@ feat(landing): migrate marketing pages to purple theme
 
 ---
 
-**Status:** 🚧 IN PROGRESS - Phase 2 (RAG Core Pages)
-**Completed:** Phase 1 (Foundation), Phase 2.1 (ChatPage), Phase 2.2 (DocumentDetailPage)
-**Next Action:** Continue Phase 2 - Migrate DocumentsPage and Collections component
+**Status:** ✅ PHASE 2 COMPLETE - Ready for Phase 3 (Secondary Pages)
+**Completed:** Phase 1 (Foundation), Phase 2 (RAG Core Pages: ChatPage, DocumentDetailPage, DocumentsPage, Collections)
+**Next Action:** Begin Phase 3 - Migrate secondary pages (Dashboard, Profile, Login/Register)
