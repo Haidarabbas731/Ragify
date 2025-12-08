@@ -49,30 +49,30 @@ export function CollectionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-background">
       {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-6 py-4">
           {/* Mobile Menu Button */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? (
-              <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <X className="w-5 h-5 text-primary" />
             ) : (
-              <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <Menu className="w-5 h-5 text-primary" />
             )}
           </button>
 
           {/* Logo & Brand */}
           <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-              <FileText className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+              <FileText className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-['Space_Grotesk'] tracking-tight">
+            <span className="text-xl font-bold text-primary font-sans tracking-tight">
               Knowledge Base
             </span>
           </Link>
@@ -83,20 +83,20 @@ export function CollectionsPage() {
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="hidden lg:flex p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="hidden lg:flex p-2 rounded-lg hover:bg-muted transition-colors"
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
-                <Sun className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <Sun className="w-5 h-5 text-primary" />
               ) : (
-                <Moon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <Moon className="w-5 h-5 text-primary" />
               )}
             </button>
 
             {/* User Menu - Hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-transparent">
-              <User className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300 font-['Inter']">
+            <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-muted border border-border">
+              <User className="w-5 h-5 text-primary" />
+              <span className="text-sm font-mono text-foreground">
                 {user?.email}
               </span>
             </div>
@@ -106,7 +106,7 @@ export function CollectionsPage() {
               onClick={handleLogout}
               variant="outline"
               size="sm"
-              className="hidden lg:flex gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-['Inter'] font-medium"
+              className="hidden lg:flex gap-2 border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-400 dark:hover:border-red-700 transition-all duration-300 font-mono font-medium"
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
@@ -130,7 +130,7 @@ export function CollectionsPage() {
 
       {/* Mobile Menu Drawer */}
       <aside
-        className={`fixed top-[73px] left-0 bottom-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 lg:hidden transform transition-transform duration-300 ${
+        className={`fixed top-[73px] left-0 bottom-0 w-64 bg-card border-r border-border z-50 lg:hidden transform transition-transform duration-300 ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -140,7 +140,7 @@ export function CollectionsPage() {
             <Link
               to="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
             >
               <HardDrive className="w-5 h-5" />
               <span>Documents</span>
@@ -148,7 +148,7 @@ export function CollectionsPage() {
             <Link
               to="/chat"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
             >
               <MessageSquare className="w-5 h-5" />
               <span>Chat</span>
@@ -156,7 +156,7 @@ export function CollectionsPage() {
             <Link
               to="/profile"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
             >
               <User className="w-5 h-5" />
               <span>Profile</span>
@@ -164,7 +164,7 @@ export function CollectionsPage() {
             <Link
               to="/collections"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-medium font-['Inter'] transition-all hover:scale-[1.02]"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-bold font-mono transition-all hover:scale-[1.02] border-2 border-primary/30"
             >
               <FolderOpen className="w-5 h-5" />
               <span>Collections</span>
@@ -172,12 +172,12 @@ export function CollectionsPage() {
           </div>
 
           {/* Mobile Actions */}
-          <div className="mt-auto pt-6 space-y-3 border-t border-slate-200 dark:border-slate-800">
+          <div className="mt-auto pt-6 space-y-3 border-t border-border">
             {/* Dark Mode Toggle */}
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-sm font-['Inter'] transition-all"
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-muted text-muted-foreground text-sm font-mono transition-all"
             >
               {darkMode ? (
                 <>
@@ -196,7 +196,7 @@ export function CollectionsPage() {
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-700 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 text-sm font-['Inter'] transition-all"
+              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 text-foreground hover:text-red-600 dark:hover:text-red-400 text-sm font-mono transition-all"
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>
@@ -208,34 +208,34 @@ export function CollectionsPage() {
       {/* Main Content Area */}
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden lg:block w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto">
+        <aside className="hidden lg:block w-64 border-r border-border bg-card/50 sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* Navigation Links */}
             <div className="space-y-1">
               <Link
                 to="/dashboard"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
               >
                 <HardDrive className="w-5 h-5" />
                 <span>Documents</span>
               </Link>
               <Link
                 to="/chat"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
               >
                 <MessageSquare className="w-5 h-5" />
                 <span>Chat</span>
               </Link>
               <Link
                 to="/profile"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-['Inter'] transition-all hover:scale-[1.02]"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
               >
                 <User className="w-5 h-5" />
                 <span>Profile</span>
               </Link>
               <Link
                 to="/collections"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-medium font-['Inter'] transition-all hover:scale-[1.02]"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-bold font-mono transition-all hover:scale-[1.02] border-2 border-primary/30"
               >
                 <FolderOpen className="w-5 h-5" />
                 <span>Collections</span>
