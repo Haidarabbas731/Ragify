@@ -148,14 +148,14 @@ export function Collections({
           </p>
           <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400 pt-2">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+              <div className="w-2 h-2 bg-primary rounded-full" />
               <span className="font-medium">
                 {collections.length} collection
                 {collections.length !== 1 ? "s" : ""}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" />
+              <div className="w-2 h-2 bg-primary rounded-full" />
               <span className="font-medium">
                 {totalDocuments} document{totalDocuments !== 1 ? "s" : ""}
               </span>
@@ -181,15 +181,15 @@ export function Collections({
           onClick={() => onSelectCollection?.(null)}
           className={`group relative bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
             selectedCollectionId === null
-              ? "ring-2 ring-slate-900 dark:ring-slate-100 shadow-lg"
-              : "ring-1 ring-slate-200 dark:ring-slate-800 hover:ring-slate-300 dark:hover:ring-slate-700"
+              ? "ring-2 ring-primary shadow-lg"
+              : "ring-1 ring-border hover:ring-primary/50"
           }`}
           style={{
             animation: "slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           {/* Background Gradient Orb */}
-          <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-purple-500/20 dark:from-blue-500/10 dark:to-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Icon */}
           <div className="relative mb-4">
@@ -236,7 +236,7 @@ export function Collections({
 
           {/* Selection Indicator */}
           {selectedCollectionId === null && (
-            <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-lg shadow-emerald-500/50" />
+            <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50" />
           )}
         </button>
 
@@ -246,15 +246,15 @@ export function Collections({
             key={collection.collection_id}
             className={`group relative bg-white dark:bg-slate-900 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
               selectedCollectionId === collection.collection_id
-                ? "ring-2 ring-slate-900 dark:ring-slate-100 shadow-lg"
-                : "ring-1 ring-slate-200 dark:ring-slate-800 hover:ring-slate-300 dark:hover:ring-slate-700"
+                ? "ring-2 ring-primary shadow-lg"
+                : "ring-1 ring-border hover:ring-primary/50"
             }`}
             style={{
               animation: `slideInLeft 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1}s both`,
             }}
           >
             {/* Background Gradient Orb */}
-            <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 dark:from-violet-500/10 dark:to-fuchsia-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header */}
             <div className="relative flex items-start justify-between mb-4">
@@ -374,7 +374,7 @@ export function Collections({
 
             {/* Selection Indicator */}
             {selectedCollectionId === collection.collection_id && (
-              <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-lg shadow-emerald-500/50" />
+              <div className="absolute top-4 right-4 w-2.5 h-2.5 bg-primary rounded-full animate-pulse shadow-lg shadow-primary/50" />
             )}
           </div>
         ))}
@@ -393,17 +393,17 @@ export function Collections({
               <FolderOpen className="w-12 h-12 text-slate-400 dark:text-slate-500" />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-3 font-['JetBrains_Mono'] uppercase tracking-tight">
+              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-3 font-mono uppercase tracking-tight">
                 Vault Uninitialized
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-['IBM_Plex_Sans'] mb-6 leading-relaxed">
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-sans mb-6 leading-relaxed">
                 Create your first collection to establish an organized archive
                 system for your documents
               </p>
               <Button
                 onClick={() => setIsCreateModalOpen(true)}
                 disabled={createMutation.isPending}
-                className="gap-2 font-['JetBrains_Mono'] font-bold uppercase tracking-wider bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 border-2 border-slate-900 dark:border-slate-100"
+                className="gap-2 font-mono font-bold uppercase tracking-wider bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 border-2 border-slate-900 dark:border-slate-100"
               >
                 <Plus className="w-4 h-4" />
                 Initialize Vault
