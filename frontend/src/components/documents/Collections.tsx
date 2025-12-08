@@ -142,11 +142,11 @@ export function Collections({
           <h1 className="text-4xl font-bold text-foreground tracking-tight">
             Collections
           </h1>
-          <p className="text-base text-muted-foreground max-w-2xl">
+          <p className="text-base text-foreground/70 max-w-2xl">
             Organize your knowledge into curated collections for better document
             management and targeted retrieval.
           </p>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground pt-2">
+          <div className="flex items-center gap-6 text-sm text-foreground/60 pt-2">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full" />
               <span className="font-medium">
@@ -221,14 +221,14 @@ export function Collections({
             >
               All Documents
             </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
+            <p className="text-sm text-foreground/60 leading-relaxed">
               Unified view of all documents across every collection
             </p>
             <div className="flex items-baseline gap-2 pt-2">
               <span className="text-3xl font-bold text-foreground tabular-nums">
                 {totalDocuments}
               </span>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+              <span className="text-xs text-foreground/60 uppercase tracking-wider font-medium">
                 total
               </span>
             </div>
@@ -326,7 +326,7 @@ export function Collections({
                 {collection.name}
               </h3>
               {collection.description && (
-                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                <p className="text-sm text-foreground/60 line-clamp-2 leading-relaxed">
                   {collection.description}
                 </p>
               )}
@@ -338,11 +338,11 @@ export function Collections({
                 <span className="text-3xl font-bold text-foreground tabular-nums">
                   {collection.document_count}
                 </span>
-                <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                <span className="text-xs text-foreground/60 uppercase tracking-wider font-medium">
                   documents
                 </span>
               </div>
-              <div className="text-xs text-muted-foreground space-y-1 font-mono">
+              <div className="text-xs text-foreground/50 space-y-1 font-mono">
                 <div className="flex items-center justify-between">
                   <span>Created</span>
                   <span className="tabular-nums">
@@ -396,7 +396,7 @@ export function Collections({
               <h3 className="text-2xl font-black text-foreground mb-3 font-mono uppercase tracking-tight">
                 Vault Uninitialized
               </h3>
-              <p className="text-sm text-muted-foreground font-sans mb-6 leading-relaxed">
+              <p className="text-sm text-foreground/70 font-sans mb-6 leading-relaxed">
                 Create your first collection to establish an organized archive
                 system for your documents
               </p>
@@ -619,7 +619,7 @@ function CollectionModal({
               onClick={handleClose}
               disabled={isPending}
               variant="outline"
-              className="flex-1 font-semibold"
+              className="flex-1 font-semibold border-2 border-primary/30 text-foreground hover:bg-muted hover:border-primary/50"
               size="lg"
             >
               Cancel
