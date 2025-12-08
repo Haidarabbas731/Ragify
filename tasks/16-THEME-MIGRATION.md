@@ -9,7 +9,7 @@
 
 ## 🔧 IMPLEMENTATION UPDATES
 
-**UPDATE [2025-01-XX]:** Phase 1 Foundation & ChatPage Migration Completed
+**UPDATE [2025-12-08]:** Phase 1 Foundation & Phase 2.2 DocumentDetailPage Migration Completed
 
 ### What Was Implemented:
 1. **Font System (✅ WORKING)**
@@ -25,11 +25,23 @@
    - Solution: `@theme { --color-primary: var(--primary); }` bridges CSS vars to Tailwind
    - **Verified:** Buttons now show purple background (`oklch(0.5417 0.179 288.033)`) instead of transparent
 
-3. **ChatPage.tsx Migration (✅ CODE COMPLETE, PENDING VISUAL VERIFICATION)**
+3. **ChatPage.tsx Migration (✅ COMPLETE)**
    - Migrated all gradient references to solid `bg-primary`
    - Updated all font references from Space Grotesk/Inter/Fira Code to Geist/Geist Mono
    - Removed decorative animations (gradient pulse, scan lines)
    - Updated logo, New Chat button, message bubbles, send button
+
+4. **DocumentDetailPage.tsx Migration (✅ COMPLETE)**
+   - Replaced cyan-blue forensics theme with purple primary color
+   - Updated grid background from cyan to muted purple
+   - Removed distracting scan line effect
+   - Updated logo to solid primary (removed pulsing glow)
+   - Replaced all IBM Plex Sans Condensed/JetBrains Mono/Courier New with Geist fonts
+   - Updated modal borders from `border` to `border-2` with higher opacity for better visibility
+   - Fixed Edit Metadata modal Cancel button styling
+   - Replaced mock collections with real collections API (`useCollections` hook)
+   - Added placeholder and empty state for collections dropdown
+   - **Verified:** All colors purple, no console errors, linting passes, Chrome DevTools verified
 
 ### Technical Breakthrough:
 **Problem:** Tailwind v4 was not rendering OKLCH colors from CSS variables when using utility classes like `bg-primary`.
@@ -366,7 +378,7 @@ Update the core RAG functionality pages with zero cognitive load from animations
 - ❌ **REMOVE:** Scan line effect (distracting), pulsing logo glow
 
 **Tasks:**
-- [ ] Replace cyan-blue theme with purple
+- [x] Replace cyan-blue theme with purple
   ```tsx
   // Replace all instances:
   // cyan-500 → primary
@@ -374,8 +386,9 @@ Update the core RAG functionality pages with zero cognitive load from animations
   // blue-600 → primary
   // cyan-400 (dark mode) → primary
   ```
+  **UPDATE:** Used `replace_all` to efficiently replace all cyan color references with purple theme colors.
 
-- [ ] Update animated grid background to muted purple
+- [x] Update animated grid background to muted purple
   ```tsx
   // OLD: rgb(34 211 238 / 0.1) (cyan)
   // NEW: Use muted color with low opacity
@@ -389,13 +402,13 @@ Update the core RAG functionality pages with zero cognitive load from animations
   }}
   ```
 
-- [ ] Remove scan line effect (too distracting for reading)
+- [x] Remove scan line effect (too distracting for reading)
   ```tsx
   // DELETE entire scan line div:
   // <div className="fixed inset-0 pointer-events-none opacity-15 dark:opacity-30" ...>
   ```
 
-- [ ] Update logo to solid primary (remove pulsing glow)
+- [x] Update logo to solid primary (remove pulsing glow)
   ```tsx
   // OLD: bg-gradient-to-br from-cyan-500 to-blue-600 + pulsing glow
   // NEW: bg-primary (no gradient, no glow)
@@ -404,44 +417,49 @@ Update the core RAG functionality pages with zero cognitive load from animations
   </div>
   ```
 
-- [ ] Update "FORENSICS//LAB" branding
+- [x] Update "FORENSICS//LAB" branding
   ```tsx
   // OLD: text-cyan-600 dark:text-cyan-400
   // NEW: text-primary
-  <span className="text-sm font-bold font-mono tracking-wider text-primary">
+  <span className="text-sm font-bold font-sans tracking-wider text-primary">
     {"FORENSICS//LAB"}
   </span>
   ```
 
-- [ ] Replace all cyan borders with primary
+- [x] Replace all cyan borders with primary
   ```tsx
   // Replace:
   // border-cyan-600/40 → border-primary/40
   // border-cyan-500/30 → border-primary/30
   // etc.
   ```
+  **UPDATE:** Replaced all cyan borders with `border-border` and `border-primary/40` for consistency.
 
-- [ ] Update fonts to Geist family
+- [x] Update fonts to Geist family
   ```tsx
   // Replace:
   // font-['JetBrains_Mono'] → font-mono
   // font-['IBM_Plex_Sans_Condensed'] → font-sans
   // font-['Courier_New'] → font-mono
   ```
+  **UPDATE:** Removed Google Fonts import from style block.
 
-- [ ] Keep chunk stagger animation (good UX)
+- [x] Keep chunk stagger animation (good UX)
   ```tsx
   // DO NOT CHANGE: animation-delay for chunks
   style={{ animation: `fadeSlideIn 0.3s ease-out ${index * 0.05}s both` }}
   ```
 
 **Verification:**
-- [ ] Grid background is subtle purple (not cyan)
-- [ ] No scan line effect
-- [ ] Logo is solid purple (no glow)
-- [ ] All borders are purple
-- [ ] Fonts use Geist/Geist Mono
-- [ ] Chunk animations still work
+- [x] Grid background is subtle purple (not cyan)
+- [x] No scan line effect
+- [x] Logo is solid purple (no glow)
+- [x] All borders are purple
+- [x] Fonts use Geist/Geist Mono
+- [x] Chunk animations still work
+- [x] No console errors
+- [x] Biome linting passes
+- [x] Verified with Chrome DevTools MCP
 
 ---
 
@@ -1019,8 +1037,8 @@ feat(landing): migrate marketing pages to purple theme
 - [ ] shadcn/ui components verified
 
 **Phase 2:**
-- [ ] ChatPage migrated (zero distraction)
-- [ ] DocumentDetailPage migrated (data forensics)
+- [x] ChatPage migrated (zero distraction)
+- [x] DocumentDetailPage migrated (data forensics)
 - [ ] DocumentsPage migrated (clean browsing)
 - [ ] Collections component migrated
 
@@ -1048,5 +1066,6 @@ feat(landing): migrate marketing pages to purple theme
 
 ---
 
-**Status:** 🚧 READY TO START
-**Next Action:** Begin Phase 1 - Foundation
+**Status:** 🚧 IN PROGRESS - Phase 2 (RAG Core Pages)
+**Completed:** Phase 1 (Foundation), Phase 2.1 (ChatPage), Phase 2.2 (DocumentDetailPage)
+**Next Action:** Continue Phase 2 - Migrate DocumentsPage and Collections component
