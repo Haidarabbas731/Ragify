@@ -143,7 +143,15 @@ export function CollectionsPage() {
               className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
             >
               <HardDrive className="w-5 h-5" />
-              <span>Documents</span>
+              <span>Dashboard</span>
+            </Link>
+            <Link
+              to="/documents"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
+            >
+              <FileText className="w-5 h-5" />
+              <span>All Documents</span>
             </Link>
             <Link
               to="/chat"
@@ -217,7 +225,14 @@ export function CollectionsPage() {
                 className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
               >
                 <HardDrive className="w-5 h-5" />
-                <span>Documents</span>
+                <span>Dashboard</span>
+              </Link>
+              <Link
+                to="/documents"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
+              >
+                <FileText className="w-5 h-5" />
+                <span>All Documents</span>
               </Link>
               <Link
                 to="/chat"
