@@ -634,16 +634,17 @@ export function DocumentDetailPage() {
                     setEditForm({ ...editForm, collection_id: value })
                   }
                 >
-                  <SelectTrigger className="w-full bg-background border-primary/40 text-foreground font-mono">
+                  <SelectTrigger className="w-full bg-background border-2 border-primary/40 text-foreground font-mono hover:border-primary/60 transition-colors">
                     <SelectValue placeholder="Select a collection" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-card border-2 border-primary/40 text-foreground">
                     {collectionsData?.collections &&
                     collectionsData.collections.length > 0 ? (
                       collectionsData.collections.map((collection) => (
                         <SelectItem
                           key={collection.collection_id}
                           value={collection.collection_id}
+                          className="text-foreground focus:bg-primary/10 focus:text-primary cursor-pointer"
                         >
                           {collection.name}
                         </SelectItem>
@@ -671,7 +672,7 @@ export function DocumentDetailPage() {
                   onChange={(e) =>
                     setEditForm({ ...editForm, category: e.target.value })
                   }
-                  className="bg-background border-primary/40 text-foreground font-mono"
+                  className="bg-background border-2 border-primary/40 text-foreground font-mono focus:border-primary/60 transition-colors"
                   placeholder="e.g., financial, technical, research"
                 />
               </div>
@@ -690,7 +691,7 @@ export function DocumentDetailPage() {
                   onChange={(e) =>
                     setEditForm({ ...editForm, tags: e.target.value })
                   }
-                  className="bg-background border-primary/40 text-foreground font-mono"
+                  className="bg-background border-2 border-primary/40 text-foreground font-mono focus:border-primary/60 transition-colors"
                   placeholder="Comma-separated tags"
                 />
                 <p className="text-xs font-mono text-muted-foreground mt-1">
@@ -757,14 +758,14 @@ export function DocumentDetailPage() {
             <div className="flex items-center gap-3">
               <Button
                 onClick={handleDelete}
-                className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground font-sans font-bold"
+                className="flex-1 bg-destructive hover:bg-destructive/80 text-destructive-foreground font-sans font-bold border-2 border-destructive hover:border-destructive/80 transition-all"
               >
                 DELETE
               </Button>
               <Button
                 onClick={() => setIsDeleteModalOpen(false)}
                 variant="outline"
-                className="flex-1 border-border text-foreground hover:bg-muted font-sans font-bold"
+                className="flex-1 border-2 border-border text-foreground hover:bg-muted hover:border-primary/40 font-sans font-bold transition-all"
               >
                 CANCEL
               </Button>
