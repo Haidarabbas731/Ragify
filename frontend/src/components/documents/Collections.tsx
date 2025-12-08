@@ -105,10 +105,10 @@ export function Collections({
             <X className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
+            <h3 className="text-lg font-bold text-foreground mb-2">
               Failed to load collections
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm text-muted-foreground">
               {(error as Error).message || "An error occurred"}
             </p>
           </div>
@@ -125,8 +125,8 @@ export function Collections({
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 text-slate-400 dark:text-slate-500 animate-spin mx-auto" />
-          <p className="text-sm text-slate-600 dark:text-slate-400">
+          <Loader2 className="w-12 h-12 text-muted-foreground animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">
             Loading collections...
           </p>
         </div>
@@ -137,16 +137,16 @@ export function Collections({
   return (
     <div className="space-y-8 animate-fadeInUp">
       {/* Header */}
-      <div className="flex items-start justify-between pb-6 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex items-start justify-between pb-6 border-b border-border">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+          <h1 className="text-4xl font-bold text-foreground tracking-tight">
             Collections
           </h1>
-          <p className="text-base text-slate-600 dark:text-slate-400 max-w-2xl">
+          <p className="text-base text-muted-foreground max-w-2xl">
             Organize your knowledge into curated collections for better document
             management and targeted retrieval.
           </p>
-          <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400 pt-2">
+          <div className="flex items-center gap-6 text-sm text-muted-foreground pt-2">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full" />
               <span className="font-medium">
@@ -165,7 +165,7 @@ export function Collections({
         <Button
           onClick={() => setIsCreateModalOpen(true)}
           disabled={createMutation.isPending}
-          className="gap-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 shadow-lg hover:shadow-xl transition-all duration-300 font-semibold"
+          className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 font-semibold"
           size="lg"
         >
           <Plus className="w-5 h-5" />
@@ -179,7 +179,7 @@ export function Collections({
         <button
           type="button"
           onClick={() => onSelectCollection?.(null)}
-          className={`group relative bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+          className={`group relative bg-gradient-to-br from-muted/30 via-card to-muted/30 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
             selectedCollectionId === null
               ? "ring-2 ring-primary shadow-lg"
               : "ring-1 ring-border hover:ring-primary/50"
@@ -196,15 +196,15 @@ export function Collections({
             <div
               className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
                 selectedCollectionId === null
-                  ? "bg-slate-900 dark:bg-slate-100 shadow-lg"
-                  : "bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700"
+                  ? "bg-primary shadow-lg"
+                  : "bg-muted group-hover:bg-muted/80"
               }`}
             >
               <Archive
                 className={`w-7 h-7 transition-colors ${
                   selectedCollectionId === null
-                    ? "text-white dark:text-slate-900"
-                    : "text-slate-600 dark:text-slate-400"
+                    ? "text-primary-foreground"
+                    : "text-muted-foreground"
                 }`}
               />
             </div>
@@ -215,20 +215,20 @@ export function Collections({
             <h3
               className={`text-xl font-bold transition-colors ${
                 selectedCollectionId === null
-                  ? "text-slate-900 dark:text-slate-100"
-                  : "text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-slate-100"
+                  ? "text-foreground"
+                  : "text-foreground/90 group-hover:text-foreground"
               }`}
             >
               All Documents
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Unified view of all documents across every collection
             </p>
             <div className="flex items-baseline gap-2 pt-2">
-              <span className="text-3xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+              <span className="text-3xl font-bold text-foreground tabular-nums">
                 {totalDocuments}
               </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-medium">
+              <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
                 total
               </span>
             </div>
@@ -244,7 +244,7 @@ export function Collections({
         {collections.map((collection, index) => (
           <div
             key={collection.collection_id}
-            className={`group relative bg-white dark:bg-slate-900 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
+            className={`group relative bg-card rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
               selectedCollectionId === collection.collection_id
                 ? "ring-2 ring-primary shadow-lg"
                 : "ring-1 ring-border hover:ring-primary/50"
@@ -266,15 +266,15 @@ export function Collections({
                 <div
                   className={`w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
                     selectedCollectionId === collection.collection_id
-                      ? "bg-slate-900 dark:bg-slate-100 shadow-lg"
-                      : "bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700"
+                      ? "bg-primary shadow-lg"
+                      : "bg-muted group-hover:bg-muted/80"
                   }`}
                 >
                   <FolderOpen
                     className={`w-7 h-7 transition-colors ${
                       selectedCollectionId === collection.collection_id
-                        ? "text-white dark:text-slate-900"
-                        : "text-slate-600 dark:text-slate-400"
+                        ? "text-primary-foreground"
+                        : "text-muted-foreground"
                     }`}
                   />
                 </div>
@@ -290,10 +290,10 @@ export function Collections({
                     setIsEditModalOpen(true);
                   }}
                   disabled={updateMutation.isPending}
-                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  className="p-2 rounded-lg hover:bg-muted transition-colors"
                   aria-label="Edit collection"
                 >
-                  <Edit2 className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <Edit2 className="w-4 h-4 text-muted-foreground" />
                 </button>
                 <button
                   type="button"
@@ -319,30 +319,30 @@ export function Collections({
               <h3
                 className={`text-xl font-bold transition-colors line-clamp-2 ${
                   selectedCollectionId === collection.collection_id
-                    ? "text-slate-900 dark:text-slate-100"
-                    : "text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-slate-100"
+                    ? "text-foreground"
+                    : "text-foreground/90 group-hover:text-foreground"
                 }`}
               >
                 {collection.name}
               </h3>
               {collection.description && (
-                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                   {collection.description}
                 </p>
               )}
             </button>
 
             {/* Stats & Metadata */}
-            <div className="relative pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            <div className="relative pt-4 mt-4 border-t border-border/50 space-y-3">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                <span className="text-3xl font-bold text-foreground tabular-nums">
                   {collection.document_count}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-medium">
+                <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
                   documents
                 </span>
               </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1 font-mono">
+              <div className="text-xs text-muted-foreground space-y-1 font-mono">
                 <div className="flex items-center justify-between">
                   <span>Created</span>
                   <span className="tabular-nums">
@@ -383,27 +383,27 @@ export function Collections({
       {/* Empty State */}
       {collections.length === 0 && (
         <div
-          className="bg-white dark:bg-slate-900 border-4 border-dashed border-slate-300 dark:border-slate-700 rounded-none p-16 text-center"
+          className="bg-card border-4 border-dashed border-border rounded-none p-16 text-center"
           style={{
             animation: "fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
           }}
         >
           <div className="max-w-md mx-auto space-y-6">
-            <div className="mx-auto w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-none border-4 border-slate-300 dark:border-slate-700 flex items-center justify-center">
-              <FolderOpen className="w-12 h-12 text-slate-400 dark:text-slate-500" />
+            <div className="mx-auto w-24 h-24 bg-muted rounded-none border-4 border-border flex items-center justify-center">
+              <FolderOpen className="w-12 h-12 text-muted-foreground" />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 mb-3 font-mono uppercase tracking-tight">
+              <h3 className="text-2xl font-black text-foreground mb-3 font-mono uppercase tracking-tight">
                 Vault Uninitialized
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-sans mb-6 leading-relaxed">
+              <p className="text-sm text-muted-foreground font-sans mb-6 leading-relaxed">
                 Create your first collection to establish an organized archive
                 system for your documents
               </p>
               <Button
                 onClick={() => setIsCreateModalOpen(true)}
                 disabled={createMutation.isPending}
-                className="gap-2 font-mono font-bold uppercase tracking-wider bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 border-2 border-slate-900 dark:border-slate-100"
+                className="gap-2 font-mono font-bold uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 border-2 border-primary"
               >
                 <Plus className="w-4 h-4" />
                 Initialize Vault
@@ -546,24 +546,24 @@ function CollectionModal({
 
       {/* Modal */}
       <div
-        className={`relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden ${
+        className={`relative w-full max-w-2xl bg-card rounded-2xl shadow-2xl overflow-hidden ${
           isAnimatingOut ? "animate-scaleOut" : "animate-scaleIn"
         }`}
       >
         {/* Header */}
-        <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 px-6 py-5 relative">
+        <div className="border-b border-border bg-muted/50 px-6 py-5 relative">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="text-2xl font-bold text-foreground">
               {mode === "create" ? "Create Collection" : "Edit Collection"}
             </h2>
             <button
               type="button"
               onClick={handleClose}
               disabled={isPending}
-              className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+              className="p-2 rounded-lg hover:bg-muted/70 transition-colors disabled:opacity-50"
               aria-label="Close"
             >
-              <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
         </div>
@@ -574,7 +574,7 @@ function CollectionModal({
           <div>
             <Label
               htmlFor="collection-name"
-              className="text-slate-900 dark:text-slate-100 font-semibold text-sm mb-2 block"
+              className="text-foreground font-semibold text-sm mb-2 block"
             >
               Collection Name <span className="text-red-500">*</span>
             </Label>
@@ -584,7 +584,7 @@ function CollectionModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Research Papers, Work Documents, Personal Notes"
-              className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-base h-11 font-sans"
+              className="bg-background border-border focus:ring-2 focus:ring-primary text-foreground placeholder:text-muted-foreground text-base h-11 font-sans"
               autoFocus
               disabled={isPending}
             />
@@ -594,10 +594,10 @@ function CollectionModal({
           <div>
             <Label
               htmlFor="collection-description"
-              className="text-slate-900 dark:text-slate-100 font-semibold text-sm mb-2 block"
+              className="text-foreground font-semibold text-sm mb-2 block"
             >
               Description
-              <span className="text-slate-500 dark:text-slate-400 ml-2 font-normal">
+              <span className="text-muted-foreground ml-2 font-normal">
                 (Optional)
               </span>
             </Label>
@@ -607,7 +607,7 @@ function CollectionModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the purpose or content of this collection..."
               rows={4}
-              className="bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-base resize-none font-sans"
+              className="bg-background border-border focus:ring-2 focus:ring-primary text-foreground placeholder:text-muted-foreground text-base resize-none font-sans"
               disabled={isPending}
             />
           </div>
@@ -627,7 +627,7 @@ function CollectionModal({
             <Button
               type="submit"
               disabled={isPending}
-              className="flex-1 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 font-semibold disabled:opacity-50"
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold disabled:opacity-50"
               size="lg"
             >
               {isPending ? (
