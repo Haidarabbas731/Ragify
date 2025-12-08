@@ -29,6 +29,7 @@ import {
 } from "../components/documents/SearchFilter";
 import { Button } from "../components/ui/button";
 import { useDarkMode } from "../contexts/DarkModeContext";
+import { useCollections } from "../hooks/useCollections";
 import {
   useBatchDeleteDocuments,
   useDeleteAllDocuments,
@@ -79,12 +80,9 @@ export function DocumentsPage() {
   const deleteAllMutation = useDeleteAllDocuments();
   const updateDocumentMutation = useUpdateDocument();
 
-  // Mock collections data - TODO: Replace with actual collections API call
-  const mockCollections = [
-    { collection_id: "coll_1", name: "Research Papers" },
-    { collection_id: "coll_2", name: "Meeting Notes" },
-    { collection_id: "coll_3", name: "Technical Docs" },
-  ];
+  // Fetch collections from backend
+  const { data: collectionsData } = useCollections();
+  const collections = collectionsData?.collections || [];
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
@@ -390,7 +388,7 @@ export function DocumentsPage() {
 
           {/* Search & Filter */}
           <SearchFilter
-            collections={mockCollections}
+            collections={collections}
             onFilterChange={handleFilterChange}
           />
 
@@ -404,7 +402,7 @@ export function DocumentsPage() {
                 onDeselectAll={handleDeselectAll}
                 onBatchDelete={handleBatchDelete}
                 onMoveToCollection={handleMoveToCollection}
-                collections={mockCollections}
+                collections={collections}
               />
             </div>
           )}

@@ -383,9 +383,9 @@ export function RegisterPage() {
               {password && (
                 <div className="space-y-2 mt-3">
                   <div className="flex gap-1">
-                    {/* biome-ignore lint/suspicious/noArrayIndexKey: static array length never changes */}
                     {[...Array(5)].map((_, i) => (
                       <div
+                        // biome-ignore lint/suspicious/noArrayIndexKey: Static array that never reorders
                         key={i}
                         className={`h-1 flex-1 transition-all duration-300 ${
                           i < passwordStrength

@@ -44,73 +44,8 @@ interface DocumentListProps {
   hideCheckboxes?: boolean;
 }
 
-// Mock data for demonstration
-const MOCK_DOCUMENTS: Document[] = [
-  {
-    document_id: "doc_1a2b3c4d",
-    filename: "Product Requirements Document Q4 2024.pdf",
-    file_type: "application/pdf",
-    size_bytes: 2457600,
-    status: "active",
-    chunks_count: 47,
-    uploaded_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    processed_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    error_message: null,
-    collection_id: "col_work",
-  },
-  {
-    document_id: "doc_5e6f7g8h",
-    filename: "meeting-notes-2024-11.docx",
-    file_type:
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    size_bytes: 856000,
-    status: "active",
-    chunks_count: 23,
-    uploaded_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    processed_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    error_message: null,
-    collection_id: "col_work",
-  },
-  {
-    document_id: "doc_9i0j1k2l",
-    filename: "research-paper-ai-embeddings.txt",
-    file_type: "text/plain",
-    size_bytes: 145000,
-    status: "processing",
-    chunks_count: 0,
-    uploaded_at: new Date(Date.now() - 30 * 1000).toISOString(),
-    processed_at: null,
-    error_message: null,
-    collection_id: "col_research",
-  },
-  {
-    document_id: "doc_3m4n5o6p",
-    filename: "budget-analysis-2024.pdf",
-    file_type: "application/pdf",
-    size_bytes: 3245000,
-    status: "error",
-    chunks_count: 0,
-    uploaded_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    processed_at: null,
-    error_message: "Failed to extract text from PDF",
-    collection_id: null,
-  },
-  {
-    document_id: "doc_7q8r9s0t",
-    filename: "architecture-design.md",
-    file_type: "text/markdown",
-    size_bytes: 98000,
-    status: "active",
-    chunks_count: 12,
-    uploaded_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    processed_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    error_message: null,
-    collection_id: "col_work",
-  },
-];
-
 export function DocumentList({
-  documents: propDocuments,
+  documents: propDocuments = [],
   onDocumentClick,
   onDeleteDocument,
   onRetryDocument,
@@ -118,8 +53,7 @@ export function DocumentList({
   onSelectionChange,
   hideCheckboxes = false,
 }: DocumentListProps) {
-  // Use prop documents if provided, otherwise fall back to mock data
-  const documents = propDocuments || MOCK_DOCUMENTS;
+  const documents = propDocuments;
   const [currentPage, setCurrentPage] = useState(1);
   const [hoveredDoc, setHoveredDoc] = useState<string | null>(null);
   const [retryingDocs, setRetryingDocs] = useState<Set<string>>(new Set());
