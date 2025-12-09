@@ -541,9 +541,11 @@ export function ChatPage() {
                           <p className="text-sm font-medium text-foreground truncate mb-1 font-sans">
                             {conv.last_message || "New conversation"}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-mono">
                             <span>{conv.message_count} msgs</span>
-                            <span className="text-muted-foreground">•</span>
+                            <span className="text-slate-500 dark:text-slate-400">
+                              •
+                            </span>
                             <span>
                               {new Date(conv.created_at).toLocaleDateString(
                                 "en-US",
@@ -644,7 +646,7 @@ export function ChatPage() {
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3 font-sans">
                       Start a Conversation
                     </h2>
-                    <p className="text-muted-foreground font-sans">
+                    <p className="text-slate-600 dark:text-slate-300 font-sans">
                       Ask me anything about your uploaded documents. I'll
                       provide accurate answers with source citations.
                     </p>
