@@ -92,11 +92,12 @@ export function LoginPage() {
         <div className="relative z-10 flex flex-col justify-between p-16 text-card-foreground">
           {/* Logo/Brand */}
           <div>
-            <img
-              src="/ragify-full.png"
-              alt="Ragify Logo"
-              className="w-64 h-auto mb-6"
-            />
+            <div className="flex items-center gap-3 mb-6">
+              <img src="/ragify.png" alt="Ragify Logo" className="w-16 h-16" />
+              <h1 className="text-5xl font-bold font-sans text-card-foreground">
+                Ragify
+              </h1>
+            </div>
             <p className="text-xl text-muted-foreground font-sans">
               Your AI-Powered Knowledge Hub
             </p>
@@ -172,11 +173,12 @@ export function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden mb-12">
-            <img
-              src="/ragify-full.png"
-              alt="Ragify Logo"
-              className="w-40 h-auto mb-4"
-            />
+            <div className="flex items-center gap-2 mb-4">
+              <img src="/ragify.png" alt="Ragify Logo" className="w-10 h-10" />
+              <h2 className="text-2xl font-bold text-foreground font-sans">
+                Ragify
+              </h2>
+            </div>
           </div>
 
           {/* Heading */}

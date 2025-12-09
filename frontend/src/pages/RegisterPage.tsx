@@ -192,24 +192,23 @@ export function RegisterPage() {
     <div className="min-h-screen bg-background flex">
       {/* Left Side - Progress Indicator */}
       <div className="hidden lg:flex lg:w-1/2 bg-card relative overflow-hidden flex-col justify-between p-16">
-        {/* Grid pattern */}
+        {/* Subtle texture overlay */}
         <div
-          className="absolute inset-0 opacity-10"
+          className="absolute inset-0 opacity-5"
           style={{
-            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)`,
-            backgroundSize: "50px 50px",
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }}
         />
 
         <div className="relative z-10">
           {/* Logo & Brand */}
           <div className="mb-12">
-            <img
-              src="/ragify-full.png"
-              alt="Ragify Logo"
-              className="w-64 h-auto mb-6"
-            />
+            <div className="flex items-center gap-3 mb-6">
+              <img src="/ragify.png" alt="Ragify Logo" className="w-16 h-16" />
+              <h2 className="text-4xl font-bold font-sans text-card-foreground">
+                Ragify
+              </h2>
+            </div>
           </div>
 
           {/* Progress Steps */}
@@ -225,13 +224,13 @@ export function RegisterPage() {
               </div>
               <div className="pt-2">
                 <h3
-                  className="text-white font-semibold mb-1"
+                  className="text-card-foreground font-semibold mb-1"
                   style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                 >
                   Create Account
                 </h3>
                 <p
-                  className="text-zinc-400 text-sm"
+                  className="text-muted-foreground text-sm"
                   style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                 >
                   Enter your details to get started
@@ -240,9 +239,9 @@ export function RegisterPage() {
             </div>
 
             <div className="flex items-start gap-4 opacity-40">
-              <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full border-2 border-card-foreground flex items-center justify-center flex-shrink-0">
                 <span
-                  className="text-white font-bold"
+                  className="text-card-foreground font-bold"
                   style={{ fontFamily: "'Fira Code', monospace" }}
                 >
                   02
@@ -250,13 +249,13 @@ export function RegisterPage() {
               </div>
               <div className="pt-2">
                 <h3
-                  className="text-white font-semibold mb-1"
+                  className="text-card-foreground font-semibold mb-1"
                   style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                 >
                   Upload Documents
                 </h3>
                 <p
-                  className="text-zinc-400 text-sm"
+                  className="text-muted-foreground text-sm"
                   style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                 >
                   Upload PDFs, DOCX, TXT, and markdown files to your knowledge
@@ -266,9 +265,9 @@ export function RegisterPage() {
             </div>
 
             <div className="flex items-start gap-4 opacity-40">
-              <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-full border-2 border-card-foreground flex items-center justify-center flex-shrink-0">
                 <span
-                  className="text-white font-bold"
+                  className="text-card-foreground font-bold"
                   style={{ fontFamily: "'Fira Code', monospace" }}
                 >
                   03
@@ -276,13 +275,13 @@ export function RegisterPage() {
               </div>
               <div className="pt-2">
                 <h3
-                  className="text-white font-semibold mb-1"
+                  className="text-card-foreground font-semibold mb-1"
                   style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                 >
                   Start Chatting
                 </h3>
                 <p
-                  className="text-zinc-400 text-sm"
+                  className="text-muted-foreground text-sm"
                   style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                 >
                   Use AI-powered chat to explore and query your documents
@@ -295,9 +294,9 @@ export function RegisterPage() {
 
         {/* Bottom Quote */}
         <div className="relative z-10">
-          <div className="w-12 h-1 bg-white mb-4" />
+          <div className="w-12 h-1 bg-card-foreground mb-4" />
           <p
-            className="text-white text-sm leading-relaxed"
+            className="text-muted-foreground text-sm leading-relaxed"
             style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
           >
             Secure, private, and powerful. Your documents stay yours.
@@ -319,11 +318,12 @@ export function RegisterPage() {
         <div className="w-full max-w-lg">
           {/* Mobile Logo */}
           <div className="lg:hidden mb-8">
-            <img
-              src="/ragify-full.png"
-              alt="Ragify Logo"
-              className="w-40 h-auto mb-4"
-            />
+            <div className="flex items-center gap-2 mb-4">
+              <img src="/ragify.png" alt="Ragify Logo" className="w-10 h-10" />
+              <h2 className="text-2xl font-bold text-foreground font-sans">
+                Ragify
+              </h2>
+            </div>
           </div>
 
           {/* Heading */}
