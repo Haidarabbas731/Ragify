@@ -140,6 +140,7 @@ export interface DocumentListResponse {
 export interface DocumentListParams {
   page?: number;
   limit?: number;
+  search?: string;
   collection_id?: string;
   status_filter?: DocumentStatus;
   sort_by?: string;

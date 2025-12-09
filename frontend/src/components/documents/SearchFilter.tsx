@@ -1,7 +1,7 @@
 /**
  * Search & Filter Component - Mission Control Filter Panel
- * Tactical data interface for document filtering and search
- * Fonts: IBM Plex Mono (labels), Space Grotesk (headings)
+ * Clean data interface for document filtering and search
+ * Fonts: Geist (sans), Geist Mono (mono)
  */
 
 import { Filter, Search, X } from "lucide-react";
@@ -59,7 +59,7 @@ export function SearchFilter({
     (filters.sortBy !== "created_at" || filters.order !== "desc" ? 1 : 0);
 
   const statusOptions = [
-    { value: "active", label: "ACTIVE", color: "emerald" },
+    { value: "active", label: "ACTIVE", color: "primary" },
     { value: "processing", label: "PROC", color: "blue" },
     { value: "error", label: "ERROR", color: "red" },
     { value: "stuck", label: "STUCK", color: "orange" },
@@ -70,31 +70,29 @@ export function SearchFilter({
       {/* Filter Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-900/50 rounded">
-            <Filter className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+          <div className="p-2 bg-primary/10 border border-primary/30 rounded">
+            <Filter className="w-4 h-4 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-emerald-800 dark:text-emerald-300 font-['Space_Grotesk'] tracking-tight">
+            <h3 className="text-sm font-bold text-primary font-sans tracking-tight">
               FILTER CONTROL
             </h3>
-            <p className="text-xs text-emerald-600 dark:text-emerald-400/70 font-mono">
-              {activeFilterCount > 0 ? (
+            {activeFilterCount > 0 && (
+              <p className="text-xs text-primary font-mono">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                   {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""}{" "}
                   active
                 </span>
-              ) : (
-                <span>All systems nominal</span>
-              )}
-            </p>
+              </p>
+            )}
           </div>
         </div>
 
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-xs font-mono font-bold rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+          className="px-3 py-1.5 bg-card border border-border text-primary text-xs font-mono font-bold rounded hover:bg-muted transition-colors"
         >
           {isExpanded ? "COLLAPSE" : "EXPAND"}
         </button>
@@ -102,31 +100,31 @@ export function SearchFilter({
 
       {/* Search Bar (Always Visible) */}
       <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
         <input
           type="text"
           value={filters.searchTerm}
           onChange={(e) => updateFilters({ searchTerm: e.target.value })}
           placeholder="SEARCH FILES BY NAME..."
-          className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-slate-800 border-2 border-emerald-300 dark:border-emerald-900/50 text-slate-900 dark:text-slate-100 placeholder:text-emerald-500/50 dark:placeholder:text-emerald-400/30 font-mono text-sm rounded focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all uppercase"
+          className="w-full pl-10 pr-10 py-2.5 bg-card border-2 border-border text-foreground placeholder:text-muted-foreground/50 font-mono text-sm rounded focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all uppercase"
         />
         {filters.searchTerm && (
           <button
             type="button"
             onClick={() => updateFilters({ searchTerm: "" })}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 rounded transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-muted rounded transition-colors"
           >
-            <X className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+            <X className="w-3 h-3 text-primary" />
           </button>
         )}
       </div>
 
       {/* Filter Panel (Expandable) */}
       {isExpanded && (
-        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-800 dark:to-emerald-950/20 border-2 border-emerald-200 dark:border-emerald-900/30 rounded-lg p-4 space-y-4 animate-slideDown">
+        <div className="bg-muted/30 border-2 border-border rounded-lg p-4 space-y-4 animate-slideDown">
           {/* Collection Filter */}
           <div>
-            <div className="block text-xs font-bold text-emerald-800 dark:text-emerald-300 font-mono mb-2 uppercase">
+            <div className="block text-xs font-bold text-primary font-mono mb-2 uppercase">
               [COLLECTION]
             </div>
             <div className="flex flex-wrap gap-2">
@@ -135,8 +133,8 @@ export function SearchFilter({
                 onClick={() => updateFilters({ collectionId: null })}
                 className={`px-3 py-1.5 text-xs font-mono font-bold rounded border-2 transition-all ${
                   filters.collectionId === null
-                    ? "bg-emerald-600 dark:bg-emerald-500 border-emerald-700 dark:border-emerald-400 text-white shadow-lg shadow-emerald-900/30"
-                    : "bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                    ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/30"
+                    : "bg-card border-border text-foreground hover:bg-muted"
                 }`}
               >
                 ALL
@@ -150,8 +148,8 @@ export function SearchFilter({
                   }
                   className={`px-3 py-1.5 text-xs font-mono font-bold rounded border-2 transition-all ${
                     filters.collectionId === collection.collection_id
-                      ? "bg-emerald-600 dark:bg-emerald-500 border-emerald-700 dark:border-emerald-400 text-white shadow-lg shadow-emerald-900/30"
-                      : "bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                      ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/30"
+                      : "bg-card border-border text-foreground hover:bg-muted"
                   }`}
                 >
                   {collection.name.toUpperCase()}
@@ -162,7 +160,7 @@ export function SearchFilter({
 
           {/* Status Filter */}
           <div>
-            <div className="block text-xs font-bold text-emerald-800 dark:text-emerald-300 font-mono mb-2 uppercase">
+            <div className="block text-xs font-bold text-primary font-mono mb-2 uppercase">
               [STATUS]
             </div>
             <div className="flex flex-wrap gap-2">
@@ -171,8 +169,8 @@ export function SearchFilter({
                 onClick={() => updateFilters({ statusFilter: null })}
                 className={`px-3 py-1.5 text-xs font-mono font-bold rounded border-2 transition-all ${
                   filters.statusFilter === null
-                    ? "bg-emerald-600 dark:bg-emerald-500 border-emerald-700 dark:border-emerald-400 text-white shadow-lg shadow-emerald-900/30"
-                    : "bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                    ? "bg-primary border-primary text-primary-foreground shadow-lg shadow-primary/30"
+                    : "bg-card border-border text-foreground hover:bg-muted"
                 }`}
               >
                 ALL
@@ -185,7 +183,7 @@ export function SearchFilter({
                   className={`px-3 py-1.5 text-xs font-mono font-bold rounded border-2 transition-all flex items-center gap-1.5 ${
                     filters.statusFilter === status.value
                       ? `bg-${status.color}-600 dark:bg-${status.color}-500 border-${status.color}-700 dark:border-${status.color}-400 text-white shadow-lg`
-                      : "bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                      : "bg-card border-border text-foreground hover:bg-muted"
                   }`}
                 >
                   {filters.statusFilter === status.value && (
@@ -205,7 +203,7 @@ export function SearchFilter({
             <div>
               <label
                 htmlFor="sort-by"
-                className="block text-xs font-bold text-emerald-800 dark:text-emerald-300 font-mono mb-2 uppercase"
+                className="block text-xs font-bold text-primary font-mono mb-2 uppercase"
               >
                 [SORT BY]
               </label>
@@ -220,7 +218,7 @@ export function SearchFilter({
                       | "status",
                   })
                 }
-                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border-2 border-emerald-300 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300 font-mono text-xs font-bold rounded focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 uppercase"
+                className="w-full px-3 py-2 bg-card border-2 border-border text-foreground font-mono text-xs font-bold rounded focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 uppercase"
               >
                 <option value="created_at">UPLOAD DATE</option>
                 <option value="filename">FILE NAME</option>
@@ -232,7 +230,7 @@ export function SearchFilter({
             <div>
               <label
                 htmlFor="order"
-                className="block text-xs font-bold text-emerald-800 dark:text-emerald-300 font-mono mb-2 uppercase"
+                className="block text-xs font-bold text-primary font-mono mb-2 uppercase"
               >
                 [ORDER]
               </label>
@@ -242,7 +240,7 @@ export function SearchFilter({
                 onChange={(e) =>
                   updateFilters({ order: e.target.value as "asc" | "desc" })
                 }
-                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border-2 border-emerald-300 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-300 font-mono text-xs font-bold rounded focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 uppercase"
+                className="w-full px-3 py-2 bg-card border-2 border-border text-foreground font-mono text-xs font-bold rounded focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 uppercase"
               >
                 <option value="desc">DESCENDING</option>
                 <option value="asc">ASCENDING</option>
