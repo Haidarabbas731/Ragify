@@ -205,7 +205,7 @@ export function RegisterPage() {
           <div className="mb-12">
             <div className="flex items-center gap-4 mb-6">
               <img src="/ragify.png" alt="Ragify Logo" className="w-24 h-24" />
-              <h2 className="text-5xl font-bold font-sans text-card-foreground">
+              <h2 className="text-4xl font-bold font-sans text-card-foreground">
                 Ragify
               </h2>
             </div>
@@ -320,7 +320,7 @@ export function RegisterPage() {
           <div className="lg:hidden mb-8">
             <div className="flex items-center gap-2 mb-4">
               <img src="/ragify.png" alt="Ragify Logo" className="w-16 h-16" />
-              <h2 className="text-3xl font-bold text-foreground font-sans">
+              <h2 className="text-2xl font-bold text-foreground font-sans">
                 Ragify
               </h2>
             </div>
