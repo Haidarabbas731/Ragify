@@ -1,7 +1,7 @@
 /**
  * Batch Actions Component - Command Center Batch Control
- * Military-grade tactical interface for bulk document operations
- * Fonts: Rajdhani (display), JetBrains Mono (monospace), Archivo (body)
+ * Clean interface for bulk document operations
+ * Fonts: Geist (sans), Geist Mono (mono)
  */
 
 import {
@@ -39,18 +39,6 @@ export function BatchActions({
 
   return (
     <>
-      {/* Tactical Font Imports */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossOrigin="anonymous"
-      />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Archivo:wght@400;500;600&display=swap"
-        rel="stylesheet"
-      />
-
       <div className="mb-4 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-lg p-4 shadow-lg">
         {/* Command Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
@@ -59,7 +47,7 @@ export function BatchActions({
             <div
               className={`relative p-1.5 sm:p-2 rounded border-2 transition-all duration-300 ${
                 hasSelection
-                  ? "bg-emerald-500 border-emerald-600 shadow-lg shadow-emerald-900/50 animate-pulse-glow"
+                  ? "bg-primary border-primary shadow-lg shadow-primary/50 animate-pulse-glow"
                   : "bg-slate-200 dark:bg-slate-700 border-slate-400 dark:border-slate-600"
               }`}
             >
@@ -67,8 +55,8 @@ export function BatchActions({
                 {/* Tactical Reticle Overlay */}
                 {hasSelection && (
                   <>
-                    <div className="absolute w-1 h-full bg-emerald-300/30" />
-                    <div className="absolute h-1 w-full bg-emerald-300/30" />
+                    <div className="absolute w-1 h-full bg-primary-foreground/30" />
+                    <div className="absolute h-1 w-full bg-primary-foreground/30" />
                   </>
                 )}
               </div>
@@ -87,20 +75,14 @@ export function BatchActions({
 
             {/* Status Display */}
             <div>
-              <h3
-                className="text-sm sm:text-base md:text-lg font-bold text-slate-800 dark:text-slate-200 tracking-tight"
-                style={{ fontFamily: "Rajdhani, sans-serif" }}
-              >
+              <h3 className="text-sm sm:text-base md:text-lg font-bold text-slate-800 dark:text-slate-200 tracking-tight font-sans">
                 BATCH OPERATIONS
               </h3>
-              <p
-                className="text-[10px] sm:text-xs font-mono text-slate-600 dark:text-slate-400"
-                style={{ fontFamily: "JetBrains Mono, monospace" }}
-              >
+              <p className="text-[10px] sm:text-xs font-mono text-slate-600 dark:text-slate-400">
                 {hasSelection ? (
                   <span className="flex items-center gap-1 sm:gap-2">
-                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse" />
-                    <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-primary rounded-full animate-pulse" />
+                    <span className="text-primary font-bold">
                       {selectedCount} TARGET{selectedCount > 1 ? "S" : ""}{" "}
                       LOCKED
                     </span>
@@ -117,8 +99,7 @@ export function BatchActions({
             <button
               type="button"
               onClick={isAllSelected ? onDeselectAll : onSelectAll}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-bold rounded hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-500 transition-all shadow-sm"
-              style={{ fontFamily: "Rajdhani, sans-serif" }}
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-bold rounded hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-400 dark:hover:border-slate-500 transition-all shadow-sm font-sans"
             >
               {isAllSelected ? "DESELECT ALL" : "SELECT ALL"}
             </button>
@@ -134,8 +115,7 @@ export function BatchActions({
                 type="button"
                 onClick={() => setShowCollectionMenu(!showCollectionMenu)}
                 disabled={selectedCount === 0}
-                className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 disabled:from-slate-400 disabled:to-slate-500 text-white text-xs sm:text-sm font-bold rounded shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed border-2 border-blue-800 dark:border-blue-500"
-                style={{ fontFamily: "Rajdhani, sans-serif" }}
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 disabled:from-slate-400 disabled:to-slate-500 text-white text-xs sm:text-sm font-bold rounded shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed border-2 border-blue-800 dark:border-blue-500 font-sans"
               >
                 <FolderInput
                   className="w-3.5 h-3.5 sm:w-4 sm:h-4"
@@ -158,7 +138,6 @@ export function BatchActions({
                           setShowCollectionMenu(false);
                         }}
                         className="w-full text-left px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded transition-colors"
-                        style={{ fontFamily: "Archivo, sans-serif" }}
                       >
                         {collection.name}
                       </button>
@@ -173,12 +152,11 @@ export function BatchActions({
               type="button"
               onClick={onBatchDelete}
               disabled={selectedCount === 0}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-br text-white text-xs sm:text-sm font-bold rounded shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed border-2 ${
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-br text-white text-xs sm:text-sm font-bold rounded shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed border-2 font-sans ${
                 isAllSelected
                   ? "from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 border-red-800 dark:border-red-500"
                   : "from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 border-amber-800 dark:border-amber-500"
               } disabled:from-slate-400 disabled:to-slate-500`}
-              style={{ fontFamily: "Rajdhani, sans-serif" }}
             >
               {isAllSelected ? (
                 <AlertTriangle
@@ -206,10 +184,10 @@ export function BatchActions({
       <style>{`
         @keyframes pulse-glow {
           0%, 100% {
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+            box-shadow: 0 0 20px hsl(var(--primary) / 0.5);
           }
           50% {
-            box-shadow: 0 0 30px rgba(16, 185, 129, 0.8);
+            box-shadow: 0 0 30px hsl(var(--primary) / 0.8);
           }
         }
 

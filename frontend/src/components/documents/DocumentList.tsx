@@ -1,7 +1,7 @@
 /**
  * Document List Component - Archive Catalog
- * Library-inspired document browser with dense information display
- * Fonts: Fira Code (stats/IDs), Space Grotesk (headings), Inter (body)
+ * Clean document browser with dense information display
+ * Fonts: Geist (sans), Geist Mono (mono)
  */
 
 import { formatDistanceToNow } from "date-fns";
@@ -106,16 +106,16 @@ export function DocumentList({
         return (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-100 dark:bg-blue-950 border border-blue-300 dark:border-blue-700">
             <Loader2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 animate-spin" />
-            <span className="text-xs font-medium text-blue-700 dark:text-blue-300 font-['Inter']">
+            <span className="text-xs font-medium text-blue-700 dark:text-blue-300 font-sans">
               Processing
             </span>
           </div>
         );
       case "active":
         return (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-100 dark:bg-emerald-950 border border-emerald-300 dark:border-emerald-700">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300 font-['Inter']">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 border border-primary/30">
+            <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-medium text-primary font-sans">
               Active
             </span>
           </div>
@@ -124,7 +124,7 @@ export function DocumentList({
         return (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-100 dark:bg-red-950 border border-red-300 dark:border-red-700">
             <AlertCircle className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
-            <span className="text-xs font-medium text-red-700 dark:text-red-300 font-['Inter']">
+            <span className="text-xs font-medium text-red-700 dark:text-red-300 font-sans">
               Error
             </span>
           </div>
@@ -132,7 +132,7 @@ export function DocumentList({
       case "deleted":
         return (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 font-['Inter']">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400 font-sans">
               Deleted
             </span>
           </div>
@@ -147,16 +147,16 @@ export function DocumentList({
 
   if (documents.length === 0) {
     return (
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center">
+      <div className="bg-card border border-border rounded-xl p-12 text-center">
         <div className="max-w-sm mx-auto space-y-4">
-          <div className="mx-auto w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
-            <FileText className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+          <div className="mx-auto w-20 h-20 bg-muted rounded-full flex items-center justify-center">
+            <FileText className="w-10 h-10 text-muted-foreground" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2 font-['Space_Grotesk']">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 font-sans">
               No documents yet
             </h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 font-['Inter']">
+            <p className="text-sm text-slate-600 dark:text-slate-300 font-sans">
               Upload your first document to get started with your AI knowledge
               base
             </p>
@@ -169,9 +169,9 @@ export function DocumentList({
   return (
     <div className="space-y-4">
       {/* Document Grid */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         {/* Table Header - Hidden on mobile */}
-        <div className="hidden md:block border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+        <div className="hidden md:block border-b border-border bg-muted">
           <div
             className={`grid gap-4 px-6 py-3 ${hideCheckboxes ? "grid-cols-12" : "grid-cols-13"}`}
           >
@@ -181,20 +181,20 @@ export function DocumentList({
               </div>
             )}
             <div
-              className={`${hideCheckboxes ? "col-span-5" : "col-span-5"} text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']`}
+              className={`${hideCheckboxes ? "col-span-5" : "col-span-5"} text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-sans`}
             >
               Document
             </div>
-            <div className="col-span-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
+            <div className="col-span-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-sans">
               Status
             </div>
-            <div className="col-span-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
+            <div className="col-span-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-sans">
               Size
             </div>
-            <div className="col-span-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter']">
+            <div className="col-span-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-sans">
               Uploaded
             </div>
-            <div className="col-span-1 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-['Inter'] text-right">
+            <div className="col-span-1 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider font-sans text-right">
               Actions
             </div>
           </div>
@@ -213,7 +213,7 @@ export function DocumentList({
                   hoveredDoc === doc.document_id
                     ? "bg-slate-50 dark:bg-slate-800/50"
                     : isSelected
-                      ? "bg-emerald-50 dark:bg-emerald-950/20"
+                      ? "bg-primary/5 dark:bg-primary/10"
                       : "hover:bg-slate-50 dark:hover:bg-slate-800/30"
                 }`}
                 onMouseEnter={() => setHoveredDoc(doc.document_id)}
@@ -241,7 +241,7 @@ export function DocumentList({
                               e.target.checked,
                             );
                           }}
-                          className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
+                          className="w-5 h-5 rounded border-2 border-primary text-primary focus:ring-2 focus:ring-primary focus:ring-offset-0 cursor-pointer transition-all"
                         />
                       </div>
                     )}
@@ -260,7 +260,7 @@ export function DocumentList({
                         </div>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Inter'] break-words">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-sans break-words">
                           {doc.filename}
                         </p>
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 font-['Fira_Code'] mt-0.5 truncate">
@@ -295,7 +295,7 @@ export function DocumentList({
                       <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">
                         Uploaded
                       </p>
-                      <p className="text-xs text-slate-700 dark:text-slate-300 font-['Inter']">
+                      <p className="text-xs text-slate-700 dark:text-slate-300 font-sans">
                         {formatDistanceToNow(new Date(doc.uploaded_at), {
                           addSuffix: true,
                         })}
@@ -309,7 +309,7 @@ export function DocumentList({
                   {/* Mobile Error Message + Retry */}
                   {doc.status === "error" && doc.error_message && (
                     <div className="flex flex-col gap-2">
-                      <p className="text-xs text-red-600 dark:text-red-400 font-['Inter']">
+                      <p className="text-xs text-red-600 dark:text-red-400 font-sans">
                         {doc.error_message}
                       </p>
                       <button
@@ -338,7 +338,7 @@ export function DocumentList({
                           }`}
                         />
                         <span
-                          className={`text-xs font-medium font-['Inter'] ${
+                          className={`text-xs font-medium font-sans ${
                             retryingDocs.has(doc.document_id)
                               ? "text-slate-600 dark:text-slate-400"
                               : "text-blue-700 dark:text-blue-300"
@@ -364,7 +364,7 @@ export function DocumentList({
                         e.stopPropagation();
                         onSelectionChange?.(doc.document_id, e.target.checked);
                       }}
-                      className="w-5 h-5 rounded border-2 border-emerald-400 dark:border-emerald-600 text-emerald-600 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0 cursor-pointer transition-all"
+                      className="w-5 h-5 rounded border-2 border-primary text-primary focus:ring-2 focus:ring-primary focus:ring-offset-0 cursor-pointer transition-all"
                     />
                   </div>
                 )}
@@ -383,7 +383,7 @@ export function DocumentList({
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate font-['Inter'] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate font-sans group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {doc.filename}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code'] mt-0.5">
@@ -409,7 +409,7 @@ export function DocumentList({
                       </p>
                     )}
                     {doc.status === "error" && doc.error_message && (
-                      <p className="text-xs text-red-600 dark:text-red-400 font-['Inter'] truncate">
+                      <p className="text-xs text-red-600 dark:text-red-400 font-sans truncate">
                         {doc.error_message}
                       </p>
                     )}
@@ -441,7 +441,7 @@ export function DocumentList({
                         }`}
                       />
                       <span
-                        className={`text-xs font-medium font-['Inter'] ${
+                        className={`text-xs font-medium font-sans ${
                           retryingDocs.has(doc.document_id)
                             ? "text-slate-600 dark:text-slate-400"
                             : "text-blue-700 dark:text-blue-300"
@@ -459,7 +459,7 @@ export function DocumentList({
                 <div className="hidden md:flex col-span-2 items-center gap-2">
                   <Clock className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm text-slate-700 dark:text-slate-300 font-['Inter']">
+                    <p className="text-sm text-slate-700 dark:text-slate-300 font-sans">
                       {formatDistanceToNow(new Date(doc.uploaded_at), {
                         addSuffix: true,
                       })}
@@ -506,8 +506,8 @@ export function DocumentList({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-          <div className="text-sm text-slate-600 dark:text-slate-400 font-['Inter']">
+        <div className="flex items-center justify-between px-4 py-3 bg-card border border-border rounded-xl">
+          <div className="text-sm text-slate-600 dark:text-slate-400 font-sans">
             Showing {startIndex + 1}-{Math.min(endIndex, documents.length)} of{" "}
             {documents.length} documents
           </div>
@@ -517,7 +517,7 @@ export function DocumentList({
               size="sm"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="gap-2 font-['Inter']"
+              className="gap-2 font-sans"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous
@@ -530,7 +530,7 @@ export function DocumentList({
               size="sm"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="gap-2 font-['Inter']"
+              className="gap-2 font-sans"
             >
               Next
               <ChevronRight className="w-4 h-4" />
