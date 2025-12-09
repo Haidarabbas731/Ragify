@@ -9,6 +9,65 @@
 
 ## 🔧 IMPLEMENTATION UPDATES
 
+**UPDATE [2025-12-09]:** CRITICAL FIX - Complete @theme Directive Mapping + Phase 3 Dark Mode Text Visibility
+
+### Critical Fix Applied:
+**Problem:** `text-muted-foreground` and other utility classes were showing `rgb(0, 0, 0)` (pure black) in dark mode, making text invisible.
+**Root Cause:** Tailwind v4's `@theme` directive was incomplete - only mapped 7 colors instead of all 26 CSS variables.
+**Solution:** Completed `@theme` block in `index.css` with ALL color mappings:
+```css
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground); /* ← KEY FIX */
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+```
+**Result:** All text now properly uses OKLCH colors and is visible in both modes:
+- Light mode: `oklch(0.5426 0.0465 284.743)` - darker for contrast
+- Dark mode: `oklch(0.7166 0.0462 285.174)` - lighter for contrast
+
+### DashboardPage Dark Mode Fixes (✅ COMPLETE):
+1. **Stats Card Text Visibility**
+   - Changed `text-slate-900 dark:text-white` to `text-foreground` for numbers
+   - Changed `text-slate-600 dark:text-slate-300` to `text-muted-foreground` for descriptions
+   - Fixed: "Total files uploaded", "Vector embeddings", "MB", "% used" labels
+   
+2. **Upload Zone Text**
+   - "Drag & drop files here or click to browse" - now visible
+   - "PDF, DOCX, TXT, MD • Max 50MB per file" - now visible
+   
+3. **Mobile Sidebar Collections Button**
+   - Changed `text-slate-600 dark:text-slate-400` to `text-foreground`
+
+### ChatPage Dark Mode Fixes (✅ COMPLETE):
+1. **Sidebar Text**
+   - Changed "Conversations" heading from `text-slate-900 dark:text-white` to `text-foreground`
+   - Changed conversation metadata from `text-slate-500 dark:text-slate-400` to `text-muted-foreground`
+   
+2. **User Menu & Toggle Icons**
+   - Changed dark/light mode icons from `text-muted-foreground` to `text-primary` for visibility
+   - Changed user icon from `text-muted-foreground` to `text-primary` for visibility
+
+**Verified via Chrome DevTools:** All pages tested in both light and dark modes with proper contrast.
+
+---
+
 **UPDATE [2025-12-08]:** Phase 1 Foundation & Phase 2.2 DocumentDetailPage Migration Completed
 
 ### What Was Implemented:
