@@ -273,7 +273,7 @@ export function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-sm font-sans transition-all hover:scale-[1.02]"
+                className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-muted text-foreground text-sm font-sans transition-all hover:scale-[1.02]"
               >
                 <FolderOpen className="w-4 h-4" />
                 <span>All Documents</span>
@@ -409,10 +409,10 @@ export function DashboardPage() {
                 </span>
               </div>
               <div className="space-y-1">
-                <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
+                <p className="text-3xl font-bold font-mono text-foreground tabular-nums">
                   {stats.totalDocuments}
                 </p>
-                <p className="text-sm text-slate-600 dark:text-slate-300 font-sans">
+                <p className="text-sm text-muted-foreground font-sans">
                   Total files uploaded
                 </p>
               </div>
@@ -429,10 +429,10 @@ export function DashboardPage() {
                 </span>
               </div>
               <div className="space-y-1">
-                <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
+                <p className="text-3xl font-bold font-mono text-foreground tabular-nums">
                   {stats.totalChunks.toLocaleString()}
                 </p>
-                <p className="text-sm text-slate-600 dark:text-slate-300 font-sans">
+                <p className="text-sm text-muted-foreground font-sans">
                   Vector embeddings
                 </p>
               </div>
@@ -450,13 +450,13 @@ export function DashboardPage() {
               </div>
               <div className="space-y-3">
                 <div className="flex items-baseline gap-2">
-                  <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
+                  <p className="text-3xl font-bold font-mono text-foreground tabular-nums">
                     {stats.storageUsed}
                   </p>
-                  <span className="text-lg font-medium text-slate-600 dark:text-slate-300 font-sans">
+                  <span className="text-lg font-medium text-muted-foreground font-sans">
                     MB
                   </span>
-                  <span className="text-sm text-slate-600 dark:text-slate-300 font-sans">
+                  <span className="text-sm text-muted-foreground font-sans">
                     / {stats.storageLimit} MB
                   </span>
                 </div>
@@ -473,7 +473,7 @@ export function DashboardPage() {
                       style={{ width: `${storagePercentage}%` }}
                     />
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-sans">
+                  <p className="text-xs text-muted-foreground font-sans">
                     {storagePercentage < 0.1 && storagePercentage > 0
                       ? storagePercentage.toFixed(3)
                       : storagePercentage.toFixed(1)}

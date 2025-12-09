@@ -426,15 +426,15 @@ export function ChatPage() {
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
-                <Sun className="w-5 h-5 text-muted-foreground" />
+                <Sun className="w-5 h-5 text-primary" />
               ) : (
-                <Moon className="w-5 h-5 text-muted-foreground" />
+                <Moon className="w-5 h-5 text-primary" />
               )}
             </button>
 
             {/* User Menu - Hidden on mobile */}
             <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-muted border border-border">
-              <User className="w-5 h-5 text-muted-foreground" />
+              <User className="w-5 h-5 text-primary" />
               <span className="text-sm font-medium text-foreground font-sans">
                 {user?.email}
               </span>
@@ -479,7 +479,7 @@ export function ChatPage() {
         >
           {/* Mobile Header */}
           <div className="lg:hidden flex items-center justify-between p-4 border-b border-border">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white font-sans">
+            <h2 className="text-lg font-semibold text-foreground font-sans">
               Conversations
             </h2>
             <button
@@ -541,11 +541,9 @@ export function ChatPage() {
                           <p className="text-sm font-medium text-foreground truncate mb-1 font-sans">
                             {conv.last_message || "New conversation"}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-mono">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
                             <span>{conv.message_count} msgs</span>
-                            <span className="text-slate-500 dark:text-slate-400">
-                              •
-                            </span>
+                            <span className="text-muted-foreground">•</span>
                             <span>
                               {new Date(conv.created_at).toLocaleDateString(
                                 "en-US",
