@@ -48,7 +48,7 @@ export function ProfilePage() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
           <p className="text-muted-foreground font-sans">Loading profile...</p>
@@ -60,7 +60,7 @@ export function ProfilePage() {
   // Show error state
   if (error || !profile) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-destructive font-sans mb-4">
             Failed to load profile
@@ -84,9 +84,9 @@ export function ProfilePage() {
   const storagePercentage = profile.storage_percentage;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-background">
       {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-xl">
         <div className="flex items-center justify-between px-6 py-4">
           {/* Logo & Brand */}
           <Link to="/dashboard" className="flex items-center gap-3 group">
@@ -104,13 +104,13 @@ export function ProfilePage() {
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="hidden lg:flex p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="hidden lg:flex p-2 rounded-lg hover:bg-muted transition-colors"
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
-                <Sun className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <Sun className="w-5 h-5 text-primary" />
               ) : (
-                <Moon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <Moon className="w-5 h-5 text-primary" />
               )}
             </button>
 
@@ -119,7 +119,7 @@ export function ProfilePage() {
               onClick={handleLogout}
               variant="outline"
               size="sm"
-              className="hidden lg:flex gap-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 font-sans font-medium"
+              className="hidden lg:flex gap-2 border-red-300 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-400 dark:hover:border-red-700 transition-all duration-300 font-sans font-medium"
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Logout</span>
@@ -133,14 +133,14 @@ export function ProfilePage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar Navigation */}
           <aside className="lg:col-span-1">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2 sticky top-24">
+            <div className="bg-card border border-border rounded-xl p-4 space-y-2 sticky top-24">
               <button
                 type="button"
                 onClick={() => setActiveTab("profile")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-sans font-medium ${
                   activeTab === "profile"
                     ? "bg-primary/10 text-primary"
-                    : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    : "hover:bg-muted text-foreground"
                 }`}
               >
                 <User className="w-5 h-5" />
@@ -152,7 +152,7 @@ export function ProfilePage() {
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-sans font-medium ${
                   activeTab === "security"
                     ? "bg-primary/10 text-primary"
-                    : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    : "hover:bg-muted text-foreground"
                 }`}
               >
                 <Lock className="w-5 h-5" />
@@ -164,7 +164,7 @@ export function ProfilePage() {
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-sans font-medium ${
                   activeTab === "usage"
                     ? "bg-primary/10 text-primary"
-                    : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    : "hover:bg-muted text-foreground"
                 }`}
               >
                 <HardDrive className="w-5 h-5" />
@@ -176,7 +176,7 @@ export function ProfilePage() {
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-sans font-medium ${
                   activeTab === "preferences"
                     ? "bg-primary/10 text-primary"
-                    : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                    : "hover:bg-muted text-foreground"
                 }`}
               >
                 <Settings className="w-5 h-5" />
@@ -184,10 +184,10 @@ export function ProfilePage() {
               </button>
 
               {/* Back to Dashboard */}
-              <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="pt-4 mt-4 border-t border-border">
                 <Link
                   to="/dashboard"
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-sans transition-all"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-sans transition-all"
                 >
                   <FileText className="w-5 h-5" />
                   <span>Back to Dashboard</span>
@@ -201,8 +201,8 @@ export function ProfilePage() {
             {/* Profile Info Tab */}
             {activeTab === "profile" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6 font-sans">
+                <div className="bg-card border border-border rounded-xl p-6">
+                  <h2 className="text-2xl font-bold text-foreground mb-6 font-sans">
                     Profile Information
                   </h2>
 
@@ -220,19 +220,19 @@ export function ProfilePage() {
                       </button>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 font-sans">
+                      <h3 className="text-lg font-semibold text-foreground font-sans">
                         {userData.name}
                       </h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                      <p className="text-sm text-muted-foreground font-sans">
                         {userData.email}
                       </p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-mono">
+                      <p className="text-xs text-muted-foreground mt-1 font-mono">
                         Member since {userData.created_at.toLocaleDateString()}
                       </p>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="mt-3 font-sans border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        className="mt-3 font-sans border-border text-foreground hover:bg-muted"
                       >
                         <Camera className="w-4 h-4 mr-2" />
                         Change Avatar
@@ -243,27 +243,27 @@ export function ProfilePage() {
                   {/* Profile Form */}
                   <div className="space-y-4">
                     <div>
-                      <Label className="font-sans font-medium text-slate-700 dark:text-slate-300">
+                      <Label className="font-sans font-medium text-foreground">
                         Display Name
                       </Label>
                       <Input
                         defaultValue={userData.name}
-                        className="mt-1 font-sans bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                        className="mt-1 font-sans bg-card border-border text-foreground"
                       />
                     </div>
                     <div>
-                      <Label className="font-sans font-medium text-slate-700 dark:text-slate-300">
+                      <Label className="font-sans font-medium text-foreground">
                         Email Address
                       </Label>
                       <div className="relative mt-1">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                           defaultValue={userData.email}
-                          className="pl-10 font-sans bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
+                          className="pl-10 font-sans bg-muted border-border text-foreground"
                           disabled
                         />
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
+                      <p className="text-xs text-muted-foreground mt-1 font-sans">
                         Email cannot be changed
                       </p>
                     </div>
@@ -279,18 +279,18 @@ export function ProfilePage() {
             {/* Security Tab */}
             {activeTab === "security" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+                <div className="bg-card border border-border rounded-xl p-6">
                   <ChangePasswordForm />
                 </div>
 
                 {/* API Key Section */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6 font-sans">
+                <div className="bg-card border border-border rounded-xl p-6">
+                  <h2 className="text-2xl font-bold text-foreground mb-6 font-sans">
                     API Access
                   </h2>
-                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                  <div className="bg-muted rounded-lg p-4 border border-border">
                     <div className="flex items-center justify-between mb-2">
-                      <Label className="font-sans font-medium text-slate-700 dark:text-slate-300">
+                      <Label className="font-sans font-medium text-foreground">
                         API Key
                       </Label>
                       <Button variant="ghost" size="sm" className="font-sans">
@@ -298,7 +298,7 @@ export function ProfilePage() {
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 bg-slate-100 dark:bg-slate-900 px-3 py-2 rounded border border-slate-200 dark:border-slate-700 text-sm font-mono text-slate-700 dark:text-slate-300">
+                      <code className="flex-1 bg-background px-3 py-2 rounded border border-border text-sm font-mono text-foreground">
                         kb_••••••••••••••••••••1a2b
                       </code>
                       <Button variant="outline" size="sm" className="font-sans">
@@ -313,8 +313,8 @@ export function ProfilePage() {
             {/* Usage & Quota Tab */}
             {activeTab === "usage" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6 font-sans">
+                <div className="bg-card border border-border rounded-xl p-6">
+                  <h2 className="text-2xl font-bold text-foreground mb-6 font-sans">
                     Usage Statistics
                   </h2>
 
@@ -335,7 +335,7 @@ export function ProfilePage() {
                             stroke="currentColor"
                             strokeWidth="10"
                             fill="none"
-                            className="text-slate-200 dark:text-slate-800"
+                            className="text-border"
                           />
                           <circle
                             cx="80"
@@ -359,22 +359,22 @@ export function ProfilePage() {
                           />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center flex-col">
-                          <span className="text-3xl font-bold text-slate-900 dark:text-slate-100 font-mono">
+                          <span className="text-3xl font-bold text-foreground font-mono">
                             {profile.storage_used_mb.toFixed(1)}
                           </span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 font-sans">
+                          <span className="text-xs text-muted-foreground font-sans">
                             MB
                           </span>
                         </div>
                       </div>
-                      <h3 className="mt-6 text-xl font-semibold text-slate-900 dark:text-slate-100 font-sans">
+                      <h3 className="mt-6 text-xl font-semibold text-foreground font-sans">
                         Storage Used
                       </h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 font-sans mt-2">
+                      <p className="text-sm text-muted-foreground font-sans mt-2">
                         {storagePercentage.toFixed(1)}% of{" "}
                         {profile.storage_limit_mb.toFixed(0)} MB
                       </p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1">
+                      <p className="text-xs text-muted-foreground font-mono mt-1">
                         {(
                           profile.storage_limit_mb - profile.storage_used_mb
                         ).toFixed(1)}{" "}
@@ -384,19 +384,19 @@ export function ProfilePage() {
                   </div>
 
                   {/* Storage Details */}
-                  <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 font-sans">
+                  <div className="mt-8 pt-6 border-t border-border">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 font-sans">
                       Storage Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
-                        <p className="text-sm text-slate-600 dark:text-slate-400 font-sans">
+                      <div className="bg-muted rounded-lg p-4">
+                        <p className="text-sm text-muted-foreground font-sans">
                           Used
                         </p>
-                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-mono mt-1">
+                        <p className="text-2xl font-bold text-foreground font-mono mt-1">
                           {profile.storage_used_mb.toFixed(2)} MB
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-500 font-mono mt-1">
+                        <p className="text-xs text-muted-foreground font-mono mt-1">
                           {(
                             profile.storage_used_bytes /
                             (1024 * 1024 * 1024)
@@ -404,14 +404,14 @@ export function ProfilePage() {
                           GB
                         </p>
                       </div>
-                      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
-                        <p className="text-sm text-slate-600 dark:text-slate-400 font-sans">
+                      <div className="bg-muted rounded-lg p-4">
+                        <p className="text-sm text-muted-foreground font-sans">
                           Limit
                         </p>
-                        <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 font-mono mt-1">
+                        <p className="text-2xl font-bold text-foreground font-mono mt-1">
                           {profile.storage_limit_mb.toFixed(0)} MB
                         </p>
-                        <p className="text-xs text-slate-500 dark:text-slate-500 font-mono mt-1">
+                        <p className="text-xs text-muted-foreground font-mono mt-1">
                           {(
                             profile.storage_limit_bytes /
                             (1024 * 1024 * 1024)
@@ -443,19 +443,19 @@ export function ProfilePage() {
             {/* Preferences Tab */}
             {activeTab === "preferences" && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6 font-sans">
+                <div className="bg-card border border-border rounded-xl p-6">
+                  <h2 className="text-2xl font-bold text-foreground mb-6 font-sans">
                     Preferences
                   </h2>
 
                   <div className="space-y-6">
                     {/* Theme Preference */}
-                    <div className="flex items-center justify-between py-3 border-b border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center justify-between py-3 border-b border-border">
                       <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 font-sans">
+                        <h3 className="font-semibold text-foreground font-sans">
                           Dark Mode
                         </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                        <p className="text-sm text-muted-foreground font-sans">
                           Use dark theme across the application
                         </p>
                       </div>
@@ -463,7 +463,7 @@ export function ProfilePage() {
                         type="button"
                         onClick={toggleDarkMode}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          darkMode ? "bg-primary" : "bg-slate-300"
+                          darkMode ? "bg-primary" : "bg-muted"
                         }`}
                       >
                         <span
@@ -475,12 +475,12 @@ export function ProfilePage() {
                     </div>
 
                     {/* Email Notifications */}
-                    <div className="flex items-center justify-between py-3 border-b border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center justify-between py-3 border-b border-border">
                       <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 font-sans">
+                        <h3 className="font-semibold text-foreground font-sans">
                           Email Notifications
                         </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                        <p className="text-sm text-muted-foreground font-sans">
                           Receive updates about document processing
                         </p>
                       </div>
@@ -495,10 +495,10 @@ export function ProfilePage() {
                     {/* Auto-save */}
                     <div className="flex items-center justify-between py-3">
                       <div>
-                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 font-sans">
+                        <h3 className="font-semibold text-foreground font-sans">
                           Auto-save Chats
                         </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 font-sans">
+                        <p className="text-sm text-muted-foreground font-sans">
                           Automatically save chat conversations
                         </p>
                       </div>
@@ -517,7 +517,7 @@ export function ProfilePage() {
                   <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4 font-sans">
                     Danger Zone
                   </h2>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 font-sans">
+                  <p className="text-sm text-muted-foreground mb-4 font-sans">
                     Once you delete your account, there is no going back. Please
                     be certain.
                   </p>
