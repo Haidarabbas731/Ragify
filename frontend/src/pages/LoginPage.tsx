@@ -5,7 +5,15 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  HardDrive,
+  Loader2,
+  MessageSquare,
+  Search,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -83,12 +91,62 @@ export function LoginPage() {
         <div className="relative z-10 flex flex-col justify-between p-16 text-card-foreground">
           {/* Logo/Brand */}
           <div>
-            <div className="w-12 h-12 bg-primary mb-6 rounded" />
+            <img
+              src="/ragify.png"
+              alt="Ragify Logo"
+              className="w-16 h-16 mb-6"
+            />
             <h1 className="text-5xl font-bold mb-4 leading-tight font-sans">
-              Knowledge
-              <br />
-              Base
+              Ragify
             </h1>
+            <p className="text-xl text-muted-foreground font-sans">
+              Your AI-Powered Knowledge Hub
+            </p>
+          </div>
+
+          {/* Features */}
+          <div className="space-y-6 py-8">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <HardDrive className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-1">
+                  Smart Document Storage
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Securely store and organize all your documents
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <MessageSquare className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-1">
+                  AI-Powered Chat
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Ask questions and get instant answers from your docs
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Search className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground mb-1">
+                  Semantic Search
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Find exactly what you need with vector embeddings
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Quote */}
@@ -107,7 +165,11 @@ export function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden mb-12">
-            <div className="w-10 h-10 bg-primary mb-4 rounded" />
+            <img
+              src="/ragify.png"
+              alt="Ragify Logo"
+              className="w-12 h-12 mb-4"
+            />
           </div>
 
           {/* Heading */}
@@ -116,7 +178,7 @@ export function LoginPage() {
               Sign in
             </h2>
             <p className="text-lg text-muted-foreground font-sans">
-              Access your knowledge base
+              Access your Ragify workspace
             </p>
           </div>
 
