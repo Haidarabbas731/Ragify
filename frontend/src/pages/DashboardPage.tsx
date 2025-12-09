@@ -412,7 +412,7 @@ export function DashboardPage() {
                 <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
                   {stats.totalDocuments}
                 </p>
-                <p className="text-sm text-muted-foreground font-sans">
+                <p className="text-sm text-slate-600 dark:text-slate-300 font-sans">
                   Total files uploaded
                 </p>
               </div>
@@ -432,7 +432,7 @@ export function DashboardPage() {
                 <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
                   {stats.totalChunks.toLocaleString()}
                 </p>
-                <p className="text-sm text-muted-foreground font-sans">
+                <p className="text-sm text-slate-600 dark:text-slate-300 font-sans">
                   Vector embeddings
                 </p>
               </div>
@@ -453,10 +453,10 @@ export function DashboardPage() {
                   <p className="text-3xl font-bold font-mono text-slate-900 dark:text-white tabular-nums">
                     {stats.storageUsed}
                   </p>
-                  <span className="text-lg font-medium text-muted-foreground font-sans">
+                  <span className="text-lg font-medium text-slate-600 dark:text-slate-300 font-sans">
                     MB
                   </span>
-                  <span className="text-sm text-muted-foreground font-sans">
+                  <span className="text-sm text-slate-600 dark:text-slate-300 font-sans">
                     / {stats.storageLimit} MB
                   </span>
                 </div>
@@ -473,7 +473,7 @@ export function DashboardPage() {
                       style={{ width: `${storagePercentage}%` }}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground font-sans">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-sans">
                     {storagePercentage < 0.1 && storagePercentage > 0
                       ? storagePercentage.toFixed(3)
                       : storagePercentage.toFixed(1)}
