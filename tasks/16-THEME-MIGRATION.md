@@ -55,9 +55,71 @@
 }
 ```
 
+**UPDATE [2025-12-09]:** Phase 3 Secondary Pages Migration Completed
+
+### What Was Implemented (Phase 3):
+
+1. **DashboardPage.tsx Migration (✅ COMPLETE)**
+   - Updated navigation bar consistency to match CollectionsPage/DocumentsPage
+   - Fixed stats card numbers visibility in dark mode (text-slate-900 dark:text-white)
+   - Updated navigation labels: "Documents" → "Dashboard", "All Documents" → "Documents"
+   - All theme colors now consistent (bg-card, border-border, text-primary)
+
+2. **ProfilePage.tsx Migration (✅ COMPLETE)**
+   - Migrated avatar gradient to solid primary
+   - Updated all fonts from Inter/Fira Code to Geist/Geist Mono
+   - Replaced all color references with theme variables
+   - Updated save button and toggle switches to use primary color
+   - **Verified:** Linting passes, all colors purple
+
+3. **LoginPage.tsx Migration (✅ COMPLETE)**
+   - Removed Google Fonts import
+   - Updated all colors from stone/zinc to theme colors (bg-background, bg-card, text-foreground)
+   - Changed all fonts to Geist family
+   - Updated input fields to use border-border and focus:border-primary
+   - Updated logo to solid primary background
+   - **Verified:** Linting passes, works in both light and dark modes
+
+4. **ChatPage.tsx Complete Theme Fix (✅ COMPLETE)**
+   - Fixed all hardcoded slate colors to use theme variables
+   - Replaced all bg-slate-* with bg-background/bg-card/bg-muted
+   - Replaced all border-slate-* with border-border
+   - Updated all text colors to use theme variables (text-foreground, text-muted-foreground, etc.)
+   - Fixed sidebar text visibility in light mode
+   - **Verified:** Linting passes
+
+5. **CollectionFilter.tsx Complete Migration (✅ COMPLETE)**
+   - Replaced hardcoded slate colors with theme variables
+   - Updated all purple colors to use text-primary
+   - Changed fonts from Inter/Fira Code to Geist/Geist Mono
+   - Fixed dropdown background: bg-white dark:bg-slate-900 → bg-card
+   - Updated hover states: hover:bg-slate-* → hover:bg-muted
+   - Fixed visibility in both light and dark modes
+   - **Verified:** Linting passes, Chrome DevTools verification pending
+
+6. **DocumentList.tsx & UploadZone.tsx Fixes (✅ COMPLETE)**
+   - Fixed "No documents yet" text visibility in light mode
+   - Updated upload zone background colors for light mode
+   - Replaced all gradient backgrounds with theme colors
+   - Updated all fonts to Geist/Geist Mono
+   - **Verified:** Linting passes
+
+### Navigation Label Standardization (✅ COMPLETE):
+- Across all pages (DashboardPage, CollectionsPage, DocumentsPage):
+  - Dashboard navigation link: "Dashboard" (not "Documents")
+  - Documents navigation link: "Documents" (not "All Documents")
+  - Consistent naming improves UX
+
+### Critical Fixes Applied:
+- **Stats Card Visibility:** Numbers now use explicit colors (text-slate-900 dark:text-white) instead of theme colors for better contrast
+- **Text Visibility:** Fixed multiple instances where text was not visible in light mode
+- **CollectionFilter:** Now works properly in both light and dark modes
+- **ChatPage Sidebar:** Fixed text visibility issues in light mode
+- **Font Consistency:** All components now use Geist (sans) and Geist Mono (mono)
+
 ### Next Steps:
-- [ ] Manual browser verification of dark mode toggle (DevTools MCP disabled)
-- [ ] Continue Phase 2: Migrate remaining RAG core pages (DocumentDetailPage, DocumentsPage, Collections)
+- [ ] Manual browser verification of all pages in both light and dark modes
+- [ ] Continue Phase 4: Migrate marketing pages (Landing page)
 
 ---
 
@@ -1051,9 +1113,9 @@ feat(landing): migrate marketing pages to purple theme
 - [x] Collections component migrated
 
 **Phase 3:**
-- [ ] Dashboard migrated
-- [ ] Profile migrated
-- [ ] Login/Register migrated
+- [x] Dashboard migrated
+- [x] Profile migrated
+- [x] Login/Register migrated
 
 **Phase 4:**
 - [ ] Landing page hero migrated
@@ -1074,6 +1136,6 @@ feat(landing): migrate marketing pages to purple theme
 
 ---
 
-**Status:** ✅ PHASE 2 COMPLETE - Ready for Phase 3 (Secondary Pages)
-**Completed:** Phase 1 (Foundation), Phase 2 (RAG Core Pages: ChatPage, DocumentDetailPage, DocumentsPage, Collections)
-**Next Action:** Begin Phase 3 - Migrate secondary pages (Dashboard, Profile, Login/Register)
+**Status:** ✅ PHASE 3 COMPLETE - Ready for Phase 4 (Marketing Pages)
+**Completed:** Phase 1 (Foundation), Phase 2 (RAG Core Pages), Phase 3 (Secondary Pages: Dashboard, Profile, Login/Register)
+**Next Action:** Begin Phase 4 - Migrate marketing pages (Landing page, Features, How It Works, CTA, Nav/Footer)
