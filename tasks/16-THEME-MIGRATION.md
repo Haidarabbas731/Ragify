@@ -221,9 +221,52 @@
 - **ChatPage Sidebar:** Fixed text visibility issues in light mode
 - **Font Consistency:** All components now use Geist (sans) and Geist Mono (mono)
 
+### Ragify Branding Integration (Phase 3) - IN PROGRESS:
+
+**UPDATE [2025-12-09]:** Adding comprehensive rebranding tasks to Phase 3
+
+7. **CollectionsPage.tsx Rebranding (❌ PENDING)**
+   - File: `frontend/src/pages/CollectionsPage.tsx` (Lines 70-78)
+   - Current: FileText icon + "Knowledge Base" text
+   - Update to: ragify.png logo (w-14 h-14) + "Ragify" text
+   - Changes:
+     - Replace FileText icon with `<img src="/ragify.png">`
+     - Change text from "Knowledge Base" to "Ragify"
+     - Remove purple background container
+     - Keep gap-0, scale-110 hover animation
+   - **Verification:** Linting pass, Chrome DevTools check
+
+8. **LoginPage.tsx Rebranding + Content Enhancement (❌ PENDING)**
+   - File: `frontend/src/pages/LoginPage.tsx` (Lines 83-102)
+   - Current: Purple square (w-12 h-12) + "Knowledge\nBase" text + large empty space
+   - Logo Update (Lines 85-91):
+     - Replace purple square with ragify.png (w-16 h-16, larger hero size)
+     - Change text to "Ragify" + tagline "Your AI-Powered Knowledge Hub"
+   - New Content in Empty Space (Lines 95-101):
+     - Add 3 feature highlights with icons:
+       - Database icon + "Smart Document Storage" + description
+       - MessageSquare icon + "AI-Powered Chat" + description
+       - Search icon + "Semantic Search" + description
+   - Text Update:
+     - "Access your knowledge base" → "Access your Ragify workspace"
+   - **Verification:** Linting pass, dark/light mode check, responsive layout
+
+9. **RegisterPage.tsx Rebranding (❌ PENDING)**
+   - File: `frontend/src/pages/RegisterPage.tsx` (Lines 197-199)
+   - Current: White/black square (w-10 h-10) + no branding text
+   - Logo Update (Lines 198-199):
+     - Replace square with ragify.png (w-14 h-14)
+     - Add "Join Ragify" heading (text-3xl, bold, white)
+   - Enhanced Step Descriptions:
+     - Step 01: Keep as-is "Enter your details to get started"
+     - Step 02: Expand to "Upload PDFs, DOCX, TXT, and markdown files to your knowledge base"
+     - Step 03: Expand to "Use AI-powered chat to explore and query your documents instantly"
+   - **Verification:** Linting pass, both modes check
+
 ### Next Steps:
 - [ ] Manual browser verification of all pages in both light and dark modes
 - [ ] Continue Phase 4: Migrate marketing pages (Landing page)
+- [ ] Update LandingNav.tsx and LandingFooter.tsx with ragify.png logos
 
 ---
 
@@ -1082,17 +1125,31 @@ Update landing page with purple theme while keeping storytelling animations.
 
 ---
 
-### 16.4.5 Navigation & Footer
+### 16.4.5 Navigation & Footer - Ragify Rebranding
 
 **Files:** `frontend/src/components/layout/LandingNav.tsx`, `LandingFooter.tsx`
 
-**Tasks:**
-- [ ] Update logo gradient
-  ```tsx
-  // OLD: from-cyan-500 to-blue-600
-  // NEW: bg-primary (solid)
-  ```
+**Ragify Logo Rebranding (NEW - Priority):**
 
+**LandingNav.tsx (Lines 38-51):**
+- File: `frontend/src/components/layout/LandingNav.tsx`
+- Current: Database icon in cyan-blue gradient + "Ragify" text
+- Update to: ragify.png logo (w-12 h-12) + "Ragify" text
+- Changes:
+  - Replace Database icon with `<img src="/ragify.png">`
+  - Change className to `w-12 h-12` (compact for nav)
+  - Remove gradient background (PNG has its own design)
+  - Keep gap-0, scale-110 hover animation
+  - **Verification:** Linting pass, logo displays correctly
+
+**LandingFooter.tsx (Lines 13-23):**
+- File: `frontend/src/components/landing/LandingFooter.tsx`
+- Current: Database icon in cyan-blue gradient + "Ragify" text
+- Update to: Same pattern as LandingNav (ragify.png logo + "Ragify")
+- Changes: Same as LandingNav (replace icon, size w-12 h-12)
+- **Verification:** Linting pass, footer logo consistency
+
+**Existing Theme Tasks (Keep/Verify):**
 - [ ] Update hover colors
   ```tsx
   // OLD: hover:text-cyan-600 dark:hover:text-cyan-400
@@ -1106,9 +1163,10 @@ Update landing page with purple theme while keeping storytelling animations.
   ```
 
 **Verification:**
-- [ ] Logo matches theme
-- [ ] Links have purple hover
-- [ ] Fonts are consistent
+- [ ] Logo matches Dashboard/Collections (consistent branding)
+- [ ] Links have purple hover (text-primary)
+- [ ] Fonts are Geist family (font-sans)
+- [ ] Works in both light and dark modes
 
 ---
 
@@ -1217,8 +1275,11 @@ feat(landing): migrate marketing pages to purple theme
 - [x] Collections component migrated
 
 **Phase 3:**
-- [x] Dashboard migrated
+- [x] Dashboard migrated + rebranded with ragify.png logo
 - [x] Profile migrated
+- [ ] Collections rebranded with ragify.png logo
+- [ ] Login rebranded + feature highlights added
+- [ ] Register rebranded + enhanced steps
 - [x] Login/Register migrated
 
 **Phase 4:**
@@ -1226,7 +1287,9 @@ feat(landing): migrate marketing pages to purple theme
 - [ ] Features section migrated
 - [ ] How It Works migrated
 - [ ] CTA section migrated
-- [ ] Navigation & Footer migrated
+- [ ] Navigation & Footer rebranded with ragify.png logos
+  - [ ] LandingNav.tsx logo update
+  - [ ] LandingFooter.tsx logo update
 
 **Final Verification:**
 - [ ] All pages use purple theme
@@ -1240,6 +1303,7 @@ feat(landing): migrate marketing pages to purple theme
 
 ---
 
-**Status:** ✅ PHASE 3 COMPLETE - Ready for Phase 4 (Marketing Pages)
-**Completed:** Phase 1 (Foundation), Phase 2 (RAG Core Pages), Phase 3 (Secondary Pages: Dashboard, Profile, Login/Register)
-**Next Action:** Begin Phase 4 - Migrate marketing pages (Landing page, Features, How It Works, CTA, Nav/Footer)
+**Status:** 🔄 PHASE 3 IN PROGRESS - Ragify Rebranding
+**Completed:** Phase 1 (Foundation), Phase 2 (RAG Core Pages), Phase 3 (Secondary Pages: Dashboard with logo)
+**In Progress:** Phase 3 Rebranding (Collections, Login, Register)
+**Next Action:** Complete Phase 3 rebranding tasks, then Phase 4 (Landing Nav/Footer logos)
