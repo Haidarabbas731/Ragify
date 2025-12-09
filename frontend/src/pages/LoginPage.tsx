@@ -6,6 +6,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  ArrowLeft,
   ArrowRight,
   Eye,
   EyeOff,
@@ -92,13 +93,10 @@ export function LoginPage() {
           {/* Logo/Brand */}
           <div>
             <img
-              src="/ragify.png"
+              src="/ragify-full.png"
               alt="Ragify Logo"
-              className="w-16 h-16 mb-6"
+              className="w-64 h-auto mb-6"
             />
-            <h1 className="text-5xl font-bold mb-4 leading-tight font-sans">
-              Ragify
-            </h1>
             <p className="text-xl text-muted-foreground font-sans">
               Your AI-Powered Knowledge Hub
             </p>
@@ -161,14 +159,23 @@ export function LoginPage() {
       </div>
 
       {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8 relative">
+        {/* Back Button */}
+        <Link
+          to="/"
+          className="absolute top-8 left-8 flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm">Back to home</span>
+        </Link>
+
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden mb-12">
             <img
-              src="/ragify.png"
+              src="/ragify-full.png"
               alt="Ragify Logo"
-              className="w-12 h-12 mb-4"
+              className="w-40 h-auto mb-4"
             />
           </div>
 

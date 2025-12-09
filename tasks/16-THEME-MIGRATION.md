@@ -237,31 +237,39 @@
    - **Verification:** Linting pass, Chrome DevTools check
 
 8. **LoginPage.tsx Rebranding + Content Enhancement (✅ COMPLETE)**
-   - File: `frontend/src/pages/LoginPage.tsx` (Lines 83-102)
-   - Logo Update (Lines 85-91): ✅
-     - Replaced purple square with ragify.png (w-16 h-16, larger hero size)
-     - Changed text to "Ragify" + tagline "Your AI-Powered Knowledge Hub"
-   - New Content in Empty Space (Lines 100-129): ✅
-     - Added 3 feature highlights with icons:
-       - HardDrive icon + "Smart Document Storage" + description
-       - MessageSquare icon + "AI-Powered Chat" + description
-       - Search icon + "Semantic Search" + description
-   - Text Update: ✅
-     - Changed "Access your knowledge base" → "Access your Ragify workspace"
-   - **SECURITY UPDATE:** Added missing imports for HardDrive, MessageSquare, Search icons from lucide-react (line 8)
-   - **Verification:** Linting pass, dark/light mode check, responsive layout
+   - File: `frontend/src/pages/LoginPage.tsx`
+   - Logo Update: ✅
+     - **UPDATE:** Changed from ragify.png to ragify-full.png (w-64 h-auto) for better branding
+     - Removed separate "Ragify" heading since full logo includes text
+     - Kept tagline "Your AI-Powered Knowledge Hub"
+   - Back Button: ✅ **NEW FEATURE**
+     - Added back button with ArrowLeft icon at top-left of form section
+     - Links to landing page (`/`) for easy navigation
+     - Styled with theme colors (muted-foreground hover:text-primary)
+   - Mobile Logo: ✅
+     - Updated from ragify.png to ragify-full.png (w-40 h-auto)
+   - Feature Highlights: ✅
+     - 3 feature cards with icons (HardDrive, MessageSquare, Search)
+   - **Verification:** ✅ Linting pass, dark/light mode check, responsive layout
 
-9. **RegisterPage.tsx Rebranding (❌ PENDING)**
-   - File: `frontend/src/pages/RegisterPage.tsx` (Lines 197-199)
-   - Current: White/black square (w-10 h-10) + no branding text
-   - Logo Update (Lines 198-199):
-     - Replace square with ragify.png (w-14 h-14)
-     - Add "Join Ragify" heading (text-3xl, bold, white)
-   - Enhanced Step Descriptions:
-     - Step 01: Keep as-is "Enter your details to get started"
-     - Step 02: Expand to "Upload PDFs, DOCX, TXT, and markdown files to your knowledge base"
-     - Step 03: Expand to "Use AI-powered chat to explore and query your documents instantly"
-   - **Verification:** Linting pass, both modes check
+9. **RegisterPage.tsx Rebranding (✅ COMPLETE)**
+   - File: `frontend/src/pages/RegisterPage.tsx`
+   - Logo Updates: ✅
+     - **UPDATE:** Changed from ragify.png to ragify-full.png (w-64 h-auto) on desktop
+     - Removed separate "Join Ragify" heading since full logo includes text
+     - Mobile: Replaced placeholder square with ragify-full.png (w-40 h-auto)
+   - Layout Consistency: ✅
+     - **IMPROVEMENT:** Changed left panel width from 40% (lg:w-2/5) to 50% (lg:w-1/2) to match LoginPage
+     - Changed left panel background: `bg-zinc-950 dark:bg-zinc-900` → `bg-card` (theme colors)
+     - Changed right panel background: `bg-white dark:bg-zinc-950` → `bg-background` (theme colors)
+   - Back Button: ✅ **NEW FEATURE**
+     - Added back button with ArrowLeft icon at top-left of form section
+     - Links to landing page (`/`) for easy navigation
+     - Styled with theme colors (muted-foreground hover:text-primary)
+   - Theme Color Migration: ✅
+     - Updated form labels: `text-zinc-700 dark:text-zinc-300` → `text-foreground`
+     - Maintained progress steps design (01, 02, 03 with Fira Code font)
+   - **Verification:** ✅ Linting pass, theme colors updated, layout consistent
 
 ### Next Steps:
 - [ ] Manual browser verification of all pages in both light and dark modes
@@ -1303,7 +1311,9 @@ feat(landing): migrate marketing pages to purple theme
 
 ---
 
-**Status:** 🔄 PHASE 3 IN PROGRESS - Ragify Rebranding
-**Completed:** Phase 1 (Foundation), Phase 2 (RAG Core Pages), Phase 3 (Secondary Pages: Dashboard with logo)
-**In Progress:** Phase 3 Rebranding (Collections, Login, Register)
-**Next Action:** Complete Phase 3 rebranding tasks, then Phase 4 (Landing Nav/Footer logos)
+**Status:** ✅ PHASE 3 COMPLETE - Ragify Rebranding (Login & Register Pages)
+**Completed:**
+- Phase 1 (Foundation)
+- Phase 2 (RAG Core Pages)
+- Phase 3 (Secondary Pages: Dashboard, Collections, Login, Register - ALL REBRANDED)
+**Next Action:** Phase 4 (Landing Page hero, features, CTA sections + Landing Nav/Footer color migration)

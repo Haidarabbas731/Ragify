@@ -5,7 +5,15 @@
  */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Check, Eye, EyeOff, Loader2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Eye,
+  EyeOff,
+  Loader2,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
@@ -181,9 +189,9 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 flex">
+    <div className="min-h-screen bg-background flex">
       {/* Left Side - Progress Indicator */}
-      <div className="hidden lg:flex lg:w-2/5 bg-zinc-950 dark:bg-zinc-900 relative overflow-hidden flex-col justify-between p-16">
+      <div className="hidden lg:flex lg:w-1/2 bg-card relative overflow-hidden flex-col justify-between p-16">
         {/* Grid pattern */}
         <div
           className="absolute inset-0 opacity-10"
@@ -198,13 +206,10 @@ export function RegisterPage() {
           {/* Logo & Brand */}
           <div className="mb-12">
             <img
-              src="/ragify.png"
+              src="/ragify-full.png"
               alt="Ragify Logo"
-              className="w-14 h-14 mb-4"
+              className="w-64 h-auto mb-6"
             />
-            <h2 className="text-3xl font-bold text-white font-sans">
-              Join Ragify
-            </h2>
           </div>
 
           {/* Progress Steps */}
@@ -301,23 +306,36 @@ export function RegisterPage() {
       </div>
 
       {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto bg-background relative">
+        {/* Back Button */}
+        <Link
+          to="/"
+          className="absolute top-8 left-8 flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm">Back to home</span>
+        </Link>
+
         <div className="w-full max-w-lg">
           {/* Mobile Logo */}
           <div className="lg:hidden mb-8">
-            <div className="w-8 h-8 bg-zinc-950 dark:bg-white mb-4" />
+            <img
+              src="/ragify-full.png"
+              alt="Ragify Logo"
+              className="w-40 h-auto mb-4"
+            />
           </div>
 
           {/* Heading */}
           <div className="mb-10">
             <h2
-              className="text-4xl font-bold text-zinc-950 dark:text-white mb-2"
+              className="text-4xl font-bold text-foreground mb-2"
               style={{ fontFamily: "'Fira Code', monospace" }}
             >
               Create Account
             </h2>
             <p
-              className="text-zinc-600 dark:text-zinc-400"
+              className="text-muted-foreground"
               style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
             >
               Fill in your details to get started
@@ -330,7 +348,7 @@ export function RegisterPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="email"
-                className="text-xs uppercase tracking-widest text-zinc-700 dark:text-zinc-300 font-semibold"
+                className="text-xs uppercase tracking-widest text-foreground font-semibold"
                 style={{ fontFamily: "'Fira Code', monospace" }}
               >
                 Email
@@ -359,7 +377,7 @@ export function RegisterPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="password"
-                className="text-xs uppercase tracking-widest text-zinc-700 dark:text-zinc-300 font-semibold"
+                className="text-xs uppercase tracking-widest text-foreground font-semibold"
                 style={{ fontFamily: "'Fira Code', monospace" }}
               >
                 Password
@@ -475,7 +493,7 @@ export function RegisterPage() {
             <div className="space-y-2">
               <Label
                 htmlFor="inviteCode"
-                className="text-xs uppercase tracking-widest text-zinc-700 dark:text-zinc-300 font-semibold"
+                className="text-xs uppercase tracking-widest text-foreground font-semibold"
                 style={{ fontFamily: "'Fira Code', monospace" }}
               >
                 Invite Code
