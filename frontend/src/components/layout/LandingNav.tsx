@@ -1,4 +1,4 @@
-import { Database, Menu, Moon, Sun, X } from "lucide-react";
+import { Menu, Moon, Sun, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDarkMode } from "../../hooks/useDarkMode";
@@ -35,17 +35,13 @@ export function LandingNav() {
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link
-            to="/"
-            className="flex items-center gap-3 group hover:scale-105 transition-transform"
-          >
-            <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 group-hover:shadow-lg group-hover:shadow-cyan-500/30 transition-all">
-              <Database className="w-6 h-6 text-white" />
-            </div>
-            <span
-              className="text-xl font-bold text-slate-900 dark:text-white hidden sm:block"
-              style={{ fontFamily: "'DM Sans', sans-serif" }}
-            >
+          <Link to="/" className="flex items-center gap-0 group">
+            <img
+              src="/ragify.png"
+              alt="Ragify Logo"
+              className="w-12 h-12 transition-transform duration-300 group-hover:scale-110"
+            />
+            <span className="text-xl font-bold text-primary hidden sm:block ml-2 font-sans">
               Ragify
             </span>
           </Link>

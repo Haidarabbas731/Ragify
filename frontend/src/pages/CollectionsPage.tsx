@@ -68,12 +68,14 @@ export function CollectionsPage() {
           </button>
 
           {/* Logo & Brand */}
-          <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-              <FileText className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-primary font-sans tracking-tight">
-              Knowledge Base
+          <Link to="/dashboard" className="flex items-center gap-0 group">
+            <img
+              src="/ragify.png"
+              alt="Ragify Logo"
+              className="w-14 h-14 transition-transform duration-300 group-hover:scale-110"
+            />
+            <span className="text-2xl font-bold text-primary font-sans tracking-tight">
+              Ragify
             </span>
           </Link>
 
