@@ -129,13 +129,13 @@ export function DashboardPage() {
           </button>
 
           {/* Logo & Brand */}
-          <Link to="/dashboard" className="flex items-center gap-2 group">
+          <Link to="/dashboard" className="flex items-center gap-0 group">
             <img
               src="/ragify.png"
               alt="Ragify Logo"
-              className="w-12 h-12 transition-transform duration-300 group-hover:scale-110"
+              className="w-14 h-14 transition-transform duration-300 group-hover:scale-110"
             />
-            <span className="text-xl font-bold text-primary font-sans tracking-tight">
+            <span className="text-2xl font-bold text-primary font-sans tracking-tight">
               Ragify
             </span>
           </Link>
