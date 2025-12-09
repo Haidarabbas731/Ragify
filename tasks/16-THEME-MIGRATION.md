@@ -164,6 +164,10 @@
    - Fixed stats card numbers visibility in dark mode (text-slate-900 dark:text-white)
    - Updated navigation labels: "Documents" → "Dashboard", "All Documents" → "Documents"
    - All theme colors now consistent (bg-card, border-border, text-primary)
+   - **UPDATE [2025-12-09]:** Rebranded logo and text
+     - Replaced `<FileText>` icon with `ragify.png` logo image
+     - Changed "Knowledge Base" text to "Ragify"
+     - Removed purple background container for cleaner design with custom logo
 
 2. **ProfilePage.tsx Migration (✅ COMPLETE)**
    - Migrated avatar gradient to solid primary

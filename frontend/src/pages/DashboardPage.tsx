@@ -130,11 +130,13 @@ export function DashboardPage() {
 
           {/* Logo & Brand */}
           <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-              <FileText className="w-6 h-6 text-primary-foreground" />
-            </div>
+            <img
+              src="/ragify.png"
+              alt="Ragify Logo"
+              className="w-10 h-10 transition-transform duration-300 group-hover:scale-105"
+            />
             <span className="text-xl font-bold text-primary font-sans tracking-tight">
-              Knowledge Base
+              Ragify
             </span>
           </Link>
 
