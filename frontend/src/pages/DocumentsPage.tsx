@@ -1,7 +1,7 @@
 /**
  * Documents Page - Archive Command Center
- * Full-page document management interface with terminal aesthetic
- * Fonts: JetBrains Mono (monospace), Space Grotesk (headings)
+ * Full-page document management interface with clean design
+ * Fonts: Geist (sans), Geist Mono (mono)
  */
 
 import {
@@ -61,6 +61,7 @@ export function DocumentsPage() {
   } = useDocuments({
     page: currentPage,
     limit: 50,
+    search: filters.searchTerm || undefined,
     collection_id: filters.collectionId || undefined,
     status_filter:
       (filters.statusFilter as
@@ -163,53 +164,42 @@ export function DocumentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-emerald-50 dark:bg-slate-950 relative">
-      {/* Scan-line overlay effect */}
-      <div
-        className="pointer-events-none fixed inset-0 z-50 opacity-[0.02] dark:opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(34, 197, 94, 0.3) 2px, rgba(34, 197, 94, 0.3) 4px)",
-          animation: "scanline 8s linear infinite",
-        }}
-      />
-
+    <div className="min-h-screen bg-background relative">
       {/* Grid background */}
       <div
         className="pointer-events-none fixed inset-0 opacity-[0.04] dark:opacity-[0.03]"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(34, 197, 94, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.2) 1px, transparent 1px)",
+            "linear-gradient(hsl(var(--muted) / 0.1) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--muted) / 0.1) 1px, transparent 1px)",
           backgroundSize: "50px 50px",
         }}
       />
 
       {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-40 border-b border-emerald-200 dark:border-emerald-900/30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm">
+      <nav className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm">
         <div className="flex items-center justify-between px-6 py-4">
           {/* Mobile Menu Button */}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? (
-              <X className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <X className="w-5 h-5 text-primary" />
             ) : (
-              <Menu className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <Menu className="w-5 h-5 text-primary" />
             )}
           </button>
 
           {/* Logo & Brand */}
           <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-sm flex items-center justify-center transition-transform duration-300 group-hover:scale-105 relative">
-              <FileText className="w-6 h-6 text-white" />
-              <div className="absolute inset-0 bg-emerald-400/20 animate-pulse rounded-sm" />
+            <div className="w-10 h-10 bg-primary rounded-sm flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+              <FileText className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold text-emerald-700 dark:text-emerald-400 font-['Space_Grotesk'] tracking-tight">
+            <span className="text-xl font-bold text-primary font-sans tracking-tight">
               ARCHIVE{"/"}
-              {"/"}/SYS
+              {"/"}SYS
             </span>
           </Link>
 
@@ -219,20 +209,20 @@ export function DocumentsPage() {
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="hidden lg:flex p-2 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 transition-colors"
+              className="hidden lg:flex p-2 rounded-lg hover:bg-muted transition-colors"
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
-                <Sun className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <Sun className="w-5 h-5 text-primary" />
               ) : (
-                <Moon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <Moon className="w-5 h-5 text-primary" />
               )}
             </button>
 
             {/* User Menu - Hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/30">
-              <User className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
-              <span className="text-sm font-mono text-emerald-800 dark:text-emerald-300">
+            <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-muted border border-border">
+              <User className="w-5 h-5 text-primary" />
+              <span className="text-sm font-mono text-foreground">
                 {user?.email}
               </span>
             </div>
@@ -266,7 +256,7 @@ export function DocumentsPage() {
 
       {/* Mobile Menu Drawer */}
       <aside
-        className={`fixed top-[73px] left-0 bottom-0 w-64 bg-white dark:bg-slate-900 border-r border-emerald-200 dark:border-emerald-900/30 z-40 lg:hidden transform transition-transform duration-300 ${
+        className={`fixed top-[73px] left-0 bottom-0 w-64 bg-card border-r border-border z-40 lg:hidden transform transition-transform duration-300 ${
           mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -276,7 +266,7 @@ export function DocumentsPage() {
             <Link
               to="/dashboard"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-mono transition-all hover:scale-[1.02]"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
             >
               <HardDrive className="w-5 h-5" />
               <span>Dashboard</span>
@@ -284,15 +274,15 @@ export function DocumentsPage() {
             <Link
               to="/documents"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-400 font-bold font-mono transition-all hover:scale-[1.02] border border-emerald-300 dark:border-emerald-900/50"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-bold font-mono transition-all hover:scale-[1.02] border-2 border-primary/30"
             >
               <FileText className="w-5 h-5" />
-              <span>All Documents</span>
+              <span>Documents</span>
             </Link>
             <Link
               to="/chat"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-mono transition-all hover:scale-[1.02]"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
             >
               <MessageSquare className="w-5 h-5" />
               <span>Chat</span>
@@ -300,7 +290,7 @@ export function DocumentsPage() {
             <Link
               to="/profile"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-mono transition-all hover:scale-[1.02]"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
             >
               <User className="w-5 h-5" />
               <span>Profile</span>
@@ -308,7 +298,7 @@ export function DocumentsPage() {
             <Link
               to="/collections"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-mono transition-all hover:scale-[1.02]"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
             >
               <FolderOpen className="w-5 h-5" />
               <span>Collections</span>
@@ -320,38 +310,38 @@ export function DocumentsPage() {
       {/* Main Content Area */}
       <div className="flex">
         {/* Sidebar */}
-        <aside className="hidden lg:block w-64 border-r border-emerald-200 dark:border-emerald-900/30 bg-white/50 dark:bg-slate-900/50 sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto">
+        <aside className="hidden lg:block w-64 border-r border-border bg-card/50 sticky top-[73px] h-[calc(100vh-73px)] overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* Navigation Links */}
             <div className="space-y-1">
               <Link
                 to="/dashboard"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-mono transition-all hover:scale-[1.02]"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
               >
                 <HardDrive className="w-5 h-5" />
                 <span>Dashboard</span>
               </Link>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-400 font-bold font-mono transition-all hover:scale-[1.02] border border-emerald-300 dark:border-emerald-900/50">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-bold font-mono transition-all hover:scale-[1.02] border-2 border-primary/30">
                 <FileText className="w-5 h-5" />
-                <span>All Documents</span>
+                <span>Documents</span>
               </div>
               <Link
                 to="/chat"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-mono transition-all hover:scale-[1.02]"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
               >
                 <MessageSquare className="w-5 h-5" />
                 <span>Chat</span>
               </Link>
               <Link
                 to="/profile"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-mono transition-all hover:scale-[1.02]"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
               >
                 <User className="w-5 h-5" />
                 <span>Profile</span>
               </Link>
               <Link
                 to="/collections"
-                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 font-mono transition-all hover:scale-[1.02]"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-mono transition-all hover:scale-[1.02] border border-border"
               >
                 <FolderOpen className="w-5 h-5" />
                 <span>Collections</span>
@@ -369,21 +359,17 @@ export function DocumentsPage() {
                 onClick={() => navigate("/dashboard")}
                 variant="outline"
                 size="sm"
-                className="gap-2 border-emerald-300 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/30 hover:border-emerald-400 dark:hover:border-emerald-700 font-mono"
+                className="gap-2 border-border text-primary hover:bg-muted hover:border-primary/50 font-mono"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">BACK</span>
               </Button>
-              <div className="h-px flex-1 bg-gradient-to-r from-emerald-300 dark:from-emerald-900/50 via-emerald-200 dark:via-emerald-700/30 to-transparent" />
+              <div className="h-px flex-1 bg-gradient-to-r from-border via-border/50 to-transparent" />
             </div>
 
-            <h1 className="text-4xl font-bold text-emerald-700 dark:text-emerald-400 font-['Space_Grotesk'] tracking-tight mb-2">
+            <h1 className="text-4xl font-bold text-primary font-sans tracking-tight">
               DOCUMENT ARCHIVE
             </h1>
-            <p className="text-emerald-600 dark:text-emerald-300/70 font-mono text-sm">
-              {">"} Full system catalog {"/"}
-              {"/"} All files indexed
-            </p>
           </div>
 
           {/* Search & Filter */}
@@ -410,7 +396,7 @@ export function DocumentsPage() {
           {/* Document List */}
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-emerald-600 dark:text-emerald-400" />
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           ) : error ? (
             <div className="rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 p-6 text-center">
@@ -445,18 +431,6 @@ export function DocumentsPage() {
         onConfirm={handleConfirmBatchDelete}
         onCancel={() => setBatchDeleteDialog(false)}
       />
-
-      {/* Animations */}
-      <style>{`
-        @keyframes scanline {
-          0% {
-            transform: translateY(-100%);
-          }
-          100% {
-            transform: translateY(100%);
-          }
-        }
-      `}</style>
     </div>
   );
 }

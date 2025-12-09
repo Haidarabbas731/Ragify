@@ -72,8 +72,8 @@ export function CollectionFilter({
       <div
         className={`flex items-center gap-2 px-4 h-[44px] rounded-lg border transition-all duration-300 ${
           selectedCollectionId
-            ? "bg-purple-50 dark:bg-purple-950/30 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300"
-            : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+            ? "bg-primary/10 border-primary/30 text-primary"
+            : "bg-muted border-border text-foreground hover:bg-muted/80"
         }`}
       >
         {selectedCollectionId ? (
@@ -82,14 +82,14 @@ export function CollectionFilter({
             <button
               type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className="text-sm font-medium font-['Inter'] hover:opacity-80 transition-opacity"
+              className="text-sm font-medium font-sans hover:opacity-80 transition-opacity"
             >
               {selectedCollection?.name}
             </button>
             <button
               type="button"
               onClick={handleClearFilter}
-              className="p-0.5 rounded hover:bg-purple-200 dark:hover:bg-purple-900 transition-colors"
+              className="p-0.5 rounded hover:bg-primary/20 transition-colors"
               aria-label="Clear filter"
             >
               <X className="w-3.5 h-3.5" />
@@ -102,7 +102,7 @@ export function CollectionFilter({
             className="flex items-center gap-2 w-full"
           >
             <Filter className="w-4 h-4" />
-            <span className="text-sm font-medium font-['Inter']">
+            <span className="text-sm font-medium font-sans">
               All Collections
             </span>
             <ChevronDown
@@ -116,7 +116,7 @@ export function CollectionFilter({
 
       {/* Dropdown Menu - Show above the button */}
       {isOpen && (
-        <div className="absolute bottom-full mb-2 left-0 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
+        <div className="absolute bottom-full mb-2 left-0 w-64 bg-card border border-border rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
           {/* All Collections Option */}
           <button
             type="button"
@@ -124,32 +124,28 @@ export function CollectionFilter({
               onSelectCollection(null);
               setIsOpen(false);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
-              !selectedCollectionId ? "bg-purple-50 dark:bg-purple-950/30" : ""
+            className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors ${
+              !selectedCollectionId ? "bg-primary/10" : ""
             }`}
           >
             <Layers
               className={`w-4 h-4 ${
-                !selectedCollectionId
-                  ? "text-purple-600 dark:text-purple-400"
-                  : "text-slate-400 dark:text-slate-500"
+                !selectedCollectionId ? "text-primary" : "text-muted-foreground"
               }`}
             />
             <span
-              className={`flex-1 text-left text-sm font-medium font-['Inter'] ${
-                !selectedCollectionId
-                  ? "text-purple-700 dark:text-purple-300"
-                  : "text-slate-700 dark:text-slate-300"
+              className={`flex-1 text-left text-sm font-medium font-sans ${
+                !selectedCollectionId ? "text-primary" : "text-foreground"
               }`}
             >
               All Collections
             </span>
             {!selectedCollectionId && (
-              <Check className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <Check className="w-4 h-4 text-primary" />
             )}
           </button>
 
-          <div className="h-px bg-slate-200 dark:bg-slate-800" />
+          <div className="h-px bg-border" />
 
           {/* Collection List */}
           <div className="max-h-64 overflow-y-auto custom-scrollbar">
@@ -161,35 +157,35 @@ export function CollectionFilter({
                   onSelectCollection(collection.collection_id);
                   setIsOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${
+                className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors ${
                   selectedCollectionId === collection.collection_id
-                    ? "bg-purple-50 dark:bg-purple-950/30"
+                    ? "bg-primary/10"
                     : ""
                 }`}
               >
                 <FolderOpen
                   className={`w-4 h-4 ${
                     selectedCollectionId === collection.collection_id
-                      ? "text-purple-600 dark:text-purple-400"
-                      : "text-slate-400 dark:text-slate-500"
+                      ? "text-primary"
+                      : "text-muted-foreground"
                   }`}
                 />
                 <div className="flex-1 text-left">
                   <p
-                    className={`text-sm font-medium font-['Inter'] ${
+                    className={`text-sm font-medium font-sans ${
                       selectedCollectionId === collection.collection_id
-                        ? "text-purple-700 dark:text-purple-300"
-                        : "text-slate-700 dark:text-slate-300"
+                        ? "text-primary"
+                        : "text-foreground"
                     }`}
                   >
                     {collection.name}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
+                  <p className="text-xs text-muted-foreground font-mono">
                     {collection.document_count} docs
                   </p>
                 </div>
                 {selectedCollectionId === collection.collection_id && (
-                  <Check className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <Check className="w-4 h-4 text-primary" />
                 )}
               </button>
             ))}

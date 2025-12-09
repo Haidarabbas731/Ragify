@@ -1,7 +1,7 @@
 /**
  * Document Upload Zone - Data Intake Terminal
- * Industrial-futuristic upload interface with drag-drop, validation, and progress tracking
- * Fonts: Fira Code (technical readouts), Space Grotesk (headings), Inter (body)
+ * Clean upload interface with drag-drop, validation, and progress tracking
+ * Fonts: Geist (UI), Geist Mono (technical readouts)
  */
 
 import {
@@ -169,13 +169,13 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
   const getStatusColor = (status: UploadedFile["status"]) => {
     switch (status) {
       case "pending":
-        return "text-slate-500 dark:text-slate-400";
+        return "text-muted-foreground";
       case "uploading":
-        return "text-blue-600 dark:text-blue-400";
+        return "text-primary";
       case "success":
         return "text-emerald-600 dark:text-emerald-400";
       case "error":
-        return "text-red-600 dark:text-red-400";
+        return "text-destructive";
     }
   };
 
@@ -199,8 +199,8 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
         {...getRootProps()}
         className={`relative overflow-hidden rounded-xl border-2 border-dashed transition-all duration-300 cursor-pointer ${
           isDragActive
-            ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-950/30 scale-[1.02]"
-            : "border-slate-300 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 hover:border-blue-400 dark:hover:border-blue-600"
+            ? "border-primary bg-primary/10 scale-[1.02]"
+            : "border-border bg-card hover:border-primary/50"
         }`}
       >
         <input {...getInputProps()} />
@@ -208,36 +208,32 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
         {/* Scan line animation */}
         {isDragActive && (
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-scan" />
+            <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan" />
           </div>
         )}
 
         <div className="p-12 text-center">
           <div
             className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-300 ${
-              isDragActive
-                ? "bg-blue-100 dark:bg-blue-900 scale-110"
-                : "bg-slate-200 dark:bg-slate-700"
+              isDragActive ? "bg-primary/20 scale-110" : "bg-muted"
             }`}
           >
             <Upload
               className={`w-10 h-10 transition-colors ${
-                isDragActive
-                  ? "text-blue-600 dark:text-blue-400"
-                  : "text-slate-600 dark:text-slate-400"
+                isDragActive ? "text-primary" : "text-muted-foreground"
               }`}
             />
           </div>
 
-          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2 font-['Space_Grotesk']">
+          <h3 className="text-xl font-bold text-foreground mb-2 font-sans">
             {isDragActive ? "Drop files here" : "Upload Documents"}
           </h3>
 
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-1 font-['Inter']">
+          <p className="text-sm text-muted-foreground mb-1 font-sans">
             Drag & drop files here or click to browse
           </p>
 
-          <p className="text-xs text-slate-500 dark:text-slate-500 font-['Fira_Code']">
+          <p className="text-xs text-muted-foreground font-mono">
             PDF, DOCX, TXT, MD • Max 50MB per file
           </p>
         </div>
@@ -245,10 +241,10 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
 
       {/* Collection Selector */}
       {files.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+        <div className="bg-card border border-border rounded-xl p-4">
           <label
             htmlFor="collection"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 font-['Inter']"
+            className="block text-sm font-medium text-foreground mb-2 font-sans"
           >
             Collection (Optional)
           </label>
@@ -256,7 +252,7 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
             id="collection"
             value={selectedCollection}
             onChange={(e) => setSelectedCollection(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-['Inter'] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 transition-all"
+            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground font-sans focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
           >
             <option value="">All Documents</option>
             {/* TODO: Replace with real collections from API */}
