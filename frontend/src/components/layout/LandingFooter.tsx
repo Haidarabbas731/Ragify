@@ -1,4 +1,4 @@
-import { Database, Github, Linkedin, Twitter } from "lucide-react";
+import { Github, Linkedin, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function LandingFooter() {
@@ -10,14 +10,13 @@ export function LandingFooter() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <Link to="/" className="flex items-center gap-3 mb-4 group">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600">
-                <Database className="w-6 h-6 text-white" />
-              </div>
-              <span
-                className="text-xl font-bold text-slate-900 dark:text-white"
-                style={{ fontFamily: "'DM Sans', sans-serif" }}
-              >
+            <Link to="/" className="flex items-center gap-0 mb-4 group">
+              <img
+                src="/ragify.png"
+                alt="Ragify Logo"
+                className="w-12 h-12 transition-transform duration-300 group-hover:scale-110"
+              />
+              <span className="text-xl font-bold text-primary ml-2 font-sans">
                 Ragify
               </span>
             </Link>

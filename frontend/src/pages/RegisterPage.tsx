@@ -195,8 +195,17 @@ export function RegisterPage() {
         />
 
         <div className="relative z-10">
-          {/* Logo */}
-          <div className="w-10 h-10 bg-white mb-12" />
+          {/* Logo & Brand */}
+          <div className="mb-12">
+            <img
+              src="/ragify.png"
+              alt="Ragify Logo"
+              className="w-14 h-14 mb-4"
+            />
+            <h2 className="text-3xl font-bold text-white font-sans">
+              Join Ragify
+            </h2>
+          </div>
 
           {/* Progress Steps */}
           <div className="space-y-8">
@@ -245,7 +254,8 @@ export function RegisterPage() {
                   className="text-zinc-400 text-sm"
                   style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                 >
-                  Add your knowledge base files
+                  Upload PDFs, DOCX, TXT, and markdown files to your knowledge
+                  base
                 </p>
               </div>
             </div>
@@ -270,7 +280,8 @@ export function RegisterPage() {
                   className="text-zinc-400 text-sm"
                   style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
                 >
-                  Query your documents with AI
+                  Use AI-powered chat to explore and query your documents
+                  instantly
                 </p>
               </div>
             </div>
