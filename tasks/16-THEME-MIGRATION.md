@@ -9,7 +9,7 @@
 
 ## 🔧 IMPLEMENTATION UPDATES
 
-**UPDATE [2025-12-09]:** CRITICAL FIX - Complete @theme Directive Mapping + Phase 3 Dark Mode Text Visibility
+**UPDATE [2025-12-09]:** CRITICAL FIX - Complete @theme Directive Mapping + Phase 3 Dark Mode Text Visibility + ProfilePage Migration
 
 ### Critical Fix Applied:
 **Problem:** `text-muted-foreground` and other utility classes were showing `rgb(0, 0, 0)` (pure black) in dark mode, making text invisible.
@@ -63,6 +63,47 @@
 2. **User Menu & Toggle Icons**
    - Changed dark/light mode icons from `text-muted-foreground` to `text-primary` for visibility
    - Changed user icon from `text-muted-foreground` to `text-primary` for visibility
+
+### ProfilePage Dark Mode Fixes (✅ COMPLETE):
+**All hardcoded slate colors replaced with theme variables:**
+1. **Navigation Bar**
+   - Background: `bg-white/80 dark:bg-slate-900/80` → `bg-card/80`
+   - Dark/light mode toggle icons: `text-slate-600 dark:text-slate-400` → `text-primary`
+   
+2. **Sidebar Navigation**
+   - Background: `bg-white dark:bg-slate-900` → `bg-card`
+   - Border: `border-slate-200 dark:border-slate-800` → `border-border`
+   - Buttons: `text-slate-700 dark:text-slate-300` → `text-foreground`
+   - Hover: `hover:bg-slate-100 dark:hover:bg-slate-800` → `hover:bg-muted`
+   
+3. **Profile Info Tab Card**
+   - Background: `bg-white dark:bg-slate-900` → `bg-card`
+   - Border: `border-slate-200 dark:border-slate-800` → `border-border`
+   - Heading: `text-slate-900 dark:text-slate-100` → `text-foreground`
+   - User info: `text-slate-500 dark:text-slate-400` → `text-muted-foreground`
+   - Form inputs: `bg-white dark:bg-slate-800` → `bg-card`, borders updated
+   - Labels: `text-slate-700 dark:text-slate-300` → `text-foreground`
+   
+4. **Security Tab**
+   - Card: `bg-white dark:bg-slate-900` → `bg-card`
+   - API key container: `bg-slate-50 dark:bg-slate-800` → `bg-muted`
+   - Code display: `bg-slate-100 dark:bg-slate-900` → `bg-background`
+   - Labels: `text-slate-700 dark:text-slate-300` → `text-foreground`
+   
+5. **Usage & Quota Tab**
+   - Card: `bg-white dark:bg-slate-900` → `bg-card`
+   - SVG circle: `text-slate-200 dark:text-slate-800` → `text-border`
+   - Numbers: `text-slate-900 dark:text-slate-100` → `text-foreground`
+   - Labels: `text-slate-500 dark:text-slate-400` → `text-muted-foreground`
+   - Storage detail cards: `bg-slate-50 dark:bg-slate-800/50` → `bg-muted`
+   - Border: `border-slate-200 dark:border-slate-800` → `border-border`
+   
+6. **Preferences Tab**
+   - Card: `bg-white dark:bg-slate-900` → `bg-card`
+   - Heading: `text-slate-900 dark:text-slate-100` → `text-foreground`
+   - Theme toggle background: `bg-slate-300` → `bg-muted` (when not dark mode)
+   - Preference descriptions: All using `text-muted-foreground`
+   - Borders: `border-slate-200 dark:border-slate-800` → `border-border`
 
 **Verified via Chrome DevTools:** All pages tested in both light and dark modes with proper contrast.
 
