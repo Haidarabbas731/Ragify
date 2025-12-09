@@ -197,15 +197,15 @@ export function ChangePasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header with Icon */}
-      <div className="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
-        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-          <Shield className="w-6 h-6 text-white" />
+      <div className="flex items-center gap-3 pb-4 border-b border-border">
+        <div className="w-12 h-12 rounded-lg bg-primary flex items-center justify-center">
+          <Shield className="w-6 h-6 text-primary-foreground" />
         </div>
         <div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 font-['Space_Grotesk']">
+          <h3 className="text-xl font-bold text-foreground font-['Space_Grotesk']">
             Change Password
           </h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400 font-['Inter']">
+          <p className="text-sm text-muted-foreground font-['Inter']">
             Update your password to keep your account secure
           </p>
         </div>
@@ -213,24 +213,24 @@ export function ChangePasswordForm() {
 
       {/* Current Password */}
       <div className="space-y-2">
-        <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
+        <Label className="font-['Inter'] font-medium text-foreground">
           Current Password
         </Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             type={showCurrentPassword ? "text" : "password"}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             onBlur={() => setTouched({ ...touched, current: true })}
-            className="pl-10 pr-10 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            className="pl-10 pr-10 font-['Inter'] bg-card border-border text-foreground placeholder:text-muted-foreground"
             placeholder="Enter current password"
             disabled={isSubmitting}
           />
           <button
             type="button"
             onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           >
             {showCurrentPassword ? (
               <EyeOff className="w-4 h-4" />
@@ -243,24 +243,24 @@ export function ChangePasswordForm() {
 
       {/* New Password */}
       <div className="space-y-2">
-        <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
+        <Label className="font-['Inter'] font-medium text-foreground">
           New Password
         </Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             type={showNewPassword ? "text" : "password"}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             onBlur={() => setTouched({ ...touched, new: true })}
-            className="pl-10 pr-10 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            className="pl-10 pr-10 font-['Inter'] bg-card border-border text-foreground placeholder:text-muted-foreground"
             placeholder="Enter new password"
             disabled={isSubmitting}
           />
           <button
             type="button"
             onClick={() => setShowNewPassword(!showNewPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           >
             {showNewPassword ? (
               <EyeOff className="w-4 h-4" />
@@ -272,20 +272,20 @@ export function ChangePasswordForm() {
 
         {/* Password Strength Meter */}
         {newPassword && (
-          <div className="space-y-3 mt-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="space-y-3 mt-4 p-4 bg-muted/30 rounded-lg border border-border animate-in fade-in slide-in-from-top-2 duration-300">
             {/* Strength Bar */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-['Inter'] font-medium text-slate-600 dark:text-slate-400">
+                <span className="text-xs font-['Inter'] font-medium text-muted-foreground">
                   Password Strength
                 </span>
                 <span
                   className={`text-xs font-['Fira_Code'] font-bold ${
                     strength.score >= 3
-                      ? "text-emerald-600 dark:text-emerald-400"
+                      ? "text-emerald-600"
                       : strength.score === 2
-                        ? "text-amber-600 dark:text-amber-400"
-                        : "text-red-600 dark:text-red-400"
+                        ? "text-amber-600"
+                        : "text-red-600"
                   }`}
                 >
                   {strength.label}
@@ -296,21 +296,19 @@ export function ChangePasswordForm() {
                   <div
                     key={level}
                     className={`h-2 flex-1 rounded-full transition-all duration-300 ${
-                      i < strength.score
-                        ? strength.color
-                        : "bg-slate-200 dark:bg-slate-700"
+                      i < strength.score ? strength.color : "bg-border"
                     }`}
                   />
                 ))}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-['Inter']">
+              <p className="text-xs text-muted-foreground font-['Inter']">
                 {strength.description}
               </p>
             </div>
 
             {/* Requirements Checklist */}
-            <div className="space-y-2 pt-3 border-t border-slate-200 dark:border-slate-700">
-              <span className="text-xs font-['Inter'] font-medium text-slate-600 dark:text-slate-400">
+            <div className="space-y-2 pt-3 border-t border-border">
+              <span className="text-xs font-['Inter'] font-medium text-muted-foreground">
                 Requirements
               </span>
               {requirements.map((req, index) => (
@@ -323,7 +321,7 @@ export function ChangePasswordForm() {
                     className={`w-4 h-4 rounded-full flex items-center justify-center transition-all duration-200 ${
                       req.met
                         ? "bg-emerald-500 scale-100"
-                        : "bg-slate-300 dark:bg-slate-700 scale-90"
+                        : "bg-border scale-90"
                     }`}
                   >
                     {req.met ? (
@@ -338,8 +336,8 @@ export function ChangePasswordForm() {
                   <span
                     className={`text-xs font-['Inter'] transition-colors ${
                       req.met
-                        ? "text-emerald-700 dark:text-emerald-400 font-medium"
-                        : "text-slate-600 dark:text-slate-400"
+                        ? "text-emerald-600 font-medium"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {req.label}
@@ -353,24 +351,24 @@ export function ChangePasswordForm() {
 
       {/* Confirm Password */}
       <div className="space-y-2">
-        <Label className="font-['Inter'] font-medium text-slate-700 dark:text-slate-300">
+        <Label className="font-['Inter'] font-medium text-foreground">
           Confirm New Password
         </Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             type={showConfirmPassword ? "text" : "password"}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             onBlur={() => setTouched({ ...touched, confirm: true })}
-            className="pl-10 pr-10 font-['Inter'] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            className="pl-10 pr-10 font-['Inter'] bg-card border-border text-foreground placeholder:text-muted-foreground"
             placeholder="Confirm new password"
             disabled={isSubmitting}
           />
           <button
             type="button"
             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           >
             {showConfirmPassword ? (
               <EyeOff className="w-4 h-4" />
@@ -384,9 +382,7 @@ export function ChangePasswordForm() {
         {touched.confirm && confirmPassword && (
           <div
             className={`flex items-center gap-2 text-xs font-['Inter'] animate-in fade-in slide-in-from-top-2 duration-300 ${
-              passwordsMatch
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-red-600 dark:text-red-400"
+              passwordsMatch ? "text-emerald-600" : "text-red-600"
             }`}
           >
             {passwordsMatch ? (
@@ -427,7 +423,7 @@ export function ChangePasswordForm() {
           !passwordsMatch ||
           !currentPassword
         }
-        className="w-full gap-2 font-['Inter'] font-medium bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full gap-2 font-['Inter'] font-medium bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 border-0 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? (
           <>
