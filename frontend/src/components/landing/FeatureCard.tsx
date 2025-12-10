@@ -1,5 +1,5 @@
-import type { LucideIcon } from 'lucide-react';
-import { useRef } from 'react';
+import type { LucideIcon } from "lucide-react";
+import { useRef } from "react";
 
 interface FeatureCardProps {
   icon: LucideIcon;
@@ -31,17 +31,19 @@ export function FeatureCard({
         className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"
         style={{
           background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})`,
-          padding: '2px',
-          mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-          maskComposite: 'xor',
-          WebkitMaskComposite: 'xor',
+          padding: "2px",
+          mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+          maskComposite: "xor",
+          WebkitMaskComposite: "xor",
         }}
       />
 
       {/* Icon */}
       <div
         className="w-14 h-14 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
-        style={{ background: `linear-gradient(135deg, ${gradientFrom}20, ${gradientTo}20)` }}
+        style={{
+          background: `linear-gradient(135deg, ${gradientFrom}20, ${gradientTo}20)`,
+        }}
       >
         <Icon
           className="w-7 h-7 transition-all duration-300 group-hover:scale-110"
@@ -53,9 +55,7 @@ export function FeatureCard({
       <h3 className="text-xl font-display font-bold text-foreground mb-2">
         {title}
       </h3>
-      <p className="text-muted-foreground leading-relaxed">
-        {description}
-      </p>
+      <p className="text-muted-foreground leading-relaxed">{description}</p>
     </div>
   );
 }
