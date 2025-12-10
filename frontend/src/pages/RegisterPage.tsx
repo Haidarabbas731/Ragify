@@ -327,18 +327,12 @@ export function RegisterPage() {
           </div>
 
           {/* Heading */}
-          <div className="mb-10">
-            <h2
-              className="text-4xl font-bold text-foreground mb-2"
-              style={{ fontFamily: "'Fira Code', monospace" }}
-            >
+          <div className="mb-12">
+            <h2 className="text-5xl font-bold text-foreground mb-3 font-sans">
               Create Account
             </h2>
-            <p
-              className="text-muted-foreground"
-              style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-            >
-              Fill in your details to get started
+            <p className="text-lg text-muted-foreground font-sans">
+              Access your Ragify workspace
             </p>
           </div>
 
