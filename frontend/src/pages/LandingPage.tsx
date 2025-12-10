@@ -1,25 +1,25 @@
-import { useEffect, useRef } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
-  Sparkles,
   ArrowRight,
-  MessageSquare,
   FileText,
   Folder,
+  Github,
   Link,
+  Linkedin,
+  MessageSquare,
+  Share2,
+  Sparkles,
+  Twitter,
   Upload,
   Zap,
-  Share2,
-  Twitter,
-  Github,
-  Linkedin,
-} from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { ThreeBackground } from '../components/landing/ThreeBackground';
-import { LandingNav } from '../components/layout/LandingNav';
-import { FeatureCard } from '../components/landing/FeatureCard';
-import { StepCard } from '../components/landing/StepCard';
+} from "lucide-react";
+import { useEffect, useRef } from "react";
+import { FeatureCard } from "../components/landing/FeatureCard";
+import { StepCard } from "../components/landing/StepCard";
+import { ThreeBackground } from "../components/landing/ThreeBackground";
+import { LandingNav } from "../components/layout/LandingNav";
+import { Button } from "../components/ui/button";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -36,7 +36,7 @@ export function LandingPage() {
   useEffect(() => {
     const ctx = gsap.context(() => {
       // Hero animations
-      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
       tl.from(badgeRef.current, {
         y: 30,
@@ -51,7 +51,7 @@ export function LandingPage() {
             opacity: 0,
             duration: 1,
           },
-          '-=0.5'
+          "-=0.5",
         )
         .from(
           subheadRef.current,
@@ -60,7 +60,7 @@ export function LandingPage() {
             opacity: 0,
             duration: 0.8,
           },
-          '-=0.6'
+          "-=0.6",
         )
         .from(
           ctaRef.current?.children || [],
@@ -70,32 +70,35 @@ export function LandingPage() {
             duration: 0.6,
             stagger: 0.15,
           },
-          '-=0.4'
+          "-=0.4",
         );
 
       // Badge icon rotation
-      const badgeSvg = badgeRef.current?.querySelector('svg');
+      const badgeSvg = badgeRef.current?.querySelector("svg");
       if (badgeSvg) {
         gsap.to(badgeSvg, {
           rotation: 360,
           duration: 8,
           repeat: -1,
-          ease: 'linear',
+          ease: "linear",
         });
       }
 
       // Features scroll animation
       ScrollTrigger.create({
         trigger: featuresRef.current,
-        start: 'top 80%',
+        start: "top 80%",
         onEnter: () => {
-          gsap.from(featuresRef.current?.querySelectorAll('.feature-card') || [], {
-            y: 60,
-            opacity: 0,
-            duration: 0.8,
-            stagger: 0.15,
-            ease: 'back.out(1.7)',
-          });
+          gsap.from(
+            featuresRef.current?.querySelectorAll(".feature-card") || [],
+            {
+              y: 60,
+              opacity: 0,
+              duration: 0.8,
+              stagger: 0.15,
+              ease: "back.out(1.7)",
+            },
+          );
         },
         once: true,
       });
@@ -103,14 +106,14 @@ export function LandingPage() {
       // Steps scroll animation
       ScrollTrigger.create({
         trigger: stepsRef.current,
-        start: 'top 80%',
+        start: "top 80%",
         onEnter: () => {
-          gsap.from(stepsRef.current?.querySelectorAll('.step-card') || [], {
+          gsap.from(stepsRef.current?.querySelectorAll(".step-card") || [], {
             y: 60,
             opacity: 0,
             duration: 0.8,
             stagger: 0.2,
-            ease: 'back.out(1.7)',
+            ease: "back.out(1.7)",
           });
         },
         once: true,
@@ -119,14 +122,14 @@ export function LandingPage() {
       // CTA section animation
       ScrollTrigger.create({
         trigger: ctaSectionRef.current,
-        start: 'top 80%',
+        start: "top 80%",
         onEnter: () => {
           gsap.from(ctaSectionRef.current?.children || [], {
             y: 40,
             opacity: 0,
             duration: 0.8,
             stagger: 0.1,
-            ease: 'power3.out',
+            ease: "power3.out",
           });
         },
         once: true,
@@ -139,63 +142,66 @@ export function LandingPage() {
   const features = [
     {
       icon: MessageSquare,
-      title: 'RAG-Powered Chat',
+      title: "RAG-Powered Chat",
       description:
-        'Ask questions and get intelligent answers powered by Retrieval-Augmented Generation. Your documents become a conversational knowledge base.',
-      gradientFrom: '#a855f7',
-      gradientTo: '#6366f1',
+        "Ask questions and get intelligent answers powered by Retrieval-Augmented Generation. Your documents become a conversational knowledge base.",
+      gradientFrom: "#a855f7",
+      gradientTo: "#6366f1",
     },
     {
       icon: FileText,
-      title: 'Multi-Format Support',
+      title: "Multi-Format Support",
       description:
-        'Upload PDFs, Word documents, text files, and Markdown. Up to 50MB per file with intelligent chunking for optimal processing.',
-      gradientFrom: '#6366f1',
-      gradientTo: '#8b5cf6',
+        "Upload PDFs, Word documents, text files, and Markdown. Up to 50MB per file with intelligent chunking for optimal processing.",
+      gradientFrom: "#6366f1",
+      gradientTo: "#8b5cf6",
     },
     {
       icon: Folder,
-      title: 'Smart Organization',
+      title: "Smart Organization",
       description:
-        'Create collections to organize your documents by topic, project, or category. Keep your knowledge base structured and searchable.',
-      gradientFrom: '#8b5cf6',
-      gradientTo: '#ec4899',
+        "Create collections to organize your documents by topic, project, or category. Keep your knowledge base structured and searchable.",
+      gradientFrom: "#8b5cf6",
+      gradientTo: "#ec4899",
     },
     {
       icon: Link,
-      title: 'Source Citations',
+      title: "Source Citations",
       description:
-        'Every answer includes citations showing exactly which documents and sections were used. Full transparency in AI responses.',
-      gradientFrom: '#ec4899',
-      gradientTo: '#a855f7',
+        "Every answer includes citations showing exactly which documents and sections were used. Full transparency in AI responses.",
+      gradientFrom: "#ec4899",
+      gradientTo: "#a855f7",
     },
   ];
 
   const steps = [
     {
-      number: '01',
+      number: "01",
       icon: Upload,
-      title: 'Upload Documents',
-      description: 'Drag and drop your documents (PDF, DOCX, TXT, MD) into Ragify.',
-    },
-    {
-      number: '02',
-      icon: Zap,
-      title: 'AI Processes & Indexes',
+      title: "Upload Documents",
       description:
-        'Our AI automatically chunks, processes, and indexes your documents for semantic search.',
+        "Drag and drop your documents (PDF, DOCX, TXT, MD) into Ragify.",
     },
     {
-      number: '03',
+      number: "02",
+      icon: Zap,
+      title: "AI Processes & Indexes",
+      description:
+        "Our AI automatically chunks, processes, and indexes your documents for semantic search.",
+    },
+    {
+      number: "03",
       icon: MessageSquare,
-      title: 'Chat & Get Answers',
-      description: 'Ask questions in natural language. Get instant answers with source citations.',
+      title: "Chat & Get Answers",
+      description:
+        "Ask questions in natural language. Get instant answers with source citations.",
     },
     {
-      number: '04',
+      number: "04",
       icon: Share2,
-      title: 'Share Knowledge',
-      description: 'Organize documents into collections and invite teammates to collaborate.',
+      title: "Share Knowledge",
+      description:
+        "Organize documents into collections and invite teammates to collaborate.",
     },
   ];
 
@@ -222,7 +228,9 @@ export function LandingPage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 text-primary mb-8"
           >
             <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium">Powered by Advanced RAG Technology</span>
+            <span className="text-sm font-medium">
+              Powered by Advanced RAG Technology
+            </span>
           </div>
 
           {/* Headline */}
@@ -240,12 +248,15 @@ export function LandingPage() {
             ref={subheadRef}
             className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
           >
-            Transform your knowledge base with AI-powered search and chat. Instant answers from
-            your documents.
+            Transform your knowledge base with AI-powered search and chat.
+            Instant answers from your documents.
           </p>
 
           {/* CTA Buttons */}
-          <div ref={ctaRef} className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div
+            ref={ctaRef}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
             <Button
               size="lg"
               className="px-8 py-6 text-lg glow-primary hover:glow-primary-intense transition-all hover:-translate-y-1"
@@ -375,16 +386,19 @@ export function LandingPage() {
             <div>
               <h4 className="font-display font-semibold mb-4">Product</h4>
               <ul className="space-y-2">
-                {['Features', 'Pricing', 'Documentation', 'Changelog'].map((item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
-                      className="text-muted-foreground hover:text-foreground transition-colors text-sm"
-                    >
-                      {item}
-                    </a>
-                  </li>
-                ))}
+                {["Features", "Pricing", "Documentation", "Changelog"].map(
+                  (item) => (
+                    <li key={item}>
+                      <button
+                        type="button"
+                        onClick={(e) => e.preventDefault()}
+                        className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+                      >
+                        {item}
+                      </button>
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
 
@@ -392,14 +406,15 @@ export function LandingPage() {
             <div>
               <h4 className="font-display font-semibold mb-4">Company</h4>
               <ul className="space-y-2">
-                {['About', 'Blog', 'Careers', 'Contact'].map((item) => (
+                {["About", "Blog", "Careers", "Contact"].map((item) => (
                   <li key={item}>
-                    <a
-                      href="#"
+                    <button
+                      type="button"
+                      onClick={(e) => e.preventDefault()}
                       className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                     >
                       {item}
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -409,37 +424,41 @@ export function LandingPage() {
             <div>
               <h4 className="font-display font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 mb-6">
-                {['Privacy Policy', 'Terms of Service'].map((item) => (
+                {["Privacy Policy", "Terms of Service"].map((item) => (
                   <li key={item}>
-                    <a
-                      href="#"
+                    <button
+                      type="button"
+                      onClick={(e) => e.preventDefault()}
                       className="text-muted-foreground hover:text-foreground transition-colors text-sm"
                     >
                       {item}
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
 
               <div className="flex gap-4">
-                <a
-                  href="#"
+                <button
+                  type="button"
+                  onClick={(e) => e.preventDefault()}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Twitter className="w-5 h-5" />
-                </a>
-                <a
-                  href="#"
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => e.preventDefault()}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Github className="w-5 h-5" />
-                </a>
-                <a
-                  href="#"
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => e.preventDefault()}
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <Linkedin className="w-5 h-5" />
-                </a>
+                </button>
               </div>
             </div>
           </div>

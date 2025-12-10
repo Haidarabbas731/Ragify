@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from "lucide-react";
 
 interface StepCardProps {
   number: string;
@@ -8,7 +8,13 @@ interface StepCardProps {
   isLast?: boolean;
 }
 
-export function StepCard({ number, icon: Icon, title, description, isLast = false }: StepCardProps) {
+export function StepCard({
+  number,
+  icon: Icon,
+  title,
+  description,
+  isLast = false,
+}: StepCardProps) {
   return (
     <div className="relative flex flex-col items-center text-center group">
       {/* Connecting line */}
@@ -18,10 +24,12 @@ export function StepCard({ number, icon: Icon, title, description, isLast = fals
           <div
             className="absolute inset-0 bg-gradient-to-r from-primary via-purple-500 to-indigo-500"
             style={{
-              maskImage: 'linear-gradient(90deg, transparent 0%, black 20%, black 80%, transparent 100%)',
-              WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, black 20%, black 80%, transparent 100%)',
-              animation: 'shimmer 2s linear infinite',
-              backgroundSize: '200% 100%',
+              maskImage:
+                "linear-gradient(90deg, transparent 0%, black 20%, black 80%, transparent 100%)",
+              WebkitMaskImage:
+                "linear-gradient(90deg, transparent 0%, black 20%, black 80%, transparent 100%)",
+              animation: "shimmer 2s linear infinite",
+              backgroundSize: "200% 100%",
             }}
           />
         </div>
@@ -42,9 +50,7 @@ export function StepCard({ number, icon: Icon, title, description, isLast = fals
       <h3 className="text-xl font-display font-bold text-foreground mb-2">
         {title}
       </h3>
-      <p className="text-muted-foreground max-w-xs">
-        {description}
-      </p>
+      <p className="text-muted-foreground max-w-xs">{description}</p>
     </div>
   );
 }
