@@ -315,7 +315,7 @@ export function RegisterPage() {
           <span className="text-sm">Back to home</span>
         </Link>
 
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-lg pt-16">
           {/* Mobile Logo */}
           <div className="lg:hidden mb-8">
             <div className="flex items-center gap-2 mb-4">
@@ -337,13 +337,12 @@ export function RegisterPage() {
           </div>
 
           {/* Register Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             {/* Email Field */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label
                 htmlFor="email"
-                className="text-xs uppercase tracking-widest text-foreground font-semibold"
-                style={{ fontFamily: "'Fira Code', monospace" }}
+                className="text-xs uppercase tracking-widest text-foreground font-medium font-sans"
               >
                 Email
               </Label>
@@ -353,26 +352,21 @@ export function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 placeholder="your@email.com"
-                className="h-12 border-2 border-zinc-300 dark:border-zinc-700 focus:border-zinc-950 dark:focus:border-white focus:ring-0 bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 transition-colors"
-                style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                className="h-14 border-0 border-b-2 border-border rounded-none focus:border-primary focus:ring-0 bg-transparent text-foreground placeholder:text-muted-foreground text-lg transition-colors font-sans"
                 disabled={isSubmitting}
               />
               {errors.email && (
-                <p
-                  className="text-sm text-red-600 dark:text-red-400"
-                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-                >
+                <p className="text-sm text-destructive font-sans">
                   {errors.email.message}
                 </p>
               )}
             </div>
 
             {/* Password Field with Strength Indicator */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label
                 htmlFor="password"
-                className="text-xs uppercase tracking-widest text-foreground font-semibold"
-                style={{ fontFamily: "'Fira Code', monospace" }}
+                className="text-xs uppercase tracking-widest text-foreground font-medium font-sans"
               >
                 Password
               </Label>
@@ -383,14 +377,13 @@ export function RegisterPage() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   placeholder="••••••••"
-                  className="h-12 border-2 border-zinc-300 dark:border-zinc-700 focus:border-zinc-950 dark:focus:border-white focus:ring-0 bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 pr-12 transition-colors"
-                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+                  className="h-14 border-0 border-b-2 border-border rounded-none focus:border-primary focus:ring-0 bg-transparent text-foreground placeholder:text-muted-foreground text-lg pr-12 transition-colors font-sans"
                   disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-500 hover:text-zinc-950 dark:hover:text-white transition-colors"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   disabled={isSubmitting}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
@@ -484,11 +477,10 @@ export function RegisterPage() {
             </div>
 
             {/* Invite Code Field */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label
                 htmlFor="inviteCode"
-                className="text-xs uppercase tracking-widest text-foreground font-semibold"
-                style={{ fontFamily: "'Fira Code', monospace" }}
+                className="text-xs uppercase tracking-widest text-foreground font-medium font-sans"
               >
                 Invite Code
               </Label>
@@ -498,29 +490,22 @@ export function RegisterPage() {
                 type="text"
                 placeholder="KB-XXXX-XXXX-XXXX"
                 maxLength={17}
-                className="h-12 border-2 border-zinc-300 dark:border-zinc-700 focus:border-zinc-950 dark:focus:border-white focus:ring-0 bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 uppercase tracking-widest text-center font-bold transition-colors"
-                style={{ fontFamily: "'Fira Code', monospace" }}
+                className="h-14 border-0 border-b-2 border-border rounded-none focus:border-primary focus:ring-0 bg-transparent text-foreground placeholder:text-muted-foreground uppercase tracking-widest text-center font-sans transition-colors"
                 disabled={isSubmitting}
               />
               {errors.inviteCode && (
-                <p
-                  className="text-sm text-red-600 dark:text-red-400"
-                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-                >
+                <p className="text-sm text-destructive font-sans">
                   {errors.inviteCode.message}
                 </p>
               )}
-              <p
-                className="text-xs text-zinc-500 dark:text-zinc-500"
-                style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-              >
+              <p className="text-xs text-muted-foreground font-sans">
                 Don't have a code?{" "}
                 <button
                   type="button"
                   onClick={() =>
                     toast.info("Contact your administrator for an invite code")
                   }
-                  className="text-zinc-950 dark:text-white underline hover:no-underline"
+                  className="text-primary underline hover:no-underline"
                 >
                   Request access
                 </button>
@@ -531,8 +516,7 @@ export function RegisterPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 font-semibold transition-all duration-300 hover:translate-y-[-2px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 mt-8 group"
-              style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+              className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-lg transition-all duration-300 hover:translate-y-[-2px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 group font-sans"
             >
               {isSubmitting ? (
                 <>
@@ -549,15 +533,12 @@ export function RegisterPage() {
           </form>
 
           {/* Login Link */}
-          <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800">
-            <p
-              className="text-zinc-600 dark:text-zinc-400 text-center"
-              style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-            >
+          <div className="mt-12 pt-8 border-t border-border">
+            <p className="text-muted-foreground text-center font-sans">
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="text-zinc-950 dark:text-white font-semibold underline underline-offset-4 hover:no-underline transition-all"
+                className="text-primary font-medium underline underline-offset-4 hover:no-underline transition-all"
               >
                 Sign in
               </Link>
