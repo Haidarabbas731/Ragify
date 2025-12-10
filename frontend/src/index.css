@@ -40,6 +40,124 @@
   --color-ring: var(--ring);
 }
 
+@layer utilities {
+  /* Animated gradient text */
+  .gradient-text {
+    background: linear-gradient(
+      90deg,
+      oklch(0.5417 0.179 288.0332) 0%,
+      oklch(0.5679 0.2113 276.7065) 50%,
+      oklch(0.5417 0.179 288.0332) 100%
+    );
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientShift 4s ease infinite;
+  }
+
+  .dark .gradient-text {
+    background: linear-gradient(
+      90deg,
+      oklch(0.7162 0.1597 290.3962) 0%,
+      oklch(0.7482 0.1235 244.7492) 50%,
+      oklch(0.7162 0.1597 290.3962) 100%
+    );
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  @keyframes gradientShift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: 0 0 30px oklch(0.5417 0.179 288.0332 / 0.4);
+  }
+
+  .glow-primary-intense {
+    box-shadow: 0 0 50px oklch(0.5417 0.179 288.0332 / 0.6);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px oklch(0.5417 0.179 288.0332 / 0.6);
+  }
+
+  /* Animated border gradient */
+  .border-gradient {
+    position: relative;
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+  }
+
+  .border-gradient::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: calc(var(--radius) + 2px);
+    background: linear-gradient(
+      135deg,
+      oklch(0.5417 0.179 288.0332),
+      oklch(0.5679 0.2113 276.7065),
+      oklch(0.5417 0.179 288.0332),
+      oklch(0.6356 0.1922 281.8054)
+    );
+    background-size: 300% 300%;
+    animation: borderGradient 4s ease infinite;
+    z-index: -1;
+  }
+
+  @keyframes borderGradient {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* Float animation for orbs */
+  .float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .float-delayed {
+    animation: float 8s ease-in-out infinite;
+    animation-delay: -2s;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-20px) rotate(5deg);
+    }
+  }
+
+  /* Pulse glow */
+  .pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% {
+      box-shadow: 0 0 20px oklch(0.5417 0.179 288.0332 / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px oklch(0.5417 0.179 288.0332 / 0.6);
+    }
+  }
+}
+
 /* ========================================
    OKLCH Purple Theme - Light Mode (fallback)
    ======================================== */
