@@ -1262,7 +1262,7 @@ async def get_document(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """
-    Get document by ID with chunks.
+    Get document by ID with chunks and collection name.
 
     Args:
         document_id: Document ID
@@ -1270,7 +1270,7 @@ async def get_document(
         db: Database session
 
     Returns:
-        Document record with chunks from Milvus
+        Document record with chunks from Milvus and collection name
 
     Raises:
         HTTPException: 404 if document not found or not owned by user
@@ -1287,6 +1287,16 @@ async def get_document(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
         )
+
+    # Fetch collection name if document is assigned to a collection
+    collection_name = None
+    if document.collection_id:
+        collection_result = await db.exec(
+            select(Collection).where(Collection.collection_id == document.collection_id)
+        )
+        collection = collection_result.one_or_none()
+        if collection:
+            collection_name = collection.name
 
     # Fetch chunks from Milvus if document is active and has chunks
     chunks_data = None
@@ -1315,9 +1325,10 @@ async def get_document(
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to fetch chunks for document {document_id}: {e}")
 
-    # Convert document to dict and add chunks
+    # Convert document to dict and add chunks and collection_name
     doc_dict = document.model_dump()
     doc_dict["chunks"] = chunks_data
+    doc_dict["collection_name"] = collection_name
 
     return doc_dict
 
