@@ -273,7 +273,24 @@ export const updateDocument = async (
     tags?: string[];
   },
 ) => {
-  const { data } = await api.put(`/documents/${documentId}`, updates);
+  // Backend expects FormData, not JSON
+  const formData = new FormData();
+
+  if (updates.collection_id !== undefined) {
+    formData.append("collection_id", updates.collection_id || "");
+  }
+  if (updates.category !== undefined) {
+    formData.append("category", updates.category || "");
+  }
+  if (updates.tags) {
+    formData.append("tags", updates.tags.join(","));
+  }
+
+  const { data } = await api.put(`/documents/${documentId}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
   return data;
 };
 
