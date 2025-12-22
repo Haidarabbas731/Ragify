@@ -9,6 +9,69 @@
 
 ## 🔧 IMPLEMENTATION UPDATES
 
+**UPDATE [2025-12-15]:** ✅ CRITICAL FIXES - Collections & Document Assignment
+
+### Fix 1: Collection Creation Bug Fix:
+**Problem:** When trying to create a collection with a duplicate name, users saw a generic "Failed to create collection" error and had to manually refresh the page to see existing collections.
+
+**Root Cause:**
+1. Frontend error handlers only read `response.data.message`, but FastAPI returns `response.data.detail`
+2. React Query cache wasn't invalidated on error, so collections list didn't auto-refresh
+
+**Solution Implemented:**
+- ✅ Updated `useCreateCollection`, `useUpdateCollection`, `useDeleteCollection` in `frontend/src/hooks/useCollections.ts`
+- ✅ Error handlers now read both `detail` (FastAPI standard) and `message` (fallback)
+- ✅ Added `queryClient.invalidateQueries({ queryKey: ["collections"] })` in all `onError` handlers
+- ✅ Collections list now auto-refreshes when creation fails, showing the conflicting collection immediately
+- ✅ Fixed backend `create_collection_endpoint` - removed invalid `collection.document_count = 0` assignment
+  - Backend was trying to set `document_count` on Collection model (which doesn't have this field)
+  - Now uses `CollectionResponse.model_validate(collection)` to properly serialize response
+  - `document_count` defaults to 0 in CollectionResponse schema
+
+**User Experience Improvements:**
+- ✅ Clean error messages: "Collection 'Nexus' already exists" (removed user ID for better UX)
+- ✅ No page refresh needed - collections list updates automatically on error
+- ✅ Better UX - user immediately sees what collection already exists
+- ✅ Consistent error handling across all collection operations (create, update, delete)
+
+**Files Modified:**
+- `frontend/src/hooks/useCollections.ts` - Fixed all three mutation hooks (create, update, delete)
+- `backend/app/services/collection_service.py` - Updated error message to be user-friendly (removed user ID)
+- `backend/app/api/v1/collections.py` - Fixed `create_collection_endpoint` to properly return CollectionResponse
+
+**Verification:**
+- ✅ Frontend linting passes (`bun run biome check --write src/hooks/useCollections.ts`)
+- ✅ Backend linting passes (`uv run ruff check app/api/v1/collections.py`)
+- ✅ TypeScript types properly defined for error response structure
+- ✅ Collection creation now works without "document_count" field error
+- ✅ Dialog closes properly on successful creation
+
+---
+
+### Fix 2: Document Collection Assignment Bug Fix:
+
+**Problem:** Moving documents to collections didn't work - documents weren't being assigned to the selected collection.
+
+**Root Cause:**
+- Backend endpoint `PUT /documents/{document_id}` expects **FormData** (`Form()` parameters)
+- Frontend `updateDocument()` was sending **JSON** data
+- Content-Type mismatch caused the backend to not receive the `collection_id` parameter
+
+**Solution Implemented:**
+- ✅ Updated `updateDocument()` in `frontend/src/lib/api.ts` to use FormData instead of JSON
+- ✅ Properly append `collection_id`, `category`, and `tags` to FormData
+- ✅ Set correct `Content-Type: multipart/form-data` header
+
+**Files Modified:**
+- `frontend/src/lib/api.ts` - Fixed `updateDocument()` to use FormData
+
+**Verification:**
+- ✅ Frontend linting passes (`bun run biome check src/lib/api.ts`)
+- ✅ Document collection assignment now works properly
+- ✅ Documents can be moved to collections via dropdown/UI
+
+---
+
 **UPDATE [2025-12-10]:** ✅ PHASE 4 COMPLETE - Landing Page V0 Migration with Purple OKLCH Theme
 
 ### Phase 4 Completion Summary:

@@ -49,13 +49,13 @@ async def create_collection_endpoint(
             db, current_user.user_id, collection_data.name, collection_data.description
         )
 
-        # New collections have 0 documents
-        collection.document_count = 0
-
         logger.info(
             f"Collection {collection.collection_id} created by user {current_user.user_id}"
         )
-        return collection
+
+        # Return collection with document_count (new collections have 0 documents)
+        # CollectionResponse schema has document_count with default value of 0
+        return CollectionResponse.model_validate(collection)
 
     except ValueError as e:
         raise HTTPException(

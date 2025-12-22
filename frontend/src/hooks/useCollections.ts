@@ -55,10 +55,24 @@ export const useCreateCollection = () => {
       toast.success("Collection created successfully");
     },
     onError: (error: unknown) => {
+      // Read both "detail" (FastAPI standard) and "message" (fallback)
       const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to create collection";
+        (
+          error as {
+            response?: { data?: { detail?: string; message?: string } };
+          }
+        ).response?.data?.detail ||
+        (
+          error as {
+            response?: { data?: { detail?: string; message?: string } };
+          }
+        ).response?.data?.message ||
+        "Failed to create collection";
       toast.error(message);
+
+      // Invalidate queries to refetch collections list
+      // This ensures user sees existing collections even when creation fails
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
     },
   });
 };
@@ -86,10 +100,23 @@ export const useUpdateCollection = () => {
       toast.success("Collection updated successfully");
     },
     onError: (error: unknown) => {
+      // Read both "detail" (FastAPI standard) and "message" (fallback)
       const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to update collection";
+        (
+          error as {
+            response?: { data?: { detail?: string; message?: string } };
+          }
+        ).response?.data?.detail ||
+        (
+          error as {
+            response?: { data?: { detail?: string; message?: string } };
+          }
+        ).response?.data?.message ||
+        "Failed to update collection";
       toast.error(message);
+
+      // Invalidate queries to refetch collections list on error
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
     },
   });
 };
@@ -108,10 +135,23 @@ export const useDeleteCollection = () => {
       toast.success("Collection deleted successfully");
     },
     onError: (error: unknown) => {
+      // Read both "detail" (FastAPI standard) and "message" (fallback)
       const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to delete collection";
+        (
+          error as {
+            response?: { data?: { detail?: string; message?: string } };
+          }
+        ).response?.data?.detail ||
+        (
+          error as {
+            response?: { data?: { detail?: string; message?: string } };
+          }
+        ).response?.data?.message ||
+        "Failed to delete collection";
       toast.error(message);
+
+      // Invalidate queries to refetch collections list on error
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
     },
   });
 };

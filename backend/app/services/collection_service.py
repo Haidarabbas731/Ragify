@@ -30,7 +30,7 @@ async def create_collection(
         select(Collection).where(Collection.user_id == user_id, Collection.name == name)
     )
     if existing.one_or_none():
-        raise ValueError(f"Collection '{name}' already exists for user {user_id}")
+        raise ValueError(f"Collection '{name}' already exists")
 
     collection = Collection(user_id=user_id, name=name, description=description)
     session.add(collection)
