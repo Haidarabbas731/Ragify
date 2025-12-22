@@ -29,6 +29,7 @@ class DocumentResponse(BaseModel):
     document_id: str
     user_id: str
     collection_id: str | None
+    collection_name: str | None = None
     filename: str
     file_type: str
     size_bytes: int
