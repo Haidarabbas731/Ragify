@@ -59,7 +59,7 @@ services:
       - key: EMBEDDING_MODEL
         value: "models/gemini-embedding-001"
       - key: EMBEDDING_DIMENSION
-        value: "1024"
+        value: "768"
 
       # -----------------------------------------------------------------
       # MILVUS (Vector Database) - Use Zilliz Cloud free tier
@@ -117,7 +117,7 @@ services:
       - key: LOG_LEVEL
         value: "INFO"
       - key: FRONTEND_URL
-        sync: false  # Your frontend URL (for CORS)
+        value: "*"  # Allow all origins until frontend is deployed
 
       # -----------------------------------------------------------------
       # FILE UPLOAD
@@ -182,7 +182,7 @@ services:
       - key: EMBEDDING_MODEL
         value: "models/gemini-embedding-001"
       - key: EMBEDDING_DIMENSION
-        value: "1024"
+        value: "768"
 
       # Milvus
       - key: MILVUS_URI
