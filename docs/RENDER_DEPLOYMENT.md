@@ -236,77 +236,6 @@ Click **"Create Blueprint"** and wait for deployment.
 
 ## Post-Deployment
 
-### ⚠️ CRITICAL: Bootstrap Admin User First!
-
-> [!CAUTION]
-> The system has a **chicken-and-egg problem**:
-> - `INVITE_ONLY=true` requires invite codes to register
-> - Invite codes can only be created by **admin users**
-> - Admin users can only be created by... registering with an invite code!
->
-> **You MUST bootstrap the first admin manually.**
-
-#### Option 1: Bootstrap Script (Recommended)
-
-After deploying, run the bootstrap script via Render Shell:
-
-1. Go to your `ragify-api` service in Render Dashboard
-2. Click **"Shell"** tab
-3. Run:
-   ```bash
-   cd backend
-   ADMIN_EMAIL=your@email.com ADMIN_PASSWORD=YourSecureP@ss1 uv run python -m scripts.bootstrap
-   ```
-
-This will:
-- Create an admin user with the specified email/password
-- Generate 5 invite codes for your first users
-
-#### Option 2: Direct SQL (Via Neon Dashboard)
-
-1. Go to [Neon Dashboard](https://console.neon.tech)
-2. Open your project → **SQL Editor**
-3. Run these SQL commands:
-
-```sql
--- Step 1: Create admin user (replace email and password_hash)
--- Generate password hash locally first: 
---   python -c "from passlib.context import CryptContext; print(CryptContext(schemes=['argon2']).hash('YourSecureP@ss1'))"
-
-INSERT INTO users (user_id, email, password_hash, role, status, is_active, storage_limit_bytes, created_at, updated_at, invited_at)
-VALUES (
-    gen_random_uuid()::text,
-    'admin@yourdomain.com',
-    '$argon2id$v=19$m=65536,t=3,p=4$YOUR_HASH_HERE',  -- Replace with generated hash
-    'admin',
-    'active',
-    true,
-    1073741824,
-    NOW(),
-    NOW(),
-    NOW()
-);
-
--- Step 2: Create invite codes for users
-INSERT INTO invite_codes (invite_code_id, code, max_uses, current_uses, status, created_at)
-VALUES 
-    (gen_random_uuid()::text, 'KB-BOOT-STRAP-0001', 1, 0, 'active', NOW()),
-    (gen_random_uuid()::text, 'KB-BOOT-STRAP-0002', 1, 0, 'active', NOW()),
-    (gen_random_uuid()::text, 'KB-BOOT-STRAP-0003', 1, 0, 'active', NOW());
-```
-
-#### Option 3: Disable INVITE_ONLY Temporarily
-
-1. In Render Dashboard, set `INVITE_ONLY=false`
-2. Register normally at `/auth/register`
-3. Manually promote yourself to admin via SQL:
-   ```sql
-   UPDATE users SET role = 'admin' WHERE email = 'your@email.com';
-   ```
-4. Set `INVITE_ONLY=true` again in Render
-
----
-
 ### 1. Verify Deployment
 
 Check the health endpoint:
@@ -323,17 +252,17 @@ Should return:
 }
 ```
 
-### 2. Access Admin Panel
+### 2. Create Admin User
 
-After bootstrapping, login with your admin credentials at:
-```
-https://ragify-api.onrender.com/docs
-```
+Since `INVITE_ONLY=true`, you need to create the first invite code:
 
-Use the `/auth/login` endpoint to get your JWT token, then use admin endpoints to:
-- Create more invite codes
-- Manage users
-- View system stats
+1. Access your Neon database using their SQL Editor
+2. Run:
+   ```sql
+   INSERT INTO invite_codes (code, is_used, created_at)
+   VALUES ('KB-ADMIN-SETUP-CODE', false, NOW());
+   ```
+3. Register with this code at your API
 
 ### 3. API Documentation
 
