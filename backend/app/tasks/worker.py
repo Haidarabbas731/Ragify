@@ -44,11 +44,15 @@ def _parse_redis_settings() -> RedisSettings:
     # Extract password from URL
     password = parsed.password or settings.REDIS_PASSWORD
 
+    # Check if SSL/TLS is required (rediss://)
+    ssl_enabled = parsed.scheme == "rediss"
+
     return RedisSettings(
         host=host,
         port=port,
         password=password,
         database=database,
+        ssl=ssl_enabled,
     )
 
 
