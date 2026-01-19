@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { useDropzone, type FileRejection } from "react-dropzone";
+import { type FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { useBulkUploadDocuments } from "../../hooks/useDocuments";
 import { Button } from "../ui/button";
@@ -49,10 +49,7 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
   // Use the real bulk upload mutation
   const bulkUploadMutation = useBulkUploadDocuments();
 
-  const onDrop = (
-    acceptedFiles: File[],
-    rejectedFiles: FileRejection[],
-  ) => {
+  const onDrop = (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
     // Handle rejected files
     rejectedFiles.forEach((rejection) => {
       const errors = rejection.errors
@@ -147,10 +144,10 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
         prev.map((f) =>
           f.status === "uploading"
             ? {
-              ...f,
-              status: "error",
-              error: error instanceof Error ? error.message : "Upload failed",
-            }
+                ...f,
+                status: "error",
+                error: error instanceof Error ? error.message : "Upload failed",
+              }
             : f,
         ),
       );
@@ -194,10 +191,11 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
       {/* Drop Zone */}
       <div
         {...getRootProps()}
-        className={`relative overflow-hidden rounded-xl border-2 border-dashed transition-all duration-300 cursor-pointer ${isDragActive
+        className={`relative overflow-hidden rounded-xl border-2 border-dashed transition-all duration-300 cursor-pointer ${
+          isDragActive
             ? "border-primary bg-primary/10 scale-[1.02]"
             : "border-border bg-card hover:border-primary/50"
-          }`}
+        }`}
       >
         <input {...getInputProps()} />
 
@@ -210,12 +208,14 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
 
         <div className="p-12 text-center">
           <div
-            className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-300 ${isDragActive ? "bg-primary/20 scale-110" : "bg-muted"
-              }`}
+            className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-300 ${
+              isDragActive ? "bg-primary/20 scale-110" : "bg-muted"
+            }`}
           >
             <Upload
-              className={`w-10 h-10 transition-colors ${isDragActive ? "text-primary" : "text-muted-foreground"
-                }`}
+              className={`w-10 h-10 transition-colors ${
+                isDragActive ? "text-primary" : "text-muted-foreground"
+              }`}
             />
           </div>
 
