@@ -43,16 +43,10 @@ import {
   useDeleteConversation,
 } from "../hooks/useConversations";
 import { useAuthStore } from "../store/authStore";
-import type { ChatMessage, SourceCitation } from "../types/api";
+import type { ChatMessage } from "../types/api";
 
 interface DisplayMessage extends ChatMessage {
   id: string;
-  timestamp: Date;
-  sources?: {
-    filename: string;
-    chunk_index: number;
-    relevance_score: number;
-  }[];
 }
 
 export function ChatPage() {
@@ -106,13 +100,6 @@ export function ChatPage() {
         (msg, index) => ({
           ...msg,
           id: `${conversationData.conversation_id}-${index}`,
-          timestamp: new Date(msg.timestamp || Date.now()),
-          // Map sources to display format
-          sources: msg.sources?.map((s) => ({
-            filename: s.filename,
-            chunk_index: s.chunk_index,
-            relevance_score: s.relevance_score,
-          })),
         }),
       );
       setMessages(displayMessages);
@@ -270,7 +257,7 @@ export function ChatPage() {
       id: Date.now().toString(),
       role: "user",
       content: message.trim(),
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
 
     // Add user message to chat
@@ -283,7 +270,7 @@ export function ChatPage() {
       id: assistantMessageId,
       role: "assistant",
       content: "",
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, assistantMessage]);
 
@@ -308,14 +295,10 @@ export function ChatPage() {
           prev.map((msg) =>
             msg.id === assistantMessageId
               ? {
-                  ...msg,
-                  content: fullResponse,
-                  sources: sources?.map((s: SourceCitation) => ({
-                    filename: s.filename,
-                    chunk_index: s.chunk_index,
-                    relevance_score: s.relevance_score,
-                  })),
-                }
+                ...msg,
+                content: fullResponse,
+                sources: sources as typeof msg.sources,
+              }
               : msg,
           ),
         );
@@ -340,9 +323,9 @@ export function ChatPage() {
           prev.map((msg) =>
             msg.id === assistantMessageId
               ? {
-                  ...msg,
-                  content: `**Error:** ${error}\n\nPlease try again.`,
-                }
+                ...msg,
+                content: `**Error:** ${error}\n\nPlease try again.`,
+              }
               : msg,
           ),
         );
@@ -471,11 +454,9 @@ export function ChatPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Conversation List */}
         <aside
-          className={`${
-            mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0 ${
-            sidebarOpen ? "lg:w-64" : "lg:w-0"
-          } fixed lg:relative z-40 w-64 h-full border-r border-border bg-card transition-all duration-300 flex flex-col shadow-xl lg:shadow-none overflow-hidden`}
+          className={`${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            } lg:translate-x-0 ${sidebarOpen ? "lg:w-64" : "lg:w-0"
+            } fixed lg:relative z-40 w-64 h-full border-r border-border bg-card transition-all duration-300 flex flex-col shadow-xl lg:shadow-none overflow-hidden`}
         >
           {/* Mobile Header */}
           <div className="lg:hidden flex items-center justify-between p-4 border-b border-border">
@@ -522,19 +503,17 @@ export function ChatPage() {
                       onClick={() =>
                         handleSelectConversation(conv.conversation_id)
                       }
-                      className={`w-full text-left p-4 rounded-lg transition-all duration-300 border ${
-                        conversationId === conv.conversation_id
-                          ? "bg-primary/10 dark:bg-primary/20 border-primary/50"
-                          : "hover:bg-muted border-transparent hover:border-slate-200 dark:hover:border-slate-700"
-                      }`}
+                      className={`w-full text-left p-4 rounded-lg transition-all duration-300 border ${conversationId === conv.conversation_id
+                        ? "bg-primary/10 dark:bg-primary/20 border-primary/50"
+                        : "hover:bg-muted border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+                        }`}
                     >
                       <div className="flex items-start gap-3">
                         <MessageSquare
-                          className={`w-4 h-4 mt-0.5 flex-shrink-0 transition-colors ${
-                            conversationId === conv.conversation_id
-                              ? "text-primary"
-                              : "text-muted-foreground group-hover:text-primary"
-                          }`}
+                          className={`w-4 h-4 mt-0.5 flex-shrink-0 transition-colors ${conversationId === conv.conversation_id
+                            ? "text-primary"
+                            : "text-muted-foreground group-hover:text-primary"
+                            }`}
                           strokeWidth={2}
                         />
                         <div className="flex-1 min-w-0">
@@ -663,7 +642,7 @@ export function ChatPage() {
                             {msg.content}
                           </p>
                           <p className="text-xs text-primary-foreground/70 mt-2 font-mono tabular-nums">
-                            {msg.timestamp.toLocaleTimeString([], {
+                            {new Date(msg.timestamp || Date.now()).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
@@ -686,7 +665,7 @@ export function ChatPage() {
                             <MarkdownContent content={msg.content} />
                           </div>
                           <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border font-mono tabular-nums">
-                            {msg.timestamp.toLocaleTimeString([], {
+                            {new Date(msg.timestamp || Date.now()).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
