@@ -234,11 +234,11 @@ export function AdminDocuments() {
                 onChange={(e) =>
                   setStatusFilter(
                     e.target.value as
-                      | "all"
-                      | "processing"
-                      | "active"
-                      | "error"
-                      | "deleted",
+                    | "all"
+                    | "processing"
+                    | "active"
+                    | "error"
+                    | "deleted",
                   )
                 }
                 className="w-full pl-10 pr-8 py-2 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:border-indigo-400 dark:focus:border-purple-500 transition-colors appearance-none cursor-pointer"
@@ -644,14 +644,14 @@ export function AdminDocuments() {
                           ...confirmDialog,
                           userId: e.target.value,
                           userEmail:
-                            allUsers.find((u) => u.user_id === e.target.value)
+                            allUsers.find((u: { user_id: string; email: string }) => u.user_id === e.target.value)
                               ?.email || "",
                         })
                       }
                       className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded font-mono text-sm text-gray-900 dark:text-slate-100 focus:outline-none focus:border-red-400 dark:focus:border-red-500 transition-colors"
                     >
                       <option value="">-- Select a user --</option>
-                      {allUsers.map((user) => (
+                      {allUsers.map((user: { user_id: string; email: string }) => (
                         <option key={user.user_id} value={user.user_id}>
                           {user.email}
                         </option>

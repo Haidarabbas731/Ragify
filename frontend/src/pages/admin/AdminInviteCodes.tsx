@@ -67,7 +67,7 @@ export function AdminInviteCodes() {
 
   // Filter codes
   const filteredCodes = inviteCodes.filter(
-    (code) => statusFilter === "all" || code.status === statusFilter,
+    (code: InviteCode) => statusFilter === "all" || code.status === statusFilter,
   );
 
   // Format date
@@ -217,11 +217,10 @@ export function AdminInviteCodes() {
                   key={status}
                   type="button"
                   onClick={() => setStatusFilter(status)}
-                  className={`px-3 py-1.5 rounded border font-mono text-xs uppercase transition-colors ${
-                    statusFilter === status
+                  className={`px-3 py-1.5 rounded border font-mono text-xs uppercase transition-colors ${statusFilter === status
                       ? "bg-blue-600 dark:bg-cyan-500 border-blue-700 dark:border-cyan-600 text-white"
                       : "bg-gray-50 dark:bg-slate-800/50 border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:border-blue-400 dark:hover:border-cyan-500"
-                  }`}
+                    }`}
                 >
                   {status.replace("_", " ")}
                 </button>
@@ -240,7 +239,7 @@ export function AdminInviteCodes() {
               </p>
             </div>
           ) : (
-            filteredCodes.map((code, idx) => (
+            filteredCodes.map((code: InviteCode, idx: number) => (
               <div
                 key={code.code}
                 className="group bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-6 hover:border-blue-300 dark:hover:border-cyan-500/50 transition-all duration-300 shadow-sm hover:shadow-md"
@@ -301,15 +300,14 @@ export function AdminInviteCodes() {
                       </div>
                       <div className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            code.status === "active"
+                          className={`h-full rounded-full transition-all duration-500 ${code.status === "active"
                               ? "bg-gradient-to-r from-blue-500 to-cyan-400"
                               : code.status === "fully_used"
                                 ? "bg-gray-400 dark:bg-slate-600"
                                 : code.status === "expired"
                                   ? "bg-amber-500"
                                   : "bg-red-500"
-                          }`}
+                            }`}
                           style={{
                             width: `${(code.current_uses / code.max_uses) * 100}%`,
                           }}
