@@ -184,13 +184,9 @@ async def health_check():
     except Exception:
         pass
 
-<<<<<<< HEAD
     overall_status = (
         "healthy" if all(s == "up" for s in services.values()) else "degraded"
     )
-=======
-    overall_status = "healthy" if all(s == "up" for s in services.values()) else "degraded"
->>>>>>> main
 
     return {
         "status": overall_status,
