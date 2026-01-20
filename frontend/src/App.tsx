@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -18,26 +18,80 @@ const PageLoader = () => (
 
 // Lazy load pages - these will be code-split into separate chunks
 // Using .then() to convert named exports to default exports for React.lazy
-const LandingPage = lazy(() => import("./pages/LandingPage").then(m => ({ default: m.LandingPage })));
-const LoginPage = lazy(() => import("./pages/LoginPage").then(m => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import("./pages/RegisterPage").then(m => ({ default: m.RegisterPage })));
-const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage").then(m => ({ default: m.ForgotPasswordPage })));
-const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage").then(m => ({ default: m.ResetPasswordPage })));
-const DashboardPage = lazy(() => import("./pages/DashboardPage").then(m => ({ default: m.DashboardPage })));
-const ChatPage = lazy(() => import("./pages/ChatPage").then(m => ({ default: m.ChatPage })));
-const ProfilePage = lazy(() => import("./pages/ProfilePage").then(m => ({ default: m.ProfilePage })));
-const CollectionsPage = lazy(() => import("./pages/CollectionsPage").then(m => ({ default: m.CollectionsPage })));
-const DocumentsPage = lazy(() => import("./pages/DocumentsPage").then(m => ({ default: m.DocumentsPage })));
-const DocumentDetailPage = lazy(() => import("./pages/DocumentDetailPage").then(m => ({ default: m.DocumentDetailPage })));
-const TestErrorPage = lazy(() => import("./pages/TestErrorPage").then(m => ({ default: m.TestErrorPage })));
+const LandingPage = lazy(() =>
+  import("./pages/LandingPage").then((m) => ({ default: m.LandingPage })),
+);
+const LoginPage = lazy(() =>
+  import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })),
+);
+const RegisterPage = lazy(() =>
+  import("./pages/RegisterPage").then((m) => ({ default: m.RegisterPage })),
+);
+const ForgotPasswordPage = lazy(() =>
+  import("./pages/ForgotPasswordPage").then((m) => ({
+    default: m.ForgotPasswordPage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import("./pages/ResetPasswordPage").then((m) => ({
+    default: m.ResetPasswordPage,
+  })),
+);
+const DashboardPage = lazy(() =>
+  import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const ChatPage = lazy(() =>
+  import("./pages/ChatPage").then((m) => ({ default: m.ChatPage })),
+);
+const ProfilePage = lazy(() =>
+  import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })),
+);
+const CollectionsPage = lazy(() =>
+  import("./pages/CollectionsPage").then((m) => ({
+    default: m.CollectionsPage,
+  })),
+);
+const DocumentsPage = lazy(() =>
+  import("./pages/DocumentsPage").then((m) => ({ default: m.DocumentsPage })),
+);
+const DocumentDetailPage = lazy(() =>
+  import("./pages/DocumentDetailPage").then((m) => ({
+    default: m.DocumentDetailPage,
+  })),
+);
+const TestErrorPage = lazy(() =>
+  import("./pages/TestErrorPage").then((m) => ({ default: m.TestErrorPage })),
+);
 
 // Admin pages - lazy loaded
-const AdminLayout = lazy(() => import("./components/admin/AdminLayout").then(m => ({ default: m.AdminLayout })));
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard").then(m => ({ default: m.AdminDashboard })));
-const AdminUsers = lazy(() => import("./pages/admin/AdminUsers").then(m => ({ default: m.AdminUsers })));
-const AdminDocuments = lazy(() => import("./pages/admin/AdminDocuments").then(m => ({ default: m.AdminDocuments })));
-const AdminInviteCodes = lazy(() => import("./pages/admin/AdminInviteCodes").then(m => ({ default: m.AdminInviteCodes })));
-const AdminAuditLogs = lazy(() => import("./pages/admin/AdminAuditLogs").then(m => ({ default: m.AdminAuditLogs })));
+const AdminLayout = lazy(() =>
+  import("./components/admin/AdminLayout").then((m) => ({
+    default: m.AdminLayout,
+  })),
+);
+const AdminDashboard = lazy(() =>
+  import("./pages/admin/AdminDashboard").then((m) => ({
+    default: m.AdminDashboard,
+  })),
+);
+const AdminUsers = lazy(() =>
+  import("./pages/admin/AdminUsers").then((m) => ({ default: m.AdminUsers })),
+);
+const AdminDocuments = lazy(() =>
+  import("./pages/admin/AdminDocuments").then((m) => ({
+    default: m.AdminDocuments,
+  })),
+);
+const AdminInviteCodes = lazy(() =>
+  import("./pages/admin/AdminInviteCodes").then((m) => ({
+    default: m.AdminInviteCodes,
+  })),
+);
+const AdminAuditLogs = lazy(() =>
+  import("./pages/admin/AdminAuditLogs").then((m) => ({
+    default: m.AdminAuditLogs,
+  })),
+);
 
 function App() {
   // Initialize auth state from localStorage on app load
