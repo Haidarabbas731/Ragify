@@ -46,11 +46,13 @@ class SystemStatsResponse(BaseModel):
     """Schema for system-wide statistics."""
 
     total_users: int
-    active_users: int
+    active_users_30d: int
     total_documents: int
     total_conversations: int
     total_storage_bytes: int
-    total_storage_gb: float
+    active_invite_codes: int
+    failed_documents: int
+    timestamp: str
 
 
 class SuspendUserRequest(BaseModel):
