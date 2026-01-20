@@ -1,16 +1,6 @@
 @import "tailwindcss";
 
-/* Font Imports - Official @fontsource packages with font-display: swap */
-@import "@fontsource/geist/400.css";
-@import "@fontsource/geist/500.css";
-@import "@fontsource/geist/600.css";
-@import "@fontsource/geist/700.css";
-@import "@fontsource/geist-mono/400.css";
-@import "@fontsource/geist-mono/500.css";
-@import "@fontsource/geist-mono/600.css";
-@import "@fontsource/source-serif-4/400.css";
-@import "@fontsource/source-serif-4/600.css";
-@import "@fontsource/source-serif-4/700.css";
+/* Fonts are imported in main.tsx for reliable bundling */
 
 @theme {
   /* Typography */
