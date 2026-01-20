@@ -3,5 +3,11 @@
     "outputDirectory": "dist",
     "installCommand": "bun install",
     "framework": null,
-    "devCommand": "bun run dev"
+    "devCommand": "bun run dev",
+    "rewrites": [
+        {
+            "source": "/((?!assets/).*)",
+            "destination": "/index.html"
+        }
+    ]
 }
