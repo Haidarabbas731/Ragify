@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     # Invite-Only Registration
     INVITE_ONLY: bool = True
 
+    # Seed admin credentials (used only on first run)
+    ADMIN_EMAIL: str | None = None
+    ADMIN_PASSWORD: str | None = None
+
     # CORS
     FRONTEND_URL: str = "http://localhost:5173"
 
