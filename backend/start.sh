@@ -3,7 +3,11 @@ set -e
 
 if command -v alembic > /dev/null 2>&1; then
     echo "==> Running database migrations..."
-    alembic upgrade head
+    if ! alembic upgrade head; then
+        echo "==> ERROR: Migrations failed. Check DATABASE_URL is set correctly."
+        echo "==> DATABASE_URL host: $(echo $DATABASE_URL | sed 's/.*@//' | cut -d'/' -f1)"
+        exit 1
+    fi
 else
     echo "==> Alembic not found in PATH, skipping migrations"
 fi
