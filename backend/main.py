@@ -214,6 +214,12 @@ app.include_router(audit_logs.router, prefix="/api/v1")
 app.include_router(invite_codes.router, prefix="/api/v1/admin")
 
 
+@app.get("/ping")
+async def ping():
+    """Lightweight liveness check — use this for uptime cron jobs."""
+    return {"status": "ok"}
+
+
 @app.get("/", response_model=RootResponse)
 async def root():
     """Root endpoint."""
