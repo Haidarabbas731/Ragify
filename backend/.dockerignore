@@ -22,3 +22,9 @@ venv/
 *.swp
 *.swo
 *~
+tests/
+TEST_CREDENTIALS.md
+README.md
+nixpacks.toml
+railway.toml
+docker-compose.yml
