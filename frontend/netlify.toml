@@ -1,0 +1,12 @@
+[build]
+  command = "bun run build"
+  publish = "dist"
+
+[build.environment]
+  BUN_VERSION = "latest"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_API_URL,VITE_APP_NAME"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
