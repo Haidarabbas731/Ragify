@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { AppLayout } from "./components/layout/AppLayout";
 import { DocumentStatusProvider } from "./components/providers/DocumentStatusProvider";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
 import { useAuthStore } from "./store/authStore";
@@ -148,66 +149,26 @@ function App() {
                 )
               }
             />
+            {/* All authenticated app pages share AppLayout (sidebar + top bar) */}
             <Route
-              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <DocumentStatusProvider>
-                    <DashboardPage />
+                    <AppLayout />
                   </DocumentStatusProvider>
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/chat"
-              element={
-                <ProtectedRoute>
-                  <DocumentStatusProvider>
-                    <ChatPage />
-                  </DocumentStatusProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <DocumentStatusProvider>
-                    <ProfilePage />
-                  </DocumentStatusProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/collections"
-              element={
-                <ProtectedRoute>
-                  <DocumentStatusProvider>
-                    <CollectionsPage />
-                  </DocumentStatusProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/documents"
-              element={
-                <ProtectedRoute>
-                  <DocumentStatusProvider>
-                    <DocumentsPage />
-                  </DocumentStatusProvider>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/documents/:documentId"
-              element={
-                <ProtectedRoute>
-                  <DocumentStatusProvider>
-                    <DocumentDetailPage />
-                  </DocumentStatusProvider>
-                </ProtectedRoute>
-              }
-            />
+            >
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/chat" element={<ChatPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/collections" element={<CollectionsPage />} />
+              <Route path="/documents" element={<DocumentsPage />} />
+              <Route
+                path="/documents/:documentId"
+                element={<DocumentDetailPage />}
+              />
+            </Route>
             {/* Test Error Page - FOR TESTING ERROR BOUNDARY ONLY */}
             <Route path="/test-error" element={<TestErrorPage />} />
             {/* Admin Routes - Protected by AdminRoute guard with persistent sidebar */}

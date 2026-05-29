@@ -12,7 +12,6 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  Database,
   Edit3,
   FileText,
   FolderOpen,
@@ -20,17 +19,13 @@ import {
   Hash,
   Layers,
   Loader2,
-  LogOut,
-  Moon,
   RefreshCw,
-  Sun,
   Tag,
   Trash2,
-  User,
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -42,20 +37,15 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { useCollections } from "../hooks/useCollections";
-import { useDarkMode } from "../hooks/useDarkMode";
 import {
   useDeleteDocument,
   useDocument,
   useRetryDocument,
   useUpdateDocument,
 } from "../hooks/useDocuments";
-import { useAuthStore } from "../store/authStore";
-
 export function DocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>();
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
-  const { darkMode, toggleDarkMode } = useDarkMode();
 
   // Fetch document data
   const { data: document, isLoading, error } = useDocument(documentId);
@@ -78,11 +68,6 @@ export function DocumentDetailPage() {
     category: document?.category || "",
     tags: document?.tags?.join(", ") || "",
   });
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   const handleRetry = async () => {
     if (!documentId) return;
@@ -221,62 +206,6 @@ export function DocumentDetailPage() {
           }}
         />
       </div>
-
-      {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-6 py-4">
-          {/* Logo & Brand */}
-          <Link to="/documents" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-primary rounded flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
-              <Database className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <span className="block text-sm font-bold font-sans tracking-wider text-primary">
-                {"FORENSICS//LAB"}
-              </span>
-              <span className="block text-[10px] font-mono text-muted-foreground">
-                DOCUMENT ANALYSIS
-              </span>
-            </div>
-          </Link>
-
-          {/* Right Side Actions */}
-          <div className="flex items-center gap-4">
-            {/* Dark Mode Toggle - Hidden on mobile */}
-            <button
-              type="button"
-              onClick={toggleDarkMode}
-              className="hidden lg:flex p-2 rounded-lg hover:bg-primary/10 transition-colors border border-border"
-              aria-label="Toggle dark mode"
-            >
-              {darkMode ? (
-                <Sun className="w-5 h-5 text-primary" />
-              ) : (
-                <Moon className="w-5 h-5 text-primary" />
-              )}
-            </button>
-
-            {/* User Menu - Hidden on mobile */}
-            <div className="hidden lg:flex items-center gap-3 px-3 py-2 rounded-lg bg-muted border border-border">
-              <User className="w-5 h-5 text-primary" />
-              <span className="text-sm font-medium text-foreground font-mono">
-                {user?.email}
-              </span>
-            </div>
-
-            {/* Logout Button - Hidden on mobile */}
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              size="sm"
-              className="hidden lg:flex gap-2 border-destructive/40 text-destructive hover:bg-destructive/10 hover:border-destructive/70 transition-all duration-300 font-sans font-semibold"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>LOGOUT</span>
-            </Button>
-          </div>
-        </div>
-      </nav>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
