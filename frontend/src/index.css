@@ -79,34 +79,35 @@ html, body {
    Dark Mode
    ======================================== */
 .dark {
+  /* Option B: Charcoal Depth — purple atmosphere, white borders for structure */
   --primary: #cd79f5;
-  --primary-foreground: #0d0b14;
-  --secondary: rgba(119, 52, 231, 0.15);
-  --secondary-foreground: #fffeff;
-  --accent: rgba(119, 52, 231, 0.10);
-  --accent-foreground: #fffeff;
-  --background: #0d0b14;
-  --foreground: #fffeff;
+  --primary-foreground: #0a090e;
+  --secondary: rgba(205, 121, 245, 0.12);
+  --secondary-foreground: #f0edf8;
+  --accent: rgba(205, 121, 245, 0.08);
+  --accent-foreground: #f0edf8;
+  --background: #0a090e;
+  --foreground: #f0edf8;
 
-  --card: #160f2a;
-  --card-foreground: #fffeff;
-  --popover: #160f2a;
-  --popover-foreground: #fffeff;
-  --muted: rgba(119, 52, 231, 0.08);
+  --card: #19172a;
+  --card-foreground: #f0edf8;
+  --popover: #1e1c30;
+  --popover-foreground: #f0edf8;
+  --muted: rgba(255, 255, 255, 0.05);
   --muted-foreground: #9b97aa;
   --destructive: #cc4f0e;
   --destructive-foreground: #fffeff;
-  --border: rgba(119, 52, 231, 0.18);
-  --input: rgba(119, 52, 231, 0.12);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.07);
   --ring: #cd79f5;
 
-  --sidebar: #160f2a;
-  --sidebar-foreground: #fffeff;
+  --sidebar: #0a090e;
+  --sidebar-foreground: #f0edf8;
   --sidebar-primary: #cd79f5;
-  --sidebar-primary-foreground: #0d0b14;
-  --sidebar-accent: rgba(119, 52, 231, 0.15);
-  --sidebar-accent-foreground: #fffeff;
-  --sidebar-border: rgba(119, 52, 231, 0.15);
+  --sidebar-primary-foreground: #0a090e;
+  --sidebar-accent: rgba(205, 121, 245, 0.10);
+  --sidebar-accent-foreground: #f0edf8;
+  --sidebar-border: rgba(255, 255, 255, 0.07);
   --sidebar-ring: #cd79f5;
 }
 
