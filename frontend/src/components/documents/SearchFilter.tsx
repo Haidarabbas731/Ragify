@@ -1,5 +1,5 @@
 import { ChevronDown, Search, SlidersHorizontal, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface SearchFilterProps {
   collections: Array<{ collection_id: string; name: string }>;
@@ -56,15 +56,21 @@ function DropdownMenu({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const triggerWithToggle = React.cloneElement(
+    trigger as React.ReactElement<{ onClick?: React.MouseEventHandler }>,
+    {
+      onClick: (e: React.MouseEvent) => {
+        (
+          trigger as React.ReactElement<{ onClick?: React.MouseEventHandler }>
+        ).props.onClick?.(e);
+        setOpen((v) => !v);
+      },
+    },
+  );
+
   return (
     <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="contents"
-      >
-        {trigger}
-      </button>
+      {triggerWithToggle}
       {open && (
         <div className="absolute top-full left-0 mt-1.5 z-30 min-w-[160px] rounded-xl bg-popover border border-border shadow-[0_8px_32px_-8px_rgba(0,0,0,0.16)] py-1.5 overflow-hidden">
           {children(() => setOpen(false))}

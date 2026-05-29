@@ -25,10 +25,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # Milvus (use full URI for Zilliz Cloud, e.g., https://your-instance.cloud.zilliz.com)
-    MILVUS_URI: str = "http://localhost:19530"
+    # Milvus — use VECTOR_DB_URI to avoid clashing with pymilvus's own MILVUS_URI env var
+    # Dev: ./milvus_ragify.db (Milvus Lite, no container)
+    # Prod: https://your-instance.cloud.zilliz.com
+    VECTOR_DB_URI: str = "./milvus_ragify.db"
     MILVUS_COLLECTION: str = "knowledge_base"
-    MILVUS_TOKEN: str | None = None
+    VECTOR_DB_TOKEN: str | None = None
 
     # Backblaze B2
     B2_APPLICATION_KEY_ID: str
