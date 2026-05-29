@@ -1,7 +1,6 @@
 import { FileText, FolderOpen, HardDrive, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { DocumentList } from "../components/documents/DocumentList";
-import { UploadZone } from "../components/documents/UploadZone";
 import { Button } from "../components/ui/button";
 import { useDeleteDocument, useDocuments } from "../hooks/useDocuments";
 import { useUserStats } from "../hooks/useUserStats";
@@ -31,10 +30,10 @@ export function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full min-h-[60vh]">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Loading dashboard...</p>
+          <Loader2 className="w-7 h-7 animate-spin text-[#7733ea] mx-auto mb-3" />
+          <p className="text-[13px] text-[#717187]">Loading dashboard…</p>
         </div>
       </div>
     );
@@ -42,9 +41,9 @@ export function DashboardPage() {
 
   if (error || !statsData) {
     return (
-      <div className="flex-1 flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full min-h-[60vh]">
         <div className="text-center">
-          <p className="text-sm text-destructive mb-4">
+          <p className="text-[13px] text-destructive mb-4">
             Failed to load dashboard
           </p>
           <Button onClick={() => window.location.reload()}>Retry</Button>
@@ -53,122 +52,149 @@ export function DashboardPage() {
     );
   }
 
-  const stats = {
-    totalDocuments: statsData.total_documents,
-    totalChunks: statsData.total_chunks,
-    storageUsed: statsData.storage_used_mb,
-    storageLimit: statsData.storage_limit_mb,
-  };
   const storagePercentage = statsData.storage_percentage;
 
+  const kpis = [
+    {
+      label: "Documents",
+      value: statsData.total_documents.toLocaleString(),
+      icon: FileText,
+      accent: "#7733ea",
+    },
+    {
+      label: "Vector Chunks",
+      value: statsData.total_chunks.toLocaleString(),
+      icon: FolderOpen,
+      accent: "#153bf5",
+    },
+    {
+      label: "Storage Used",
+      value: `${statsData.storage_used_mb} MB`,
+      icon: HardDrive,
+      accent: "#7733ea",
+    },
+    {
+      label: "Storage Left",
+      value: `${(statsData.storage_limit_mb - statsData.storage_used_mb).toFixed(0)} MB`,
+      icon: HardDrive,
+      accent: "#153bf5",
+    },
+  ];
+
   return (
-    <div className="p-6">
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-card border border-border rounded-2xl p-6 hover:border-[rgba(119,52,231,0.30)] transition-all duration-200 hover:shadow-[0_4px_20px_rgba(119,52,231,0.07)]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-xl bg-[rgba(119,52,231,0.10)] flex items-center justify-center">
-              <FileText className="w-5 h-5 text-[#7734e7] dark:text-[#cd79f5]" />
+    <div className="p-6 space-y-6">
+      {/* KPI cards */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {kpis.map((kpi) => (
+          <div
+            key={kpi.label}
+            className="rounded-2xl bg-card border border-border p-5 hover:bg-[rgba(0,51,255,0.02)] transition-colors"
+            style={{
+              boxShadow:
+                "0 1px 2px rgba(34,38,96,0.04), 0 8px 24px -12px rgba(34,38,96,0.08)",
+            }}
+          >
+            <div className="text-[12px] font-semibold text-[#717187] mb-2">
+              {kpi.label}
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-muted-foreground">
-              Documents
-            </span>
+            <div className="flex items-end justify-between gap-2">
+              <div
+                className="text-[28px] font-bold tracking-tight tabular-nums"
+                style={{ color: kpi.accent }}
+              >
+                {kpi.value}
+              </div>
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mb-0.5"
+                style={{ background: `${kpi.accent}14` }}
+              >
+                <kpi.icon className="w-4 h-4" style={{ color: kpi.accent }} />
+              </div>
+            </div>
           </div>
-          <p className="text-3xl font-bold font-mono text-[#7734e7] dark:text-[#cd79f5] tabular-nums">
-            {stats.totalDocuments}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Total files uploaded
-          </p>
-        </div>
+        ))}
+      </section>
 
-        <div className="bg-card border border-border rounded-2xl p-6 hover:border-[rgba(119,52,231,0.30)] transition-all duration-200 hover:shadow-[0_4px_20px_rgba(119,52,231,0.07)]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-xl bg-[rgba(119,52,231,0.10)] flex items-center justify-center">
-              <FolderOpen className="w-5 h-5 text-[#7734e7] dark:text-[#cd79f5]" />
+      {/* Storage bar */}
+      {storagePercentage > 0 && (
+        <div
+          className="rounded-2xl bg-card border border-border p-5"
+          style={{
+            boxShadow:
+              "0 1px 2px rgba(34,38,96,0.04), 0 8px 24px -12px rgba(34,38,96,0.08)",
+          }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-[14px] font-semibold text-[#222660]">
+                Storage
+              </h3>
+              <p className="text-[12px] text-[#717187] mt-0.5">
+                {statsData.storage_used_mb} MB used of{" "}
+                {statsData.storage_limit_mb} MB
+              </p>
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-muted-foreground">
-              Chunks
-            </span>
-          </div>
-          <p className="text-3xl font-bold font-mono text-[#7734e7] dark:text-[#cd79f5] tabular-nums">
-            {stats.totalChunks.toLocaleString()}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Vector embeddings
-          </p>
-        </div>
-
-        <div className="bg-card border border-border rounded-2xl p-6 sm:col-span-2 hover:border-[rgba(119,52,231,0.30)] transition-all duration-200 hover:shadow-[0_4px_20px_rgba(119,52,231,0.07)]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-xl bg-[rgba(119,52,231,0.10)] flex items-center justify-center">
-              <HardDrive className="w-5 h-5 text-[#7734e7] dark:text-[#cd79f5]" />
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-[1.5px] text-muted-foreground">
-              Storage
-            </span>
-          </div>
-          <div className="flex items-baseline gap-1.5 mb-3">
-            <p className="text-3xl font-bold font-mono text-[#7734e7] dark:text-[#cd79f5] tabular-nums">
-              {stats.storageUsed}
-            </p>
-            <span className="text-base text-muted-foreground">MB</span>
-            <span className="text-xs text-muted-foreground">
-              / {stats.storageLimit} MB
-            </span>
-          </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
+            <span
+              className={`text-[12px] font-semibold px-2.5 py-1 rounded-lg ${
                 storagePercentage >= 90
-                  ? "bg-[#cc4f0e]"
-                  : storagePercentage >= 70
-                    ? "bg-[#f1a091]"
-                    : "bg-[#7734e7]"
+                  ? "bg-[rgba(204,79,14,0.10)] text-[#cc4f0e]"
+                  : "bg-[rgba(0,51,255,0.06)] text-[#153bf5]"
               }`}
-              style={{ width: `${storagePercentage}%` }}
+            >
+              {storagePercentage.toFixed(1)}% used
+              {storagePercentage >= 90 && " · Nearly full"}
+            </span>
+          </div>
+          <div className="h-2 rounded-full bg-[rgba(34,38,96,0.06)] overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${Math.min(storagePercentage, 100)}%`,
+                background:
+                  storagePercentage >= 90
+                    ? "#cc4f0e"
+                    : "linear-gradient(90deg, #7733ea, #153bf5)",
+              }}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1.5">
-            {storagePercentage < 0.1 && storagePercentage > 0
-              ? storagePercentage.toFixed(3)
-              : storagePercentage.toFixed(1)}
-            % used
-            {storagePercentage >= 90 && (
-              <span className="text-[#cc4f0e] font-semibold ml-2">
-                Nearly full
-              </span>
-            )}
-          </p>
         </div>
-      </div>
+      )}
 
-      {/* Upload */}
-      <div className="mb-8">
-        <UploadZone onUploadComplete={() => refetchDocuments()} />
-      </div>
-
-      {/* Recent documents */}
-      <div>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-foreground">
-            Recent Documents
-          </h2>
+      {/* Recent Documents */}
+      <div
+        className="rounded-2xl bg-card border border-border overflow-hidden"
+        style={{
+          boxShadow:
+            "0 1px 2px rgba(34,38,96,0.04), 0 8px 24px -12px rgba(34,38,96,0.08)",
+        }}
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div>
+            <h3 className="text-[14px] font-semibold text-[#222660]">
+              Recent Documents
+            </h3>
+            <p className="text-[12px] text-[#717187] mt-0.5">
+              Last 5 uploaded files
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => navigate("/documents")}
-            className="text-sm font-semibold text-[#7734e7] dark:text-[#cd79f5] hover:underline"
+            className="text-[12px] font-semibold text-[#7733ea] hover:underline"
           >
-            View All →
+            View all →
           </button>
         </div>
-        <DocumentList
-          documents={recentDocumentsData?.documents || []}
-          onDocumentClick={(id) => navigate(`/documents/${id}`)}
-          onDeleteDocument={handleDeleteDocument}
-          onRetryDocument={(id) => console.log("Retry document:", id)}
-          hideCheckboxes={true}
-        />
+
+        <div className="px-5 py-2">
+          <DocumentList
+            documents={recentDocumentsData?.documents || []}
+            onDocumentClick={(id) => navigate(`/documents/${id}`)}
+            onDeleteDocument={handleDeleteDocument}
+            onRetryDocument={(id) => console.log("Retry document:", id)}
+            hideCheckboxes={true}
+          />
+        </div>
       </div>
     </div>
   );

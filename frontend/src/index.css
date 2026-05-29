@@ -36,43 +36,54 @@ html, body {
 }
 
 /* ========================================
-   Light Mode
+   Light Mode — Ragify brand palette
    ======================================== */
 :root {
   --font-sans: "Karla", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Courier New", monospace;
 
-  --primary: #7734e7;
-  --primary-foreground: #fffeff;
-  --secondary: rgba(119, 52, 231, 0.08);
-  --secondary-foreground: #12375c;
-  --accent: rgba(1, 50, 252, 0.06);
-  --accent-foreground: #12375c;
-  --background: #fffeff;
-  --foreground: #010101;
+  /* Brand */
+  --ragify-primary: #7733ea;
+  --ragify-blue: #153bf5;
+  --ragify-gradient: linear-gradient(135deg, #7733ea 0%, #153bf5 100%);
+  --ragify-navy: #222660;
+  --ragify-body: #717187;
+  --ragify-tint: rgba(0, 51, 255, 0.06);
+  --ragify-border: rgba(34, 38, 96, 0.08);
+  --ragify-shadow: 0 1px 2px rgba(34,38,96,0.04), 0 8px 24px -12px rgba(34,38,96,0.10);
 
-  --card: #fffeff;
-  --card-foreground: #010101;
-  --popover: #fffeff;
-  --popover-foreground: #010101;
-  --muted: rgba(1, 50, 252, 0.04);
-  --muted-foreground: #7f7f7f;
+  /* Tailwind mappings */
+  --primary: #7733ea;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(0, 51, 255, 0.06);
+  --secondary-foreground: #222660;
+  --accent: rgba(0, 51, 255, 0.06);
+  --accent-foreground: #222660;
+  --background: #fbfaff;
+  --foreground: #222660;
+
+  --card: #ffffff;
+  --card-foreground: #222660;
+  --popover: #ffffff;
+  --popover-foreground: #222660;
+  --muted: rgba(0, 51, 255, 0.04);
+  --muted-foreground: #717187;
   --destructive: #cc4f0e;
-  --destructive-foreground: #fffeff;
-  --border: rgba(1, 50, 252, 0.12);
-  --input: rgba(1, 50, 252, 0.08);
-  --ring: #7734e7;
+  --destructive-foreground: #ffffff;
+  --border: rgba(34, 38, 96, 0.08);
+  --input: rgba(34, 38, 96, 0.06);
+  --ring: #7733ea;
 
-  --sidebar: #fffeff;
-  --sidebar-foreground: #12375c;
-  --sidebar-primary: #7734e7;
-  --sidebar-primary-foreground: #fffeff;
-  --sidebar-accent: rgba(119, 52, 231, 0.08);
-  --sidebar-accent-foreground: #12375c;
-  --sidebar-border: rgba(1, 50, 252, 0.10);
-  --sidebar-ring: #7734e7;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #222660;
+  --sidebar-primary: #7733ea;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(0, 51, 255, 0.06);
+  --sidebar-accent-foreground: #222660;
+  --sidebar-border: rgba(34, 38, 96, 0.08);
+  --sidebar-ring: #7733ea;
 
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 }
 
 /* ========================================

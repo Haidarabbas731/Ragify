@@ -138,14 +138,15 @@ export function DocumentsPage() {
 
   return (
     <>
-      <div className="p-6">
-        {/* Search & Filter */}
+      <div className="p-6 space-y-4">
+        {/* Filter toolbar — floats on the page background */}
         <SearchFilter
           collections={collections}
           onFilterChange={handleFilterChange}
+          totalCount={totalDocuments}
         />
 
-        {/* Batch Operations - Only show when documents are selected */}
+        {/* Batch Actions — slides in above the table when rows are selected */}
         {selectedDocuments.size > 0 && (
           <div className="animate-in slide-in-from-top-2 duration-300">
             <BatchActions
@@ -160,14 +161,14 @@ export function DocumentsPage() {
           </div>
         )}
 
-        {/* Document List */}
+        {/* Document table */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-7 h-7 animate-spin text-primary" />
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-950/20 p-6 text-center">
-            <p className="text-red-600 dark:text-red-400 font-mono">
+          <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <p className="text-sm text-red-500 dark:text-red-400">
               Failed to load documents. Please try again.
             </p>
           </div>

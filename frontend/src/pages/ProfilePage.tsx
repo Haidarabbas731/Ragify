@@ -10,12 +10,9 @@ import {
   HardDrive,
   Loader2,
   Lock,
-  LogOut,
   Mail,
-  Moon,
   Save,
   Settings,
-  Sun,
   User,
   X,
 } from "lucide-react";
@@ -40,7 +37,7 @@ export function ProfilePage() {
   // Fetch user profile from API
   const { data: profile, isLoading, error } = useUserProfile();
 
-  const handleLogout = () => {
+  const _handleLogout = () => {
     logout();
     navigate("/login");
   };

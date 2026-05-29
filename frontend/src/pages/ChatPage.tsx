@@ -13,18 +13,11 @@ import {
   FolderOpen,
   HardDrive,
   Loader2,
-  LogOut,
-  Menu,
   MessageSquare,
-  Moon,
-  PanelLeftClose,
-  PanelLeftOpen,
   Plus,
   Send,
   Sparkles,
-  Sun,
   Trash2,
-  User,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -34,7 +27,6 @@ import { CollectionFilter } from "../components/chat/CollectionFilter";
 import { DeleteConfirmDialog } from "../components/chat/DeleteConfirmDialog";
 import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { Button } from "../components/ui/button";
-import { useDarkMode } from "../contexts/DarkModeContext";
 import { useChatStream } from "../hooks/useChatStream";
 import { useCollections } from "../hooks/useCollections";
 import {
@@ -52,12 +44,11 @@ interface DisplayMessage extends ChatMessage {
 export function ChatPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, logout } = useAuthStore();
-  const { darkMode, toggleDarkMode } = useDarkMode();
+  const { logout } = useAuthStore();
   const queryClient = useQueryClient();
 
   // UI State
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, _setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
@@ -204,7 +195,7 @@ export function ChatPage() {
     }
   }, [checkScrollPosition]);
 
-  const handleLogout = () => {
+  const _handleLogout = () => {
     logout();
     navigate("/login");
   };
