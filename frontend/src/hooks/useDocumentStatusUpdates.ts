@@ -150,9 +150,25 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
         if (isUnmountedRef.current) return;
 
         console.error("[SSE] Connection error:", error);
-        console.log("[SSE] EventSource readyState:", eventSource.readyState);
         eventSource.close();
         setConnectionState("disconnected");
+
+        // Check if token is expired before reconnecting
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          window.location.href = "/login";
+          return;
+        }
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          if (payload.exp * 1000 < Date.now()) {
+            localStorage.clear();
+            window.location.href = "/login";
+            return;
+          }
+        } catch {
+          // Malformed token — let the Axios interceptor handle it
+        }
 
         // Attempt reconnection with exponential backoff
         const delayIndex = Math.min(
@@ -160,11 +176,6 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
           RECONNECT_DELAYS.length - 1,
         );
         const delay = RECONNECT_DELAYS[delayIndex];
-
-        console.log(
-          `[SSE] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1})`,
-        );
-
         reconnectTimeoutRef.current = window.setTimeout(() => {
           reconnectAttemptsRef.current += 1;
           connectSSE();

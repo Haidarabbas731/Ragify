@@ -1,22 +1,14 @@
-/**
- * Document Detail Page - Data Forensics Lab
- * High-tech document analysis interface with metadata visualization
- * Fonts: Geist (sans), Geist Mono (mono)
- */
-
 import {
   AlertCircle,
   ArrowLeft,
   Calendar,
   CheckCircle2,
   ChevronDown,
-  ChevronUp,
   Clock,
   Edit3,
   FileText,
   FolderOpen,
   HardDrive,
-  Hash,
   Layers,
   Loader2,
   RefreshCw,
@@ -26,9 +18,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import {
   Select,
   SelectContent,
@@ -43,26 +32,83 @@ import {
   useRetryDocument,
   useUpdateDocument,
 } from "../hooks/useDocuments";
+
+const STATUS_CONFIG = {
+  active: {
+    label: "Active",
+    dot: "bg-emerald-500",
+    text: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-950/40",
+    border: "border-emerald-200 dark:border-emerald-800",
+    icon: CheckCircle2,
+    spin: false,
+  },
+  processing: {
+    label: "Processing",
+    dot: "bg-blue-500",
+    text: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-50 dark:bg-blue-950/40",
+    border: "border-blue-200 dark:border-blue-800",
+    icon: Loader2,
+    spin: true,
+  },
+  error: {
+    label: "Error",
+    dot: "bg-red-500",
+    text: "text-red-600 dark:text-red-400",
+    bg: "bg-red-50 dark:bg-red-950/40",
+    border: "border-red-200 dark:border-red-800",
+    icon: AlertCircle,
+    spin: false,
+  },
+  deleted: {
+    label: "Deleted",
+    dot: "bg-gray-400",
+    text: "text-gray-500 dark:text-gray-400",
+    bg: "bg-gray-50 dark:bg-gray-900/40",
+    border: "border-gray-200 dark:border-gray-700",
+    icon: AlertCircle,
+    spin: false,
+  },
+};
+
+function MetaRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
+      <Icon className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] text-muted-foreground font-medium mb-0.5">
+          {label}
+        </p>
+        <div className="text-[13px] text-foreground font-medium">{value}</div>
+      </div>
+    </div>
+  );
+}
+
 export function DocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>();
   const navigate = useNavigate();
 
-  // Fetch document data
   const { data: document, isLoading, error } = useDocument(documentId);
-
-  // Fetch collections for edit modal
   const { data: collectionsData } = useCollections();
 
-  // API mutations
   const deleteDocumentMutation = useDeleteDocument();
   const retryDocumentMutation = useRetryDocument();
   const updateDocumentMutation = useUpdateDocument();
 
   const [showAllChunks, setShowAllChunks] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  // Edit form state - initialize from document data
   const [editForm, setEditForm] = useState({
     collection_id: document?.collection_id || "",
     category: document?.category || "",
@@ -93,645 +139,576 @@ export function DocumentDetailPage() {
           .filter(Boolean),
       },
     });
-    setIsEditModalOpen(false);
+    setIsEditOpen(false);
   };
 
   const formatFileSize = (bytes: number) => {
     const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(2)} MB`;
+    return mb >= 1 ? `${mb.toFixed(2)} MB` : `${(bytes / 1024).toFixed(1)} KB`;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
+
+  const getExt = (filename: string) => {
+    const parts = filename.split(".");
+    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "FILE";
   };
 
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case "active":
-        return {
-          label: "ACTIVE",
-          icon: CheckCircle2,
-          color: "text-emerald-500",
-          bg: "bg-emerald-500/10",
-          border: "border-emerald-500/30",
-        };
-      case "processing":
-        return {
-          label: "PROCESSING",
-          icon: Loader2,
-          color: "text-blue-500",
-          bg: "bg-blue-500/10",
-          border: "border-blue-500/30",
-        };
-      case "error":
-        return {
-          label: "ERROR",
-          icon: AlertCircle,
-          color: "text-red-500",
-          bg: "bg-red-500/10",
-          border: "border-red-500/30",
-        };
-      default:
-        return {
-          label: "UNKNOWN",
-          icon: AlertCircle,
-          color: "text-slate-500",
-          bg: "bg-slate-500/10",
-          border: "border-slate-500/30",
-        };
-    }
-  };
-
-  const statusConfig = getStatusConfig(document?.status || "unknown");
-  const StatusIcon = statusConfig.icon;
-
-  const chunksToShow = showAllChunks
-    ? document?.chunks || []
-    : (document?.chunks || []).slice(0, 5);
-
-  // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
-          <p className="text-muted-foreground font-mono">
-            Loading document data...
-          </p>
-        </div>
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Error state
   if (error || !document) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
-          <h2 className="text-xl font-bold text-foreground">
-            Document Not Found
-          </h2>
-          <p className="text-muted-foreground font-mono">
-            Failed to load document. It may have been deleted.
-          </p>
-          <Button onClick={() => navigate("/documents")} className="mt-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Documents
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
-      {/* Animated Grid Background */}
-      <div className="fixed inset-0 opacity-10 dark:opacity-20 pointer-events-none">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `
-              linear-gradient(to right, hsl(var(--muted) / 0.1) 1px, transparent 1px),
-              linear-gradient(to bottom, hsl(var(--muted) / 0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: "40px 40px",
-            animation: "gridPulse 8s ease-in-out infinite",
-          }}
-        />
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <AlertCircle className="w-10 h-10 text-red-500" />
+        <p className="text-sm text-muted-foreground">
+          Document not found or failed to load.
+        </p>
         <button
           type="button"
           onClick={() => navigate("/documents")}
-          className="group flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-card border border-border hover:border-primary/40 hover:bg-muted transition-all duration-300"
+          className="text-[13px] font-medium text-primary hover:underline"
         >
-          <ArrowLeft className="w-4 h-4 text-primary group-hover:-translate-x-1 transition-transform" />
-          <span className="text-sm font-sans font-semibold text-primary tracking-wide">
-            BACK TO ARCHIVE
-          </span>
+          ← Back to Documents
         </button>
+      </div>
+    );
+  }
 
-        {/* Document Header */}
-        <div className="mb-8 p-6 rounded-xl bg-card border border-border backdrop-blur-sm">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-5 h-5 text-primary flex-shrink-0" />
-                <h1 className="text-2xl font-bold font-sans text-foreground tracking-tight break-words">
-                  {document.filename}
-                </h1>
+  const status =
+    STATUS_CONFIG[document.status as keyof typeof STATUS_CONFIG] ??
+    STATUS_CONFIG.deleted;
+  const StatusIcon = status.icon;
+  const chunksToShow = showAllChunks
+    ? document.chunks || []
+    : (document.chunks || []).slice(0, 5);
+
+  return (
+    <div className="p-6">
+      {/* Back nav */}
+      <button
+        type="button"
+        onClick={() => navigate("/documents")}
+        className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors mb-5"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Documents
+      </button>
+
+      {/* Two-panel layout */}
+      <div className="flex gap-5 items-start">
+        {/* ── Left panel: file info + metadata ── */}
+        <div className="w-80 shrink-0 sticky top-6 space-y-3">
+          {/* File card */}
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            {/* File type banner */}
+            <div className="px-5 pt-5 pb-4 border-b border-border">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/15 flex items-center justify-center shrink-0">
+                  <span className="text-[11px] font-bold text-primary">
+                    {getExt(document.filename)}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <p
+                    className="text-[14px] font-semibold text-foreground leading-tight break-all line-clamp-2"
+                    title={document.filename}
+                  >
+                    {document.filename}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs font-mono text-muted-foreground">
-                ID: {document.document_id}
-              </p>
-            </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Status Badge */}
+              {/* Status badge */}
               <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${statusConfig.bg} ${statusConfig.border}`}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-medium border ${status.bg} ${status.border} ${status.text}`}
               >
                 <StatusIcon
-                  className={`w-4 h-4 ${statusConfig.color} ${
-                    document.status === "processing" ? "animate-spin" : ""
-                  }`}
+                  className={`w-3 h-3 ${status.spin ? "animate-spin" : ""}`}
                 />
-                <span
-                  className={`text-xs font-bold font-sans tracking-wide ${statusConfig.color}`}
-                >
-                  {statusConfig.label}
-                </span>
-              </div>
-
-              {/* Edit Button */}
-              <Button
-                onClick={() => setIsEditModalOpen(true)}
-                variant="outline"
-                size="sm"
-                className="gap-2 border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/70 font-sans font-semibold"
-              >
-                <Edit3 className="w-4 h-4" />
-                <span className="hidden sm:inline">EDIT</span>
-              </Button>
-
-              {/* Retry Button (for error status) */}
-              {document.status === "error" && (
-                <Button
-                  onClick={handleRetry}
-                  disabled={retryDocumentMutation.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/70 disabled:opacity-50 font-sans font-semibold"
-                >
-                  <RefreshCw
-                    className={`w-4 h-4 ${retryDocumentMutation.isPending ? "animate-spin" : ""}`}
-                  />
-                  <span className="hidden sm:inline">
-                    {retryDocumentMutation.isPending ? "RETRYING..." : "RETRY"}
-                  </span>
-                </Button>
-              )}
-
-              {/* Delete Button */}
-              <Button
-                onClick={() => setIsDeleteModalOpen(true)}
-                variant="outline"
-                size="sm"
-                className="gap-2 border-destructive/40 text-destructive hover:bg-destructive/10 hover:border-destructive/70 font-sans font-semibold"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span className="hidden sm:inline">DELETE</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Metadata Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {/* File Size */}
-          <div className="p-4 rounded-lg bg-card border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <HardDrive className="w-4 h-4 text-primary" />
-              <span className="text-xs font-sans font-semibold text-primary tracking-wide">
-                FILE SIZE
-              </span>
-            </div>
-            <p className="text-lg font-mono font-bold text-foreground">
-              {formatFileSize(document.size_bytes)}
-            </p>
-            <p className="text-xs font-mono text-muted-foreground mt-1">
-              {document.size_bytes.toLocaleString()} bytes
-            </p>
-          </div>
-
-          {/* Chunks Count */}
-          <div className="p-4 rounded-lg bg-card border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Layers className="w-4 h-4 text-primary" />
-              <span className="text-xs font-sans font-semibold text-primary tracking-wide">
-                CHUNKS
-              </span>
-            </div>
-            <p className="text-lg font-mono font-bold text-foreground">
-              {document.chunks_count}
-            </p>
-            <p className="text-xs font-mono text-muted-foreground mt-1">
-              Vector segments
-            </p>
-          </div>
-
-          {/* MIME Type */}
-          <div className="p-4 rounded-lg bg-card border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Hash className="w-4 h-4 text-primary" />
-              <span className="text-xs font-sans font-semibold text-primary tracking-wide">
-                FILE TYPE
-              </span>
-            </div>
-            <p className="text-lg font-mono font-bold text-foreground">
-              {document.file_type.split("/")[1]?.toUpperCase() ||
-                document.file_type.toUpperCase()}
-            </p>
-            <p className="text-xs font-mono text-muted-foreground mt-1">
-              {document.file_type}
-            </p>
-          </div>
-
-          {/* Uploaded At */}
-          <div className="p-4 rounded-lg bg-card border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4 text-primary" />
-              <span className="text-xs font-sans font-semibold text-primary tracking-wide">
-                UPLOADED
-              </span>
-            </div>
-            <p className="text-sm font-mono font-bold text-foreground">
-              {formatDate(document.uploaded_at)}
-            </p>
-          </div>
-
-          {/* Processed At */}
-          <div className="p-4 rounded-lg bg-card border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-4 h-4 text-primary" />
-              <span className="text-xs font-sans font-semibold text-primary tracking-wide">
-                PROCESSED
-              </span>
-            </div>
-            <p className="text-sm font-mono font-bold text-foreground">
-              {document.processed_at
-                ? formatDate(document.processed_at)
-                : "N/A"}
-            </p>
-          </div>
-
-          {/* Collection */}
-          <div className="p-4 rounded-lg bg-card border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <FolderOpen className="w-4 h-4 text-primary" />
-              <span className="text-xs font-sans font-semibold text-primary tracking-wide">
-                COLLECTION
-              </span>
-            </div>
-            <p className="text-sm font-mono font-bold text-foreground">
-              {document.collection_name || "None"}
-            </p>
-          </div>
-        </div>
-
-        {/* Category & Tags */}
-        <div className="mb-8 p-6 rounded-xl bg-card border border-border">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Category */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Tag className="w-4 h-4 text-primary" />
-                <span className="text-sm font-sans font-semibold text-primary tracking-wide">
-                  CATEGORY
-                </span>
-              </div>
-              <div className="inline-block px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30">
-                <span className="text-sm font-mono font-semibold text-primary">
-                  {document.category || "uncategorized"}
-                </span>
+                {status.label}
               </div>
             </div>
 
-            {/* Tags */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Tag className="w-4 h-4 text-primary" />
-                <span className="text-sm font-sans font-semibold text-primary tracking-wide">
-                  TAGS
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {document.tags && document.tags.length > 0 ? (
-                  document.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/30 text-sm font-mono font-semibold text-primary"
-                    >
-                      {tag}
+            {/* Metadata */}
+            <div className="px-5 py-1">
+              <MetaRow
+                icon={HardDrive}
+                label="File size"
+                value={formatFileSize(document.size_bytes)}
+              />
+              <MetaRow
+                icon={FileText}
+                label="File type"
+                value={
+                  document.file_type.split("/")[1]?.toUpperCase() ??
+                  document.file_type
+                }
+              />
+              <MetaRow
+                icon={Layers}
+                label="Chunks"
+                value={
+                  <span>
+                    {document.chunks_count}{" "}
+                    <span className="text-muted-foreground font-normal text-[12px]">
+                      segments
                     </span>
-                  ))
-                ) : (
-                  <span className="text-sm font-mono text-muted-foreground">
-                    No tags
                   </span>
-                )}
-              </div>
+                }
+              />
+              <MetaRow
+                icon={Calendar}
+                label="Uploaded"
+                value={
+                  <span className="text-[12px]">
+                    {formatDate(document.uploaded_at)}
+                  </span>
+                }
+              />
+              {document.processed_at && (
+                <MetaRow
+                  icon={Clock}
+                  label="Processed"
+                  value={
+                    <span className="text-[12px]">
+                      {formatDate(document.processed_at)}
+                    </span>
+                  }
+                />
+              )}
+              <MetaRow
+                icon={FolderOpen}
+                label="Collection"
+                value={
+                  document.collection_name ?? (
+                    <span className="text-muted-foreground">None</span>
+                  )
+                }
+              />
+              <MetaRow
+                icon={Tag}
+                label="Category"
+                value={
+                  document.category ?? (
+                    <span className="text-muted-foreground">—</span>
+                  )
+                }
+              />
+              <MetaRow
+                icon={Tag}
+                label="Tags"
+                value={
+                  document.tags && document.tags.length > 0 ? (
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {document.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded-md bg-primary/8 border border-primary/15 text-[11px] font-medium text-primary"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">None</span>
+                  )
+                }
+              />
             </div>
-          </div>
-        </div>
 
-        {/* Chunks Section */}
-        {document.chunks && document.chunks.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Layers className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-bold font-sans text-foreground tracking-tight">
-                  CONTENT CHUNKS
-                </h2>
-                <span className="px-2 py-1 rounded bg-cyan-100 dark:bg-cyan-500/20 border border-cyan-600/40 dark:border-cyan-500/30 text-xs font-mono font-bold text-primary">
-                  {document.chunks_count}
-                </span>
-              </div>
-
-              {/* Show All Toggle */}
-              {(document.chunks?.length ?? 0) > 5 && (
+            {/* Actions */}
+            <div className="px-4 pb-4 pt-2 flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditForm({
+                    collection_id: document.collection_id || "",
+                    category: document.category || "",
+                    tags: document.tags?.join(", ") || "",
+                  });
+                  setIsEditOpen(true);
+                }}
+                className="flex items-center justify-center gap-2 w-full h-8 rounded-lg border border-border text-[13px] font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                Edit metadata
+              </button>
+              {document.status === "error" && (
                 <button
                   type="button"
-                  onClick={() => setShowAllChunks(!showAllChunks)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border hover:border-primary/40 hover:bg-muted transition-all duration-300"
+                  onClick={handleRetry}
+                  disabled={retryDocumentMutation.isPending}
+                  className="flex items-center justify-center gap-2 w-full h-8 rounded-lg border border-blue-200 dark:border-blue-800 text-[13px] font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors disabled:opacity-50"
                 >
-                  <span className="text-sm font-sans font-semibold text-primary">
-                    {showAllChunks ? "SHOW LESS" : "SHOW ALL"}
-                  </span>
-                  {showAllChunks ? (
-                    <ChevronUp className="w-4 h-4 text-primary" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-primary" />
-                  )}
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${retryDocumentMutation.isPending ? "animate-spin" : ""}`}
+                  />
+                  {retryDocumentMutation.isPending
+                    ? "Retrying…"
+                    : "Retry processing"}
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => setIsDeleteOpen(true)}
+                className="flex items-center justify-center gap-2 w-full h-8 rounded-lg border border-red-200 dark:border-red-900 text-[13px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete document
+              </button>
             </div>
+          </div>
 
-            {/* Chunks List */}
-            <div className="space-y-4">
-              {chunksToShow.map((chunk, index) => (
-                <div
-                  key={chunk.chunk_id}
-                  className="p-4 rounded-lg bg-card border border-border hover:border-primary/40 transition-all duration-300"
-                  style={{
-                    animation: `fadeSlideIn 0.3s ease-out ${index * 0.05}s both`,
-                  }}
-                >
-                  {/* Chunk Header */}
-                  <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded bg-cyan-100 dark:bg-cyan-500/20 border border-cyan-600/40 dark:border-cyan-500/30 flex items-center justify-center">
-                        <span className="text-xs font-mono font-bold text-primary">
-                          {chunk.chunk_index + 1}
-                        </span>
-                      </div>
-                      <span className="text-xs font-mono text-muted-foreground">
-                        Chunk ID: {chunk.chunk_id}
+          {/* Error message card */}
+          {document.status === "error" && document.error_message && (
+            <div className="rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                <p className="text-[12px] font-semibold text-red-600 dark:text-red-400">
+                  Processing error
+                </p>
+              </div>
+              <p className="text-[12px] text-red-600/80 dark:text-red-400/80 leading-relaxed">
+                {document.error_message}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Right panel: content chunks ── */}
+        <div className="flex-1 min-w-0">
+          {document.chunks && document.chunks.length > 0 ? (
+            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+              {/* Chunks header */}
+              <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <Layers className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-[14px] font-semibold text-foreground">
+                    Content chunks
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-muted text-[11px] font-medium text-muted-foreground tabular-nums">
+                    {document.chunks_count}
+                  </span>
+                </div>
+                {(document.chunks?.length ?? 0) > 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllChunks((v) => !v)}
+                    className="flex items-center gap-1.5 text-[12px] font-medium text-primary hover:underline"
+                  >
+                    {showAllChunks
+                      ? "Show less"
+                      : `Show all ${document.chunks_count}`}
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform ${showAllChunks ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                )}
+              </div>
+
+              {/* Chunk rows */}
+              <div className="divide-y divide-border">
+                {chunksToShow.map((chunk, index) => (
+                  <div
+                    key={chunk.chunk_id}
+                    className="flex gap-4 px-5 py-4 hover:bg-muted/30 transition-colors"
+                    style={{
+                      animationDelay: `${index * 30}ms`,
+                    }}
+                  >
+                    {/* Index number */}
+                    <div className="w-6 h-6 rounded-lg bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-[11px] font-semibold text-muted-foreground tabular-nums">
+                        {chunk.chunk_index + 1}
                       </span>
                     </div>
-                    {chunk.metadata && (
-                      <div className="flex items-center gap-2">
-                        {typeof chunk.metadata === "object" &&
-                          "page" in chunk.metadata && (
-                            <span className="text-xs font-mono text-muted-foreground">
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      {/* Metadata tags */}
+                      {chunk.metadata && typeof chunk.metadata === "object" && (
+                        <div className="flex items-center gap-2 mb-2">
+                          {"page" in chunk.metadata && (
+                            <span className="text-[11px] text-muted-foreground">
                               Page {String(chunk.metadata.page)}
                             </span>
                           )}
-                        {typeof chunk.metadata === "object" &&
-                          "section" in chunk.metadata && (
-                            <span className="px-2 py-0.5 rounded bg-cyan-100 dark:bg-cyan-500/10 border border-border text-xs font-mono text-primary">
+                          {"section" in chunk.metadata && (
+                            <span className="px-1.5 py-0.5 rounded bg-muted border border-border text-[11px] text-muted-foreground">
                               {String(chunk.metadata.section)}
                             </span>
                           )}
-                      </div>
-                    )}
-                  </div>
+                        </div>
+                      )}
 
-                  {/* Chunk Content */}
-                  <div className="font-mono text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                    {chunk.content}
+                      {/* Chunk text */}
+                      <p className="text-[13px] text-foreground leading-relaxed whitespace-pre-wrap">
+                        {chunk.content}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Show More Indicator */}
-            {!showAllChunks && (document.chunks?.length ?? 0) > 5 && (
-              <div className="mt-4 text-center">
-                <p className="text-sm font-mono text-muted-foreground">
-                  Showing 5 of {document.chunks_count} chunks
-                </p>
+                ))}
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Footer: show more hint */}
+              {!showAllChunks && (document.chunks?.length ?? 0) > 5 && (
+                <div className="px-5 py-3 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllChunks(true)}
+                    className="text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Showing 5 of {document.chunks_count} chunks —{" "}
+                    <span className="text-primary font-medium hover:underline">
+                      show all
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-border bg-card flex flex-col items-center justify-center py-16 gap-3">
+              <Layers className="w-8 h-8 text-muted-foreground/40" />
+              <p className="text-[13px] text-muted-foreground">
+                {document.status === "processing"
+                  ? "Processing document — chunks will appear here shortly."
+                  : "No content chunks available."}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Edit Metadata Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+      {/* ── Edit metadata modal ── */}
+      {isEditOpen && (
+        <>
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop dismiss */}
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: backdrop dismiss */}
           <div
-            className="w-full max-w-lg p-6 rounded-xl bg-card border-2 border-primary/60 shadow-2xl shadow-primary/30"
-            style={{ animation: "modalFadeIn 0.2s ease-out" }}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold font-sans text-foreground">
-                EDIT METADATA
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsEditModalOpen(false)}
-                className="p-2 rounded-lg hover:bg-primary/10 transition-colors"
-              >
-                <X className="w-5 h-5 text-primary" />
-              </button>
-            </div>
-
-            {/* Form */}
-            <div className="space-y-4">
-              {/* Collection */}
-              <div>
-                <Label className="text-sm font-sans font-semibold text-primary mb-2 block">
-                  COLLECTION
-                </Label>
-                <Select
-                  value={editForm.collection_id}
-                  onValueChange={(value) =>
-                    setEditForm({ ...editForm, collection_id: value })
-                  }
+            className="fixed inset-0 z-50 bg-black/20 dark:bg-black/40 backdrop-blur-[2px]"
+            onClick={() => setIsEditOpen(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation only */}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation only */}
+            <div
+              className="w-full max-w-sm rounded-2xl bg-card border border-border shadow-[0_24px_64px_-12px_rgba(0,0,0,0.15)] pointer-events-auto overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Edit3 className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-[15px] font-bold text-foreground">
+                      Edit metadata
+                    </h2>
+                    <p className="text-[11px] text-muted-foreground">
+                      Update collection, category and tags
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(false)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 >
-                  <SelectTrigger className="w-full bg-background border-2 border-primary/40 text-foreground font-mono hover:border-primary/60 transition-colors">
-                    <SelectValue placeholder="Select a collection" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-2 border-primary/40 text-foreground">
-                    {collectionsData?.collections &&
-                    collectionsData.collections.length > 0 ? (
-                      collectionsData.collections.map((collection) => (
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Form */}
+              <div className="px-6 py-5 space-y-4">
+                {/* Collection */}
+                <div>
+                  <label
+                    htmlFor="edit-collection"
+                    className="block text-[12px] font-semibold text-foreground mb-1.5"
+                  >
+                    Collection
+                  </label>
+                  <Select
+                    value={editForm.collection_id}
+                    onValueChange={(value) =>
+                      setEditForm({ ...editForm, collection_id: value })
+                    }
+                  >
+                    <SelectTrigger className="w-full h-9 text-[13px] border-border bg-background">
+                      <SelectValue placeholder="Select a collection" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {collectionsData?.collections?.map((c) => (
                         <SelectItem
-                          key={collection.collection_id}
-                          value={collection.collection_id}
-                          className="text-foreground focus:bg-primary/10 focus:text-primary cursor-pointer"
+                          key={c.collection_id}
+                          value={c.collection_id}
                         >
-                          {collection.name}
+                          {c.name}
                         </SelectItem>
-                      ))
-                    ) : (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                        No collections available
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Category */}
+                <div>
+                  <label
+                    htmlFor="edit-category"
+                    className="block text-[12px] font-semibold text-foreground mb-1.5"
+                  >
+                    Category
+                  </label>
+                  <input
+                    id="edit-category"
+                    type="text"
+                    value={editForm.category}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, category: e.target.value })
+                    }
+                    placeholder="e.g. financial, technical, research"
+                    className="w-full h-9 px-3 rounded-lg border border-border bg-background text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label
+                    htmlFor="edit-tags"
+                    className="block text-[12px] font-semibold text-foreground mb-1.5"
+                  >
+                    Tags
+                  </label>
+                  <input
+                    id="edit-tags"
+                    type="text"
+                    value={editForm.tags}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, tags: e.target.value })
+                    }
+                    placeholder="Comma-separated: design, q1, report"
+                    className="w-full h-9 px-3 rounded-lg border border-border bg-background text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
               </div>
 
-              {/* Category */}
-              <div>
-                <Label
-                  htmlFor="category"
-                  className="text-sm font-sans font-semibold text-primary mb-2 block"
+              {/* Actions */}
+              <div className="flex gap-2 px-6 pb-5">
+                <button
+                  type="button"
+                  onClick={handleSaveMetadata}
+                  disabled={updateDocumentMutation.isPending}
+                  className="flex-1 h-9 rounded-xl text-[13px] font-semibold text-white transition-opacity disabled:opacity-60"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #7733ea 0%, #153bf5 100%)",
+                  }}
                 >
-                  CATEGORY
-                </Label>
-                <Input
-                  id="category"
-                  value={editForm.category}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, category: e.target.value })
-                  }
-                  className="bg-background border-2 border-primary/40 text-foreground font-mono focus:border-primary/60 transition-colors"
-                  placeholder="e.g., financial, technical, research"
-                />
-              </div>
-
-              {/* Tags */}
-              <div>
-                <Label
-                  htmlFor="tags"
-                  className="text-sm font-sans font-semibold text-primary mb-2 block"
+                  {updateDocumentMutation.isPending
+                    ? "Saving…"
+                    : "Save changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(false)}
+                  className="flex-1 h-9 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-muted transition-colors"
                 >
-                  TAGS
-                </Label>
-                <Input
-                  id="tags"
-                  value={editForm.tags}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, tags: e.target.value })
-                  }
-                  className="bg-background border-2 border-primary/40 text-foreground font-mono focus:border-primary/60 transition-colors"
-                  placeholder="Comma-separated tags"
-                />
-                <p className="text-xs font-mono text-muted-foreground mt-1">
-                  Separate tags with commas
-                </p>
+                  Cancel
+                </button>
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3 mt-6">
-              <Button
-                onClick={handleSaveMetadata}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-sans font-bold"
-              >
-                SAVE CHANGES
-              </Button>
-              <Button
-                onClick={() => setIsEditModalOpen(false)}
-                variant="outline"
-                className="flex-1 border-border text-foreground hover:bg-muted font-sans font-bold"
-              >
-                CANCEL
-              </Button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+      {/* ── Delete confirmation modal ── */}
+      {isDeleteOpen && (
+        <>
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop dismiss */}
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: backdrop dismiss */}
           <div
-            className="w-full max-w-md p-6 rounded-xl bg-card border-2 border-destructive/60 shadow-2xl shadow-destructive/30"
-            style={{ animation: "modalFadeIn 0.2s ease-out" }}
-          >
-            {/* Warning Icon */}
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-destructive/10 border-2 border-destructive/40 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-destructive" />
+            className="fixed inset-0 z-50 bg-black/20 dark:bg-black/40 backdrop-blur-[2px]"
+            onClick={() => setIsDeleteOpen(false)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: stopPropagation only */}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation only */}
+            <div
+              className="w-full max-w-sm rounded-2xl bg-card border border-border shadow-[0_24px_64px_-12px_rgba(0,0,0,0.15)] pointer-events-auto overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-950/50 flex items-center justify-center shrink-0">
+                    <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-[15px] font-bold text-foreground">
+                      Delete document?
+                    </h2>
+                    <p className="text-[11px] text-muted-foreground">
+                      This action cannot be undone
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteOpen(false)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* File info */}
+              <div className="px-6 py-4">
+                <div className="px-3 py-2.5 rounded-xl bg-muted/50 border border-border">
+                  <p className="text-[13px] font-medium text-foreground break-all">
+                    {document.filename}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {document.chunks_count} chunks ·{" "}
+                    {formatFileSize(document.size_bytes)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 px-6 pb-5">
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleteDocumentMutation.isPending}
+                  className="flex-1 h-9 rounded-xl bg-red-600 hover:bg-red-500 dark:bg-red-700 dark:hover:bg-red-600 text-white text-[13px] font-semibold transition-colors disabled:opacity-60"
+                >
+                  {deleteDocumentMutation.isPending ? "Deleting…" : "Delete"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteOpen(false)}
+                  className="flex-1 h-9 rounded-xl border border-border text-[13px] font-semibold text-foreground hover:bg-muted transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
-
-            {/* Modal Header */}
-            <h3 className="text-xl font-bold font-sans text-destructive text-center mb-2">
-              DELETE DOCUMENT?
-            </h3>
-            <p className="text-sm font-mono text-destructive/80 text-center mb-6">
-              This action cannot be undone. All chunks and metadata will be
-              permanently deleted.
-            </p>
-
-            {/* Document Info */}
-            <div className="mb-6 p-3 rounded-lg bg-destructive/10 border border-red-600/30 dark:border-red-500/20">
-              <p className="text-sm font-mono text-destructive break-words">
-                {document.filename}
-              </p>
-              <p className="text-xs font-mono text-destructive/60 mt-1">
-                {document.chunks_count} chunks •{" "}
-                {formatFileSize(document.size_bytes)}
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={handleDelete}
-                className="flex-1 bg-destructive hover:bg-destructive/80 text-destructive-foreground font-sans font-bold border-2 border-destructive hover:border-destructive/80 transition-all"
-              >
-                DELETE
-              </Button>
-              <Button
-                onClick={() => setIsDeleteModalOpen(false)}
-                variant="outline"
-                className="flex-1 border-2 border-border text-foreground hover:bg-muted hover:border-primary/40 font-sans font-bold transition-all"
-              >
-                CANCEL
-              </Button>
-            </div>
           </div>
-        </div>
+        </>
       )}
-
-      {/* Custom Styles */}
-      <style>{`
-        @keyframes gridPulse {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 0.3; }
-        }
-
-        @keyframes fadeSlideIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes modalFadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-      `}</style>
     </div>
   );
 }
