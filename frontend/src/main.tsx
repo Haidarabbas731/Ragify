@@ -11,9 +11,11 @@ import "@fontsource/geist/700.css";
 import "@fontsource/geist-mono/400.css";
 import "@fontsource/geist-mono/500.css";
 import "@fontsource/geist-mono/600.css";
-import "@fontsource/source-serif-4/400.css";
-import "@fontsource/source-serif-4/600.css";
-import "@fontsource/source-serif-4/700.css";
+import "@fontsource/karla/400.css";
+import "@fontsource/karla/500.css";
+import "@fontsource/karla/600.css";
+import "@fontsource/karla/700.css";
+import "@fontsource/karla/800.css";
 
 import "./index.css";
 import App from "./App.tsx";

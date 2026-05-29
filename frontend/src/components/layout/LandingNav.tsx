@@ -1,4 +1,4 @@
-import { Menu, Moon, Sun, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDarkMode } from "../../hooks/useDarkMode";
@@ -7,87 +7,75 @@ import { Button } from "../ui/button";
 export function LandingNav() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { darkMode, toggleDarkMode } = useDarkMode();
+  const { darkMode } = useDarkMode();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: "smooth" });
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
     setIsMobileMenuOpen(false);
   };
+
+  const navLinks = [
+    { label: "Features", id: "features" },
+    { label: "How It Works", id: "how-it-works" },
+    { label: "FAQ", id: "faq" },
+  ];
 
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-700/50 shadow-lg"
+          ? "bg-[#fffeff] dark:bg-[#0d0b14] border-b border-[rgba(1,50,252,0.10)] dark:border-[rgba(119,52,231,0.15)]"
           : "bg-transparent"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-0 group">
-            <img
-              src="/ragify.png"
-              alt="Ragify Logo"
-              className="w-12 h-12 transition-transform duration-300 group-hover:scale-110"
-            />
-            <span className="text-xl font-bold text-primary hidden sm:block ml-2 font-sans">
-              Ragify
-            </span>
+          {/* Logo — icon only, no wordmark */}
+          <Link to="/" className="flex items-center">
+            <img src="/images/ragify.png" alt="Ragify" className="w-10 h-10" />
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
-            <button
-              type="button"
-              onClick={() => scrollToSection("features")}
-              className="text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium"
-            >
-              Features
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection("how-it-works")}
-              className="text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium"
-            >
-              How It Works
-            </button>
-
-            {/* Dark mode toggle */}
-            <button
-              type="button"
-              onClick={toggleDarkMode}
-              className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              aria-label="Toggle dark mode"
-            >
-              {darkMode ? (
-                <Sun className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              ) : (
-                <Moon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              )}
-            </button>
-
-            <Link to="/login">
-              <Button
-                variant="ghost"
-                className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+            {navLinks.map((link) => (
+              <button
+                key={link.id}
+                type="button"
+                onClick={() => scrollToSection(link.id)}
+                className={`text-sm font-semibold transition-colors duration-150 ${
+                  isScrolled || darkMode
+                    ? "text-[#12375c] dark:text-white hover:text-[#7734e7] dark:hover:text-[#cd79f5]"
+                    : "text-white/80 hover:text-white"
+                }`}
               >
-                Login
-              </Button>
-            </Link>
+                {link.label}
+              </button>
+            ))}
+          </div>
 
+          {/* Desktop auth */}
+          <div className="hidden md:flex items-center gap-3">
+            <Link
+              to="/login"
+              className={`text-sm font-semibold transition-colors duration-150 ${
+                isScrolled || darkMode
+                  ? "text-[#7f7f7f] hover:text-[#12375c] dark:hover:text-white"
+                  : "text-white/70 hover:text-white"
+              }`}
+            >
+              Log in
+            </Link>
             <Link to="/register">
-              <Button className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all">
+              <Button
+                size="sm"
+                className="bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl px-5 font-semibold transition-colors duration-150"
+              >
                 Get Started
               </Button>
             </Link>
@@ -97,48 +85,44 @@ export function LandingNav() {
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className={`md:hidden p-2 rounded-lg transition-colors ${
+              isScrolled || darkMode
+                ? "text-[#12375c] dark:text-white hover:bg-[rgba(1,50,252,0.06)]"
+                : "text-white hover:bg-white/10"
+            }`}
           >
             {isMobileMenuOpen ? (
-              <X className="w-6 h-6 text-slate-900 dark:text-white" />
+              <X className="w-5 h-5" />
             ) : (
-              <Menu className="w-6 h-6 text-slate-900 dark:text-white" />
+              <Menu className="w-5 h-5" />
             )}
           </button>
         </div>
 
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden mt-4 p-4 rounded-xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50">
-            <div className="flex flex-col gap-4">
-              <button
-                type="button"
-                onClick={() => scrollToSection("features")}
-                className="text-left text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium py-2"
-              >
-                Features
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollToSection("how-it-works")}
-                className="text-left text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors font-medium py-2"
-              >
-                How It Works
-              </button>
-
-              <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
-
-              <Link to="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button
-                  variant="ghost"
-                  className="w-full text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700"
+          <div className="md:hidden mt-3 p-4 rounded-2xl bg-[#fffeff] dark:bg-[#160f2a] border border-[rgba(1,50,252,0.10)] dark:border-[rgba(119,52,231,0.15)]">
+            <div className="flex flex-col gap-1">
+              {navLinks.map((link) => (
+                <button
+                  key={link.id}
+                  type="button"
+                  onClick={() => scrollToSection(link.id)}
+                  className="text-left px-3 py-2.5 rounded-xl text-sm font-semibold text-[#12375c] dark:text-white hover:bg-[rgba(119,52,231,0.06)] transition-colors"
                 >
-                  Login
-                </Button>
+                  {link.label}
+                </button>
+              ))}
+              <div className="border-t border-[rgba(1,50,252,0.10)] dark:border-[rgba(119,52,231,0.15)] my-2" />
+              <Link
+                to="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="px-3 py-2.5 text-sm font-semibold text-[#7f7f7f] hover:text-[#12375c] dark:hover:text-white transition-colors"
+              >
+                Log in
               </Link>
-
               <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white">
+                <Button className="w-full bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl font-semibold">
                   Get Started
                 </Button>
               </Link>
