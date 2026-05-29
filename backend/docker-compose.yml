@@ -1,5 +1,5 @@
 # Local development compose — spins up Postgres, Redis, and the app via Dockerfile.
-# External services (Milvus/Zilliz, B2, Gemini) are configured via .env.
+# Milvus uses the embedded Milvus Lite (.db file) — no separate container needed.
 #
 # Usage:
 #   docker compose up --build        # first run
@@ -41,7 +41,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: ragify_app
     env_file: .env
     environment:
@@ -49,6 +49,16 @@ services:
       DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/knowledge_base
       REDIS_URL: redis://redis:6379/0
       FRONTEND_URL: http://localhost:5173
+      # Milvus Lite — write to a dedicated writable directory inside the container
+      VECTOR_DB_URI: ./milvus_data/ragify.db
+      ENVIRONMENT: development
+    volumes:
+      # Mount source directories only — leaves .venv from the image untouched
+      - ./app:/app/app
+      - ./main.py:/app/main.py
+      - ./alembic:/app/alembic
+      - ./scripts:/app/scripts
+      - milvus_data:/app/milvus_data
     ports:
       - "8000:8000"
     depends_on:
@@ -61,5 +71,6 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  milvus_data:
 
 # docker exec -it ragify_postgres psql -U postgres -d knowledge_base

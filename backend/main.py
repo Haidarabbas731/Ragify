@@ -2,7 +2,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pymilvus import connections, utility
 from redis.asyncio import Redis
 from sqlalchemy import text
 
@@ -160,22 +159,12 @@ async def health_check():
 
     # Check Milvus
     try:
-        connections.connect(
-            alias="health_check",
-            uri=settings.MILVUS_URI,
-            token=settings.MILVUS_TOKEN,  # type: ignore
-        )
-        # Check if collection exists as a health check
-        utility.has_collection(
-            settings.MILVUS_COLLECTION, using="health_check"
-        )  # type:ignore
+        from app.services.milvus_service import get_milvus_service
+        milvus = await get_milvus_service()
+        milvus.client.has_collection(settings.MILVUS_COLLECTION)  # type: ignore
         services["milvus"] = "up"
-        connections.disconnect(alias="health_check")
     except Exception:
-        try:
-            connections.disconnect(alias="health_check")
-        except Exception:
-            pass
+        pass
 
     # Check Email Service (Resend)
     try:
