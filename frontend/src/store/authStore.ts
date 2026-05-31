@@ -67,6 +67,7 @@ export const useAuthStore = create<AuthStore>()(
 
       // Actions
       setLoading: (loading: boolean) => set({ isLoading: loading }),
+      clearError: () => set({ error: null }),
 
       /**
        * Login with email and password

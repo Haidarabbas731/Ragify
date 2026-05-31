@@ -6,6 +6,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   Eye,
@@ -35,8 +36,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, isAuthenticated, isLoading } = useAuthStore();
+  const { login, isAuthenticated } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Initialize dark mode from localStorage
   useDarkMode();
@@ -59,23 +61,17 @@ export function LoginPage() {
 
   // Handle form submission
   const onSubmit = async (data: LoginFormData) => {
+    setFormError(null);
     try {
       await login(data.email, data.password);
       navigate("/dashboard");
-    } catch (error) {
-      // Error is handled by the store (toast notification)
-      console.error("Login error:", error);
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail ?? "Invalid email or password. Please try again.";
+      setFormError(message);
     }
   };
-
-  // Show loading state during auth initialization
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -265,6 +261,14 @@ export function LoginPage() {
                 Forgot password?
               </Link>
             </div>
+
+            {/* Inline error */}
+            {formError && (
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive font-sans">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <p className="text-sm font-medium">{formError}</p>
+              </div>
+            )}
 
             {/* Submit Button */}
             <Button

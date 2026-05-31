@@ -35,10 +35,6 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
     title: "Documents",
     subtitle: "All uploaded files and their status",
   },
-  "/chat": {
-    title: "Chat",
-    subtitle: "Ask questions across your knowledge base",
-  },
   "/collections": {
     title: "Collections",
     subtitle: "Organise documents into groups",

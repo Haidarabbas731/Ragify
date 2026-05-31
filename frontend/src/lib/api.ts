@@ -69,8 +69,13 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // Handle 401 Unauthorized errors
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Handle 401 Unauthorized errors — skip auth endpoints (login/register failures are expected)
+    const isAuthEndpoint = originalRequest.url?.includes("/auth/");
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isAuthEndpoint
+    ) {
       if (isRefreshing) {
         // Already refreshing, add to queue
         return new Promise((resolve, reject) => {

@@ -52,5 +52,6 @@ export interface AuthActions {
   refreshAccessToken: () => Promise<void>;
   initializeAuth: () => void;
   clearAuth: () => void;
+  clearError: () => void;
   setLoading: (loading: boolean) => void;
 }
