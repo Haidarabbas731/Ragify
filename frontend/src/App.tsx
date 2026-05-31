@@ -149,7 +149,18 @@ function App() {
                 )
               }
             />
-            {/* All authenticated app pages share AppLayout (sidebar + top bar) */}
+            {/* Chat — full-screen dedicated layout, no AppLayout sidebar */}
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <DocumentStatusProvider>
+                    <ChatPage />
+                  </DocumentStatusProvider>
+                </ProtectedRoute>
+              }
+            />
+            {/* All other authenticated pages share AppLayout (sidebar + top bar) */}
             <Route
               element={
                 <ProtectedRoute>
@@ -160,7 +171,6 @@ function App() {
               }
             >
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/chat" element={<ChatPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/collections" element={<CollectionsPage />} />
               <Route path="/documents" element={<DocumentsPage />} />

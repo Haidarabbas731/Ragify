@@ -6,6 +6,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   Check,
@@ -92,6 +93,7 @@ export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Initialize dark mode from localStorage
   useDarkMode();
@@ -159,6 +161,7 @@ export function RegisterPage() {
 
   // Handle form submission
   const onSubmit = async (data: RegisterFormData) => {
+    setFormError(null);
     try {
       setIsSubmitting(true);
       setLoading(true);
@@ -180,8 +183,7 @@ export function RegisterPage() {
       const message =
         (error as { response?: { data?: { detail?: string } } })?.response?.data
           ?.detail || "Registration failed. Please try again.";
-      toast.error(message);
-      console.error("Registration error:", error);
+      setFormError(message);
     } finally {
       setIsSubmitting(false);
       setLoading(false);
@@ -514,6 +516,14 @@ export function RegisterPage() {
                 </button>
               </p>
             </div>
+
+            {/* Inline error */}
+            {formError && (
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive font-sans">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <p className="text-sm font-medium">{formError}</p>
+              </div>
+            )}
 
             {/* Submit Button */}
             <Button
