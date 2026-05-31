@@ -9,9 +9,9 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   FileText,
   FolderOpen,
-  HardDrive,
   Loader2,
   MessageSquare,
   Plus,
@@ -349,7 +349,7 @@ export function ChatPage() {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
       {/* Mobile Overlay */}
       {mobileSidebarOpen && (
         <button
@@ -373,28 +373,45 @@ export function ChatPage() {
             sidebarOpen ? "lg:w-64" : "lg:w-0"
           } fixed lg:relative z-40 w-64 h-full border-r border-border bg-card transition-all duration-300 flex flex-col shadow-xl lg:shadow-none overflow-hidden`}
         >
-          {/* Mobile Header */}
-          <div className="lg:hidden flex items-center justify-between p-4 border-b border-border">
-            <h2 className="text-lg font-semibold text-foreground font-sans">
-              Conversations
-            </h2>
-            <button
-              type="button"
-              onClick={() => setMobileSidebarOpen(false)}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
-              aria-label="Close sidebar"
-            >
-              <X className="w-5 h-5 text-muted-foreground" />
-            </button>
+          {/* Sidebar Header — logo + back to app */}
+          <div className="flex items-center justify-between px-4 h-14 border-b border-border shrink-0">
+            <Link to="/dashboard" className="flex items-center gap-2.5 group">
+              <img
+                src="/images/ragify.png"
+                alt="Ragify"
+                className="w-7 h-7 shrink-0"
+              />
+              <span className="text-[13px] font-bold text-foreground group-hover:text-primary transition-colors font-sans">
+                Ragify
+              </span>
+            </Link>
+            {/* Mobile close / Desktop back */}
+            <div className="flex items-center gap-1">
+              <Link
+                to="/dashboard"
+                className="hidden lg:flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-muted"
+              >
+                <ArrowLeft className="w-3 h-3" />
+                App
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMobileSidebarOpen(false)}
+                className="lg:hidden p-1.5 rounded-lg hover:bg-muted transition-colors"
+                aria-label="Close sidebar"
+              >
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
           </div>
 
           {/* New Chat Button */}
-          <div className="p-6 border-b border-border">
+          <div className="p-4 border-b border-border">
             <Button
               onClick={handleNewChat}
-              className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 py-6 font-sans"
+              className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 py-5 font-sans"
             >
-              <Plus className="w-5 h-5" strokeWidth={2.5} />
+              <Plus className="w-4 h-4" strokeWidth={2.5} />
               <span>New Chat</span>
             </Button>
           </div>
@@ -474,24 +491,6 @@ export function ChatPage() {
                 Start chatting below!
               </p>
             )}
-          </div>
-
-          {/* Bottom Actions */}
-          <div className="p-6 border-t border-border space-y-1">
-            <Link
-              to="/dashboard"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-sans transition-all hover:scale-[1.02]"
-            >
-              <HardDrive className="w-5 h-5" />
-              <span>Dashboard</span>
-            </Link>
-            <Link
-              to="/documents"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-muted text-foreground font-sans transition-all hover:scale-[1.02]"
-            >
-              <FolderOpen className="w-5 h-5" />
-              <span>Documents</span>
-            </Link>
           </div>
         </aside>
 
