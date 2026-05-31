@@ -20,10 +20,12 @@ import { FeatureCard } from "../components/landing/FeatureCard";
 import { StepCard } from "../components/landing/StepCard";
 import { LandingNav } from "../components/layout/LandingNav";
 import { Button } from "../components/ui/button";
+import { useAuthStore } from "../store/authStore";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export function LandingPage() {
+  const { isAuthenticated } = useAuthStore();
   const heroRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const subheadRef = useRef<HTMLParagraphElement>(null);
@@ -227,27 +229,41 @@ export function LandingPage() {
             ref={ctaRef}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14"
           >
-            <a href="/register">
-              <Button
-                size="lg"
-                className="bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl px-8 py-3 text-base font-bold transition-colors duration-150"
-              >
-                Get Started Free
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Button>
-            </a>
-            <button
-              type="button"
-              onClick={() =>
-                document
-                  .getElementById("how-it-works")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="flex items-center gap-2 text-white/65 hover:text-white text-sm font-semibold transition-colors duration-150"
-            >
-              See how it works
-              <ArrowDown className="w-4 h-4" />
-            </button>
+            {isAuthenticated ? (
+              <a href="/dashboard">
+                <Button
+                  size="lg"
+                  className="bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl px-8 py-3 text-base font-bold transition-colors duration-150"
+                >
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </a>
+            ) : (
+              <>
+                <a href="/register">
+                  <Button
+                    size="lg"
+                    className="bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl px-8 py-3 text-base font-bold transition-colors duration-150"
+                  >
+                    Get Started Free
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </a>
+                <button
+                  type="button"
+                  onClick={() =>
+                    document
+                      .getElementById("how-it-works")
+                      ?.scrollIntoView({ behavior: "smooth" })
+                  }
+                  className="flex items-center gap-2 text-white/65 hover:text-white text-sm font-semibold transition-colors duration-150"
+                >
+                  See how it works
+                  <ArrowDown className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Trust bar */}
@@ -336,12 +352,12 @@ export function LandingPage() {
           <p className="text-base text-white/70 mb-10">
             Free to start. No credit card required.
           </p>
-          <a href="/register">
+          <a href={isAuthenticated ? "/dashboard" : "/register"}>
             <Button
               size="lg"
               className="bg-white hover:bg-white/90 text-[#7734e7] rounded-2xl px-10 py-3 text-base font-bold transition-colors duration-150"
             >
-              Get Started Free
+              {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
             </Button>
           </a>
         </div>
