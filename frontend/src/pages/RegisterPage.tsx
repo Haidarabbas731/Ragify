@@ -205,10 +205,13 @@ export function RegisterPage() {
           <div className="mb-12">
             <div className="flex items-center gap-4 mb-6">
               <img src="/ragify.png" alt="Ragify Logo" className="w-24 h-24" />
-              <h2 className="text-4xl font-bold font-sans text-card-foreground">
+              <h2 className="text-5xl font-bold font-sans text-card-foreground">
                 Ragify
               </h2>
             </div>
+            <p className="text-xl text-muted-foreground font-sans">
+              Your AI-Powered Knowledge Hub
+            </p>
           </div>
 
           {/* Progress Steps */}
