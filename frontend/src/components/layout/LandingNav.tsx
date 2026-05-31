@@ -2,12 +2,14 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useDarkMode } from "../../hooks/useDarkMode";
+import { useAuthStore } from "../../store/authStore";
 import { Button } from "../ui/button";
 
 export function LandingNav() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { darkMode } = useDarkMode();
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -61,24 +63,37 @@ export function LandingNav() {
 
           {/* Desktop auth */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              to="/login"
-              className={`text-sm font-semibold transition-colors duration-150 ${
-                isScrolled || darkMode
-                  ? "text-[#7f7f7f] hover:text-[#12375c] dark:hover:text-white"
-                  : "text-white/70 hover:text-white"
-              }`}
-            >
-              Log in
-            </Link>
-            <Link to="/register">
-              <Button
-                size="sm"
-                className="bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl px-5 font-semibold transition-colors duration-150"
-              >
-                Get Started
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/dashboard">
+                <Button
+                  size="sm"
+                  className="bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl px-5 font-semibold transition-colors duration-150"
+                >
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className={`text-sm font-semibold transition-colors duration-150 ${
+                    isScrolled || darkMode
+                      ? "text-[#7f7f7f] hover:text-[#12375c] dark:hover:text-white"
+                      : "text-white/70 hover:text-white"
+                  }`}
+                >
+                  Log in
+                </Link>
+                <Link to="/register">
+                  <Button
+                    size="sm"
+                    className="bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl px-5 font-semibold transition-colors duration-150"
+                  >
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -114,18 +129,34 @@ export function LandingNav() {
                 </button>
               ))}
               <div className="border-t border-[rgba(1,50,252,0.10)] dark:border-[rgba(119,52,231,0.15)] my-2" />
-              <Link
-                to="/login"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="px-3 py-2.5 text-sm font-semibold text-[#7f7f7f] hover:text-[#12375c] dark:hover:text-white transition-colors"
-              >
-                Log in
-              </Link>
-              <Link to="/register" onClick={() => setIsMobileMenuOpen(false)}>
-                <Button className="w-full bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl font-semibold">
-                  Get Started
-                </Button>
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  to="/dashboard"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Button className="w-full bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl font-semibold">
+                    Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="px-3 py-2.5 text-sm font-semibold text-[#7f7f7f] hover:text-[#12375c] dark:hover:text-white transition-colors"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Button className="w-full bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl font-semibold">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}
