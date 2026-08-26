@@ -1,7 +1,6 @@
 """Seed the initial admin user if one does not already exist."""
 
 import asyncio
-import sys
 
 from sqlmodel import select
 

@@ -17,7 +17,7 @@ from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.size_limit import RequestSizeLimitMiddleware
 from app.schemas.common import HealthCheckResponse, RootResponse
-from app.services.b2_service import B2Service
+from app.services.b2_service import get_b2_service
 from app.services.email_service import check_email_service_health
 
 configure_logging(log_level=settings.LOG_LEVEL)
@@ -149,10 +149,9 @@ async def health_check():
     except Exception:
         pass
 
-    # Check Backblaze B2
+    # Check file storage (local disk or Backblaze B2, per STORAGE_BACKEND)
     try:
-        b2_service = B2Service()
-        await b2_service.authorize()
+        await get_b2_service()
         services["b2_storage"] = "up"
     except Exception:
         pass
