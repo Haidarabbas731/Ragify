@@ -32,8 +32,8 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 COPY --chown=appuser:appgroup . .
 
-# Create writable directory for Milvus Lite data
-RUN mkdir -p /app/milvus_data && chown appuser:appgroup /app/milvus_data
+# Create writable directories for Milvus Lite data and local document storage
+RUN mkdir -p /app/milvus_data /app/storage && chown -R appuser:appgroup /app/milvus_data /app/storage
 
 RUN chmod +x start.sh
 

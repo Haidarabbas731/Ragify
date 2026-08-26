@@ -9,7 +9,7 @@
 services:
 
   postgres:
-    image: postgres:18-alpine
+    image: pgvector/pgvector:pg17
     container_name: ragify_postgres
     environment:
       POSTGRES_DB: knowledge_base
@@ -20,20 +20,20 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d knowledge_base"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d knowledge_base" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: ragify_redis
     ports:
       - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -52,6 +52,8 @@ services:
       # Milvus Lite — write to a dedicated writable directory inside the container
       VECTOR_DB_URI: ./milvus_data/ragify.db
       ENVIRONMENT: development
+      # Local file storage — set STORAGE_BACKEND=b2 in .env to use Backblaze instead
+      STORAGE_LOCAL_PATH: /app/storage
     volumes:
       # Mount source directories only — leaves .venv from the image untouched
       - ./app:/app/app
@@ -59,6 +61,7 @@ services:
       - ./alembic:/app/alembic
       - ./scripts:/app/scripts
       - milvus_data:/app/milvus_data
+      - document_storage:/app/storage
     ports:
       - "8000:8000"
     depends_on:
@@ -66,11 +69,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: on-failure
+    restart: "unless-stopped"
 
 volumes:
   postgres_data:
   redis_data:
   milvus_data:
+  document_storage:
 
-# docker exec -it ragify_postgres psql -U postgres -d knowledge_base
+    # docker exec -it ragify_postgres psql -U postgres -d knowledge_base
