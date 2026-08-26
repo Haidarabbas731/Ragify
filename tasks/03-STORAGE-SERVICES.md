@@ -396,4 +396,13 @@ Before moving to Phase 5, verify:
 
 ---
 
+**UPDATE (2026-08-26):** Added a local-disk storage backend so the app runs fully locally without a Backblaze B2 account.
+- Added `LocalStorageService` in `app/services/b2_service.py`, implementing the same interface as `B2Service` (`upload_file`, `download_file`, `delete_file`, `delete_all_files`, `list_all_files`, `generate_presigned_url`).
+- `get_b2_service()` now returns `LocalStorageService` or `B2Service` based on new `STORAGE_BACKEND` setting (`"local"` by default, `"b2"` for production/Backblaze). No call sites changed.
+- `app/core/config.py`: added `STORAGE_BACKEND` and `STORAGE_LOCAL_PATH`; `B2_APPLICATION_KEY_ID`/`B2_APPLICATION_KEY`/`B2_BUCKET_NAME` are now optional (only required when `STORAGE_BACKEND=b2`).
+- `docker-compose.yml`: added `document_storage` named volume mounted at `/app/storage`, mirroring how `milvus_data` is handled; switched `postgres` image to `pgvector/pgvector:pg17` and `redis` to `redis:8-alpine`.
+- `Dockerfile.dev`: `/app/storage` is created and `chown`'d to `appuser` at build time — without this the named volume mounts as root-owned and uploads fail with `PermissionError`.
+- `main.py`: `/api/v1/health` now checks storage via `get_b2_service()` instead of hardcoding `B2Service()`, so it reports the actual configured backend instead of always attempting real B2 auth.
+- `backend/.env.example`, root `.gitignore`: documented new vars, ignored `backend/storage/`.
+
 **Next Phase:** [Phase 4: Document Processing Pipeline](04-DOCUMENT-PROCESSING.md)

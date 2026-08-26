@@ -1,5 +1,7 @@
 import logging
+import shutil
 import uuid
+from pathlib import Path
 
 from b2sdk.v2 import B2Api, InMemoryAccountInfo
 from fastapi import UploadFile
@@ -267,21 +269,147 @@ class B2Service:
             raise
 
 
-# Singleton instance
-_b2_service: B2Service | None = None
+class LocalStorageService:
+    """Local filesystem storage service — used for dev when STORAGE_BACKEND=local.
 
-
-async def get_b2_service() -> B2Service:
+    Mirrors B2Service's interface so callers don't need to know which backend
+    they're talking to.
     """
-    Get or create B2 service singleton.
+
+    def __init__(self):
+        """Initialize local storage rooted at settings.STORAGE_LOCAL_PATH."""
+        self._root = Path(settings.STORAGE_LOCAL_PATH)
+        self._authorized = False
+
+    async def authorize(self) -> bool:
+        """Ensure the local storage root directory exists."""
+        self._root.mkdir(parents=True, exist_ok=True)
+        self._authorized = True
+        logger.info(f"Local storage ready at: {self._root.resolve()}")
+        return True
+
+    def _ensure_authorized(self):
+        """Ensure storage is authorized before operations."""
+        if not self._authorized:
+            raise RuntimeError("Local storage not authorized. Call authorize() first.")
+
+    def _path_for(self, storage_key: str) -> Path:
+        """Resolve a storage key to a path, rejecting traversal outside the root."""
+        path = (self._root / storage_key).resolve()
+        if self._root.resolve() not in path.parents and path != self._root.resolve():
+            raise ValueError(f"Invalid storage key: {storage_key}")
+        return path
+
+    async def upload_file(self, file: UploadFile, user_id: str) -> str:
+        """Save an uploaded file under the local storage root and return its key."""
+        self._ensure_authorized()
+
+        unique_id = str(uuid.uuid4())
+        storage_key = f"documents/{user_id}/{unique_id}-{file.filename}"
+
+        try:
+            content = await file.read()
+            dest = self._path_for(storage_key)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(content)
+
+            logger.info(f"File saved locally: {storage_key} ({len(content)} bytes)")
+            return storage_key
+        except Exception as e:
+            logger.error(f"Local upload failed for {file.filename}: {e}")
+            raise
+        finally:
+            await file.seek(0)
+
+    async def generate_presigned_url(self, storage_key: str, expiration: int = 900) -> str:
+        """Return the local file path (no real presigning needed for local dev)."""
+        self._ensure_authorized()
+        return str(self._path_for(storage_key))
+
+    async def download_file(self, storage_key: str) -> bytes:
+        """Read a file's bytes from local storage."""
+        self._ensure_authorized()
+
+        try:
+            content = self._path_for(storage_key).read_bytes()
+            logger.info(f"File read locally: {storage_key} ({len(content)} bytes)")
+            return content
+        except Exception as e:
+            logger.error(f"Local download failed for {storage_key}: {e}")
+            raise
+
+    async def delete_file(self, storage_key: str) -> bool:
+        """Delete a file from local storage, treating a missing file as success."""
+        self._ensure_authorized()
+
+        try:
+            path = self._path_for(storage_key)
+            if path.exists():
+                path.unlink()
+                logger.info(f"File deleted locally: {storage_key}")
+            else:
+                logger.warning(f"File not found locally: {storage_key}")
+            return True
+        except Exception as e:
+            logger.error(f"Local deletion failed for {storage_key}: {e}")
+            raise
+
+    async def list_all_files(self) -> list[str]:
+        """List all storage keys under the local storage root."""
+        self._ensure_authorized()
+
+        try:
+            files = [
+                str(path.relative_to(self._root))
+                for path in self._root.rglob("*")
+                if path.is_file()
+            ]
+            logger.info(f"Listed {len(files)} files from local storage")
+            return files
+        except Exception as e:
+            logger.error(f"Failed to list local files: {e}")
+            raise
+
+    async def delete_all_files(self) -> tuple[int, list[str]]:
+        """Delete every file under the local storage root (nuclear cleanup option)."""
+        self._ensure_authorized()
+
+        try:
+            all_files = await self.list_all_files()
+            if not all_files:
+                logger.info("No files to delete from local storage")
+                return (0, [])
+
+            for entry in self._root.iterdir():
+                if entry.is_dir():
+                    shutil.rmtree(entry)
+                else:
+                    entry.unlink()
+
+            logger.info(f"Deleted {len(all_files)} files from local storage")
+            return (len(all_files), [])
+        except Exception as e:
+            logger.error(f"Failed to delete all local files: {e}")
+            raise
+
+
+# Singleton instance
+_storage_service: B2Service | LocalStorageService | None = None
+
+
+async def get_b2_service() -> B2Service | LocalStorageService:
+    """
+    Get or create the storage service singleton, chosen by settings.STORAGE_BACKEND.
 
     Returns:
-        B2Service: Initialized B2 service instance
+        B2Service | LocalStorageService: Initialized storage service instance
     """
-    global _b2_service
+    global _storage_service
 
-    if _b2_service is None:
-        _b2_service = B2Service()
-        await _b2_service.authorize()
+    if _storage_service is None:
+        _storage_service = (
+            LocalStorageService() if settings.STORAGE_BACKEND == "local" else B2Service()
+        )
+        await _storage_service.authorize()
 
-    return _b2_service
+    return _storage_service

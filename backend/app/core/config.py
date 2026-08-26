@@ -32,10 +32,16 @@ class Settings(BaseSettings):
     MILVUS_COLLECTION: str = "knowledge_base"
     VECTOR_DB_TOKEN: str | None = None
 
-    # Backblaze B2
-    B2_APPLICATION_KEY_ID: str
-    B2_APPLICATION_KEY: str
-    B2_BUCKET_NAME: str
+    # File Storage
+    # "local" (default): store documents on disk under STORAGE_LOCAL_PATH — no external account needed.
+    # "b2": store documents in Backblaze B2 — requires the B2_* credentials below.
+    STORAGE_BACKEND: str = "local"
+    STORAGE_LOCAL_PATH: str = "./storage/documents"
+
+    # Backblaze B2 (only required when STORAGE_BACKEND=b2)
+    B2_APPLICATION_KEY_ID: str | None = None
+    B2_APPLICATION_KEY: str | None = None
+    B2_BUCKET_NAME: str | None = None
 
     # Google Gemini
     GOOGLE_API_KEY: str

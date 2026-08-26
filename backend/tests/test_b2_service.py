@@ -286,14 +286,42 @@ async def test_delete_all_files_empty_bucket(b2_service):
 
 @pytest.mark.asyncio
 async def test_get_b2_service_singleton():
-    """Test B2 service singleton pattern."""
-    with patch("app.services.b2_service.B2Service") as MockB2Service:
-        mock_instance = MockB2Service.return_value
-        mock_instance.authorize = AsyncMock(return_value=True)
+    """Test storage service singleton pattern when STORAGE_BACKEND=b2."""
+    import app.services.b2_service as b2_module
 
-        service1 = await get_b2_service()
-        service2 = await get_b2_service()
+    b2_module._storage_service = None
+    try:
+        with (
+            patch("app.services.b2_service.settings.STORAGE_BACKEND", "b2"),
+            patch("app.services.b2_service.B2Service") as MockB2Service,
+        ):
+            mock_instance = MockB2Service.return_value
+            mock_instance.authorize = AsyncMock(return_value=True)
 
-        assert service1 is service2
-        MockB2Service.assert_called_once()
-        mock_instance.authorize.assert_called_once()
+            service1 = await get_b2_service()
+            service2 = await get_b2_service()
+
+            assert service1 is service2
+            MockB2Service.assert_called_once()
+            mock_instance.authorize.assert_called_once()
+    finally:
+        b2_module._storage_service = None
+
+
+@pytest.mark.asyncio
+async def test_get_storage_service_local_backend(tmp_path):
+    """Test storage service factory returns LocalStorageService when STORAGE_BACKEND=local."""
+    import app.services.b2_service as b2_module
+    from app.services.b2_service import LocalStorageService
+
+    b2_module._storage_service = None
+    try:
+        with (
+            patch("app.services.b2_service.settings.STORAGE_BACKEND", "local"),
+            patch("app.services.b2_service.settings.STORAGE_LOCAL_PATH", str(tmp_path)),
+        ):
+            service = await get_b2_service()
+
+            assert isinstance(service, LocalStorageService)
+    finally:
+        b2_module._storage_service = None
