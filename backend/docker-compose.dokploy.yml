@@ -55,7 +55,7 @@ services:
 
   api:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     command: ["./scripts/start-api.sh"]
     environment:
@@ -116,7 +116,7 @@ services:
 
   worker:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     command: ["./scripts/start-worker.sh"]
     environment:
