@@ -27,8 +27,11 @@ if config.config_file_name is not None:
 # Set target metadata for autogenerate
 target_metadata = SQLModel.metadata
 
-# Override sqlalchemy.url with our settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Override sqlalchemy.url with our settings.
+# configparser treats "%" as the start of an interpolation token, so a raw "%"
+# in the password (or anywhere else in the URL) must be escaped as "%%" or
+# set_main_option raises "invalid interpolation syntax".
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
 
 
 def run_migrations_offline() -> None:
