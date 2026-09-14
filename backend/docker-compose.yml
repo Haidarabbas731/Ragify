@@ -1,5 +1,6 @@
-# Local development compose — spins up Postgres, Redis, and the app via Dockerfile.
-# Milvus uses the embedded Milvus Lite (.db file) — no separate container needed.
+# Local development compose — Postgres, Redis, standalone Milvus, and the app
+# (split into `api` + `worker` so one crashing doesn't take the other down,
+# matching the production topology used in docker-compose.dokploy.yml).
 #
 # Usage:
 #   docker compose up --build        # first run
@@ -9,7 +10,7 @@
 services:
 
   postgres:
-    image: pgvector/pgvector:pg17
+    image: postgres:17-alpine
     container_name: ragify_postgres
     environment:
       POSTGRES_DB: knowledge_base
@@ -18,7 +19,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d knowledge_base" ]
       interval: 10s
@@ -28,6 +29,7 @@ services:
   redis:
     image: redis:8-alpine
     container_name: ragify_redis
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6380:6379"
     volumes:
@@ -38,29 +40,43 @@ services:
       timeout: 5s
       retries: 5
 
-  app:
+  milvus:
+    image: milvusdb/milvus:v3.0.0
+    container_name: ragify_milvus
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - milvus_data:/var/lib/milvus
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9091/healthz" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  api:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: ragify_app
+    container_name: ragify_api
+    command: ["./scripts/start-api.sh"]
     env_file: .env
     environment:
-      # Override to use container service names instead of localhost
       DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/knowledge_base
       REDIS_URL: redis://redis:6379/0
+      VECTOR_DB_URI: http://milvus:19530
       FRONTEND_URL: http://localhost:5173
-      # Milvus Lite — write to a dedicated writable directory inside the container
-      VECTOR_DB_URI: ./milvus_data/ragify.db
       ENVIRONMENT: development
-      # Local file storage — set STORAGE_BACKEND=b2 in .env to use Backblaze instead
       STORAGE_LOCAL_PATH: /app/storage
     volumes:
-      # Mount source directories only — leaves .venv from the image untouched
       - ./app:/app/app
       - ./main.py:/app/main.py
       - ./alembic:/app/alembic
       - ./scripts:/app/scripts
-      - milvus_data:/app/milvus_data
       - document_storage:/app/storage
     ports:
       - "8000:8000"
@@ -68,6 +84,37 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+    restart: "unless-stopped"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ragify_worker
+    command: ["./scripts/start-worker.sh"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/knowledge_base
+      REDIS_URL: redis://redis:6379/0
+      VECTOR_DB_URI: http://milvus:19530
+      FRONTEND_URL: http://localhost:5173
+      ENVIRONMENT: development
+      STORAGE_LOCAL_PATH: /app/storage
+    volumes:
+      - ./app:/app/app
+      - ./main.py:/app/main.py
+      - ./alembic:/app/alembic
+      - ./scripts:/app/scripts
+      - document_storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      milvus:
         condition: service_healthy
     restart: "unless-stopped"
 
