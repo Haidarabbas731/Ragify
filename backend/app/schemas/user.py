@@ -16,7 +16,7 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     """Schema for user login."""
 
-    email: EmailStr
+    email: str = Field(max_length=255)
     password: str
 
 
