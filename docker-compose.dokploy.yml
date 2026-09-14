@@ -1,0 +1,163 @@
+# Production compose for Dokploy.
+#
+# All secrets/config are read from ${VAR} — set them in the Dokploy project's
+# "Environment" tab (see .env.dokploy.example for the full list) rather than
+# committing a .env file. Domains/HTTPS are configured manually in Dokploy
+# against the `api` service's port 8000 — no Traefik labels needed here.
+#
+# Topology: api and worker are separate services (independent crash/restart,
+# no shared in-process state) talking to shared postgres/redis/milvus
+# services over the internal Dokploy network. Only `api` needs to be exposed.
+
+services:
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  milvus:
+    image: milvusdb/milvus:v3.0.0
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - milvus_data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["./scripts/start-api.sh"]
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+      PORT: 8000
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-20}
+      DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-10}
+      REDIS_URL: ${REDIS_URL}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      VECTOR_DB_URI: http://milvus:19530
+      MILVUS_COLLECTION: ${MILVUS_COLLECTION:-knowledge_base}
+      VECTOR_DB_TOKEN: ${VECTOR_DB_TOKEN:-}
+      STORAGE_BACKEND: b2
+      B2_APPLICATION_KEY_ID: ${B2_APPLICATION_KEY_ID}
+      B2_APPLICATION_KEY: ${B2_APPLICATION_KEY}
+      B2_BUCKET_NAME: ${B2_BUCKET_NAME}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-models/gemini-embedding-001}
+      EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-1024}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-50}
+      MAX_UPLOAD_BATCH: ${MAX_UPLOAD_BATCH:-10}
+      ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES:-pdf,docx,txt,md}
+      CHUNK_SIZE: ${CHUNK_SIZE:-1000}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-200}
+      CONVERSATION_HISTORY_LIMIT: ${CONVERSATION_HISTORY_LIMIT:-5}
+      STORAGE_QUOTA_DEFAULT: ${STORAGE_QUOTA_DEFAULT:-1073741824}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-100}
+      INVITE_ONLY: ${INVITE_ONLY:-true}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      FRONTEND_URL: ${FRONTEND_URL}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Ragify}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["./scripts/start-worker.sh"]
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-20}
+      DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-10}
+      REDIS_URL: ${REDIS_URL}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      VECTOR_DB_URI: http://milvus:19530
+      MILVUS_COLLECTION: ${MILVUS_COLLECTION:-knowledge_base}
+      VECTOR_DB_TOKEN: ${VECTOR_DB_TOKEN:-}
+      STORAGE_BACKEND: b2
+      B2_APPLICATION_KEY_ID: ${B2_APPLICATION_KEY_ID}
+      B2_APPLICATION_KEY: ${B2_APPLICATION_KEY}
+      B2_BUCKET_NAME: ${B2_BUCKET_NAME}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-models/gemini-embedding-001}
+      EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-1024}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-50}
+      CHUNK_SIZE: ${CHUNK_SIZE:-1000}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-200}
+      STORAGE_QUOTA_DEFAULT: ${STORAGE_QUOTA_DEFAULT:-1073741824}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Ragify}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  milvus_data:

@@ -58,7 +58,8 @@ backend/
 ├── scripts/             # Utility scripts
 │   ├── bootstrap_admin.py  # Generate first invite code
 │   ├── seed_data.py        # Seed dev test data
-│   ├── run_worker.sh       # Start ARQ worker
+│   ├── start-api.sh        # Container entrypoint: migrate + seed admin + uvicorn
+│   ├── start-worker.sh     # Container entrypoint: arq worker
 │   └── db_reset.sh         # Reset database (dev only)
 ├── tests/               # Pytest tests
 ├── alembic/             # Database migrations (optional)
