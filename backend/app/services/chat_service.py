@@ -304,7 +304,7 @@ async def execute_rag_query(
         # Step 9: Call LLM for response
         llm_service = await get_llm_service()
         response_text = await llm_service.generate_response(
-            SYSTEM_PROMPT, user_prompt, timeout=10
+            SYSTEM_PROMPT, user_prompt, timeout=settings.GEMINI_RAG_TIMEOUT_SECONDS
         )
         logger.info(f"Generated LLM response ({len(response_text)} chars)")
 
@@ -566,7 +566,7 @@ async def execute_rag_query_stream(
         full_response = []
 
         async for chunk in llm_service.generate_response_stream(
-            SYSTEM_PROMPT, user_prompt, timeout=10
+            SYSTEM_PROMPT, user_prompt, timeout=settings.GEMINI_RAG_TIMEOUT_SECONDS
         ):
             full_response.append(chunk)
             yield chunk
