@@ -43,7 +43,12 @@ class LLMService:
             raise RuntimeError("Gemini LLM not configured. Call configure() first.")
 
     async def generate_response(
-        self, system_prompt: str, user_prompt: str, timeout: int = 10
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        timeout: int = 10,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
     ) -> str:
         """
         Generate AI response using Gemini LLM.
@@ -52,6 +57,8 @@ class LLMService:
             system_prompt: System instructions for the model
             user_prompt: User query with context
             timeout: Timeout in seconds (default: 10)
+            max_tokens: Maximum number of output tokens (default: model default)
+            temperature: Sampling temperature (default: model default)
 
         Returns:
             str: Generated response text
@@ -77,9 +84,15 @@ class LLMService:
             # Create model instance
             model = genai.GenerativeModel(self.model_name)  # type: ignore
 
+            generation_config = genai.types.GenerationConfig(  # type: ignore
+                max_output_tokens=max_tokens,
+                temperature=temperature,
+            )
+
             # Generate response with timeout
             response = model.generate_content(  # type: ignore
                 full_prompt,
+                generation_config=generation_config,
                 request_options={"timeout": timeout},
             )
 

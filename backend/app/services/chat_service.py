@@ -122,8 +122,8 @@ Classification:"""
         classification = await llm_service.generate_response(
             system_prompt="You are a query classifier. Respond with only one word.",
             user_prompt=classification_prompt,
-            max_tokens=10,  # type:ignore Only need 1 word
-            temperature=0.0,  # type:ignore Deterministic type:ignore
+            max_tokens=10,  # Only need 1 word
+            temperature=0.0,  # Deterministic
             timeout=5,
         )
 
