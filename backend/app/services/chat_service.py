@@ -124,7 +124,7 @@ Classification:"""
             user_prompt=classification_prompt,
             max_tokens=10,  # Only need 1 word
             temperature=0.0,  # Deterministic
-            timeout=5,
+            timeout=10,
         )
 
         classification = classification.strip().upper()
