@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     # Google Gemini
     GOOGLE_API_KEY: str
     GEMINI_MODEL: str = "gemini-2.5-flash"
+    # RAG generation calls include retrieved document context, so give them more
+    # room than a bare prompt needs before the request is aborted as timed out.
+    GEMINI_RAG_TIMEOUT_SECONDS: int = 30
     EMBEDDING_MODEL: str = "models/gemini-embedding-001"
     # Embedding dimension: 768 (standard), 1024 (better quality - CURRENT), 3072 (maximum)
     # Higher = better semantic understanding but slower search and more storage
