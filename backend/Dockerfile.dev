@@ -13,6 +13,9 @@ COPY --from=ghcr.io/astral-sh/uv:0.12.13 /uv /usr/local/bin/uv
 # Optimize container startup times by compiling .py files to .pyc bytecode
 ENV UV_COMPILE_BYTECODE=1
 
+# Cache mount and .venv are on different filesystems; avoid failed hardlink attempts
+ENV UV_LINK_MODE=copy
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/*
