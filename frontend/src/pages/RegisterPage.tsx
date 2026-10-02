@@ -15,7 +15,7 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -24,6 +24,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useDarkMode } from "../contexts/DarkModeContext";
+import { useAuthConfig } from "../hooks/useAuthConfig";
 import api, { getApiErrorMessage } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
@@ -63,29 +64,37 @@ const getStrengthLabel = (score: number): string => {
   return "Strong";
 };
 
-// Validation schema
-const registerSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/\d/, "Password must contain at least one number")
-    .regex(
-      /[!@#$%^&*(),.?":{}|<>]/,
-      "Password must contain at least one special character",
-    ),
-  inviteCode: z
-    .string()
-    .length(17, "Invite code must be in format KB-XXXX-XXXX-XXXX")
-    .regex(
-      /^KB-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/,
-      "Invalid invite code format",
-    ),
-});
+const INVITE_CODE_PATTERN = /^KB-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 
-type RegisterFormData = z.infer<typeof registerSchema>;
+// Validation schema. The invite code is only checked (and only sent) when the server runs
+// in invite-only mode, so one server setting controls both sides.
+const createRegisterSchema = (inviteOnly: boolean) =>
+  z
+    .object({
+      email: z.string().email("Invalid email address"),
+      password: z
+        .string()
+        .min(8, "Password must be at least 8 characters")
+        .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+        .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+        .regex(/\d/, "Password must contain at least one number")
+        .regex(
+          /[!@#$%^&*(),.?":{}|<>]/,
+          "Password must contain at least one special character",
+        ),
+      inviteCode: z.string().optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (inviteOnly && !INVITE_CODE_PATTERN.test(data.inviteCode ?? "")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["inviteCode"],
+          message: "Invite code must be in format KB-XXXX-XXXX-XXXX",
+        });
+      }
+    });
+
+type RegisterFormData = z.infer<ReturnType<typeof createRegisterSchema>>;
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -94,6 +103,13 @@ export function RegisterPage() {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Whether an invite code is needed comes from the server (INVITE_ONLY)
+  const { inviteOnly, isLoading: configLoading } = useAuthConfig();
+  const registerSchema = useMemo(
+    () => createRegisterSchema(inviteOnly),
+    [inviteOnly],
+  );
 
   // Initialize dark mode from localStorage
   useDarkMode();
@@ -170,7 +186,7 @@ export function RegisterPage() {
       const response = await api.post("/auth/register", {
         email: data.email,
         password: data.password,
-        invite_code: data.inviteCode,
+        invite_code: inviteOnly ? data.inviteCode : undefined,
       });
 
       // Store tokens
@@ -480,41 +496,45 @@ export function RegisterPage() {
               )}
             </div>
 
-            {/* Invite Code Field */}
-            <div className="space-y-3">
-              <Label
-                htmlFor="inviteCode"
-                className="text-xs uppercase tracking-widest text-foreground font-medium font-sans"
-              >
-                Invite Code
-              </Label>
-              <Input
-                {...register("inviteCode")}
-                id="inviteCode"
-                type="text"
-                placeholder="KB-XXXX-XXXX-XXXX"
-                maxLength={17}
-                className="h-14 border-0 border-b-2 border-border rounded-none focus:border-primary focus:ring-0 bg-transparent text-foreground placeholder:text-muted-foreground uppercase tracking-widest text-center font-sans transition-colors"
-                disabled={isSubmitting}
-              />
-              {errors.inviteCode && (
-                <p className="text-sm text-destructive font-sans">
-                  {errors.inviteCode.message}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground font-sans">
-                Don't have a code?{" "}
-                <button
-                  type="button"
-                  onClick={() =>
-                    toast.info("Contact your administrator for an invite code")
-                  }
-                  className="text-primary underline hover:no-underline"
+            {/* Invite Code Field: only when the server requires one */}
+            {inviteOnly && !configLoading && (
+              <div className="space-y-3">
+                <Label
+                  htmlFor="inviteCode"
+                  className="text-xs uppercase tracking-widest text-foreground font-medium font-sans"
                 >
-                  Request access
-                </button>
-              </p>
-            </div>
+                  Invite Code
+                </Label>
+                <Input
+                  {...register("inviteCode")}
+                  id="inviteCode"
+                  type="text"
+                  placeholder="KB-XXXX-XXXX-XXXX"
+                  maxLength={17}
+                  className="h-14 border-0 border-b-2 border-border rounded-none focus:border-primary focus:ring-0 bg-transparent text-foreground placeholder:text-muted-foreground uppercase tracking-widest text-center font-sans transition-colors"
+                  disabled={isSubmitting}
+                />
+                {errors.inviteCode && (
+                  <p className="text-sm text-destructive font-sans">
+                    {errors.inviteCode.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground font-sans">
+                  Don't have a code?{" "}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      toast.info(
+                        "Contact your administrator for an invite code",
+                      )
+                    }
+                    className="text-primary underline hover:no-underline"
+                  >
+                    Request access
+                  </button>
+                </p>
+              </div>
+            )}
 
             {/* Inline error */}
             {formError && (
@@ -527,7 +547,7 @@ export function RegisterPage() {
             {/* Submit Button */}
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || configLoading}
               className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-lg transition-all duration-300 hover:translate-y-[-2px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 group font-sans"
             >
               {isSubmitting ? (

@@ -326,3 +326,10 @@ export interface AiModel {
   context_length: number | null;
   free: boolean;
 }
+
+/**
+ * Public sign-up settings from the server (no login needed)
+ */
+export interface AuthConfig {
+  invite_only: boolean;
+}
