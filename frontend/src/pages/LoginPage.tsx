@@ -24,6 +24,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useDarkMode } from "../contexts/DarkModeContext";
+import { getApiErrorMessage } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
 // Validation schema
@@ -66,10 +67,9 @@ export function LoginPage() {
       await login(data.email, data.password);
       navigate("/dashboard");
     } catch (err) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail ?? "Invalid email or password. Please try again.";
-      setFormError(message);
+      setFormError(
+        getApiErrorMessage(err, "Invalid email or password. Please try again."),
+      );
     }
   };
 

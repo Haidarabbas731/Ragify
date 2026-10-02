@@ -24,7 +24,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useDarkMode } from "../contexts/DarkModeContext";
-import api from "../lib/api";
+import api, { getApiErrorMessage } from "../lib/api";
 import { useAuthStore } from "../store/authStore";
 
 // Password strength validation
@@ -180,10 +180,9 @@ export function RegisterPage() {
       toast.success("Account created successfully!");
       navigate("/dashboard");
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail || "Registration failed. Please try again.";
-      setFormError(message);
+      setFormError(
+        getApiErrorMessage(error, "Registration failed. Please try again."),
+      );
     } finally {
       setIsSubmitting(false);
       setLoading(false);

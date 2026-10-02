@@ -14,7 +14,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useDarkMode } from "../contexts/DarkModeContext";
-import api from "../lib/api";
+import api, { getApiErrorMessage } from "../lib/api";
 
 // Password strength validation
 const passwordRequirements = {
@@ -135,10 +135,12 @@ export function ResetPasswordPage() {
       toast.success("Password reset successfully!");
       navigate("/login");
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail || "Password reset failed. The link may have expired.";
-      toast.error(message);
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "Password reset failed. The link may have expired.",
+        ),
+      );
       console.error("Password reset error:", error);
     } finally {
       setIsSubmitting(false);
