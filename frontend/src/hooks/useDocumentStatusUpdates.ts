@@ -73,6 +73,10 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
 
       // Invalidate documents list to refresh (will show new status)
       console.log("[SSE] Invalidating documents query");
+      // The detail query carries the chunk list, which the status patch above can't supply
+      queryClient.invalidateQueries({
+        queryKey: ["document", update.document_id],
+      });
       queryClient.invalidateQueries({ queryKey: ["documents"] });
 
       // Invalidate user stats to update counts and storage
