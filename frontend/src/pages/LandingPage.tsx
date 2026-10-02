@@ -142,7 +142,7 @@ export function LandingPage() {
       icon: Link,
       title: "Source Citations",
       description:
-        "Every answer includes citations showing exactly which documents and sections were used. Full transparency in AI responses.",
+        "Every answer shows which documents it came from, so you can trust and verify what the AI tells you.",
     },
   ];
 
@@ -165,7 +165,7 @@ export function LandingPage() {
       icon: MessageSquare,
       title: "Ask in Plain Language",
       description:
-        "Ask questions naturally. Get instant answers with source citations.",
+        "Ask questions naturally. Get instant answers that show their source documents.",
     },
     {
       number: "04",
@@ -180,7 +180,7 @@ export function LandingPage() {
     "PDF · DOCX · TXT · MD",
     "Up to 50MB per file",
     "Vector search powered",
-    "Source citations on every answer",
+    "Source documents shown with every answer",
   ];
 
   return (
@@ -221,7 +221,7 @@ export function LandingPage() {
             className="text-lg md:text-xl text-white/70 max-w-xl mx-auto mb-10 leading-relaxed"
           >
             Transform your knowledge base with AI-powered search and chat.
-            Instant answers from your documents, with source citations.
+            Instant answers from your documents, with the sources shown.
           </p>
 
           {/* CTAs */}

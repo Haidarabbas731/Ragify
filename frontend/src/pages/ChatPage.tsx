@@ -540,8 +540,8 @@ export function ChatPage() {
                       Start a Conversation
                     </h2>
                     <p className="text-slate-600 dark:text-slate-300 font-sans">
-                      Ask me anything about your uploaded documents. I'll
-                      provide accurate answers with source citations.
+                      Ask me anything about your uploaded documents. I'll answer
+                      from them and show which documents I used.
                     </p>
                   </div>
                 </div>
@@ -592,50 +592,18 @@ export function ChatPage() {
                           </p>
                         </div>
 
-                        {/* Source Citations */}
+                        {/* Source documents */}
                         {msg.sources && msg.sources.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2 font-sans">
-                              <FileText className="w-3.5 h-3.5" />
-                              Sources
-                            </p>
-                            <div className="grid gap-2">
-                              {msg.sources.map((source, idx) => (
-                                <div
-                                  key={`${source.filename}-${source.chunk_index}-${idx}`}
-                                  className="bg-muted rounded-lg p-3 border border-border hover:border-primary/50 dark:hover:border-primary/50 transition-all duration-300 cursor-pointer"
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <div className="p-2 bg-primary/10 dark:bg-primary/20 rounded-lg">
-                                      <FileText
-                                        className="w-3.5 h-3.5 text-primary"
-                                        strokeWidth={2}
-                                      />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-foreground truncate mb-1 font-sans">
-                                        {source.filename}
-                                      </p>
-                                      <div className="flex items-center gap-2 text-xs font-mono">
-                                        <span className="text-muted-foreground">
-                                          chunk {source.chunk_index}
-                                        </span>
-                                        <span className="text-muted-foreground">
-                                          •
-                                        </span>
-                                        <span className="font-semibold text-primary tabular-nums">
-                                          {(
-                                            source.relevance_score * 100
-                                          ).toFixed(0)}
-                                          % match
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                          <p className="mt-3 flex items-start gap-1.5 text-xs text-muted-foreground font-sans">
+                            <FileText className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                            <span className="min-w-0 break-words">
+                              {[
+                                ...new Set(
+                                  msg.sources.map((source) => source.filename),
+                                ),
+                              ].join(" · ")}
+                            </span>
+                          </p>
                         )}
                       </div>
                     </div>

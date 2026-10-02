@@ -26,7 +26,7 @@ const steps = [
     icon: Sparkles,
     title: "Get Intelligent Answers",
     description:
-      "Receive AI-powered responses with source citations. Every answer shows exactly where the information came from.",
+      "Receive AI-powered responses grounded in your documents. Every answer lists the documents it came from.",
   },
 ];
 

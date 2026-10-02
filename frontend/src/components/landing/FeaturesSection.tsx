@@ -37,7 +37,7 @@ const features = [
     icon: LinkIcon,
     title: "Source Citations",
     description:
-      "Every answer includes citations showing exactly which documents and sections were used. Full transparency in AI responses.",
+      "Every answer shows which documents it came from, so you can trust and verify what the AI tells you.",
     gradient: "from-pink-500 to-rose-600",
   },
 ];
