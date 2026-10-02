@@ -189,6 +189,14 @@ bash scripts/db_reset.sh  # Drops all tables and recreates
 
 ## 🔐 Initial Setup Scripts
 
+### Admin account (`ADMIN_EMAIL` / `ADMIN_PASSWORD`)
+
+The API creates this admin at startup and keeps its password in sync with `ADMIN_PASSWORD`
+(changing the variable and restarting is enough; a password changed in the app for this
+account is reverted the same way). Avoid `#`, `$`, quotes, backslashes and spaces in the
+value: env-file parsers cut or rewrite them. To also restore a demoted or suspended admin run
+`python scripts/seed_admin.py --restore-access`.
+
 ### Generate First Admin Invite Code
 ```bash
 uv run python scripts/bootstrap_admin.py

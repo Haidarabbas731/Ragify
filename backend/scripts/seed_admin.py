@@ -1,7 +1,11 @@
-"""Seed the initial admin user, or reset the admin's password.
+"""Create the admin user, and keep its password in sync with ADMIN_PASSWORD.
 
-    python scripts/seed_admin.py                  # create the admin if missing (runs at startup)
-    python scripts/seed_admin.py --reset-password # set the admin's password from ADMIN_PASSWORD
+    python scripts/seed_admin.py                  # runs at every startup
+    python scripts/seed_admin.py --restore-access # also make the account an active admin again
+
+ADMIN_PASSWORD is the source of truth for this account: when it differs from the stored
+password, the stored one is replaced on the next start. A password changed through the app for
+this account is therefore reverted by the next restart unless ADMIN_PASSWORD is updated too.
 """
 
 import argparse
@@ -10,21 +14,18 @@ import asyncio
 from sqlmodel import select
 
 from app.core.config import settings
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.db.database import async_session_maker
 from app.models.user import User, UserStatus
 
 
-async def seed_admin(reset_password: bool = False) -> None:
+async def seed_admin(restore_access: bool = False) -> None:
     """
-    Create the admin user from env vars if it does not exist yet.
-
-    An existing admin is normally left alone, so changing ADMIN_PASSWORD later does not change
-    its password. With ``reset_password`` the existing admin's password is set from
-    ADMIN_PASSWORD (and the account is re-activated), which recovers a locked-out admin.
+    Create the admin user from env vars, or update an existing one to match them.
 
     Args:
-        reset_password: Overwrite the existing admin's password with ADMIN_PASSWORD
+        restore_access: Also make the account an active admin again (role, status, active
+            flag), which recovers an admin that was demoted or suspended
     """
     email = settings.ADMIN_EMAIL
     password = settings.ADMIN_PASSWORD
@@ -34,43 +35,48 @@ async def seed_admin(reset_password: bool = False) -> None:
         return
 
     async with async_session_maker() as session:
-        existing = (await session.exec(select(User).where(User.email == email))).first()
+        admin = (await session.exec(select(User).where(User.email == email))).first()
 
-        if existing and not reset_password:
-            print(
-                f"==> Admin already exists ({email}), skipping seed "
-                "(use --reset-password to set its password from ADMIN_PASSWORD)"
+        if admin is None:
+            session.add(
+                User(
+                    email=email,
+                    password_hash=hash_password(password),
+                    role="admin",
+                    status=UserStatus.ACTIVE.value,
+                    is_active=True,
+                )
             )
-            return
-
-        if existing:
-            existing.password_hash = hash_password(password)
-            existing.role = "admin"
-            existing.status = UserStatus.ACTIVE.value
-            existing.is_active = True
-            session.add(existing)
             await session.commit()
-            print(f"==> Admin password reset: {email}")
+            print(f"==> Admin user created: {email}")
             return
 
-        session.add(
-            User(
-                email=email,
-                password_hash=hash_password(password),
-                role="admin",
-                status=UserStatus.ACTIVE.value,
-                is_active=True,
-            )
-        )
+        updated = []
+        if not verify_password(password, admin.password_hash):
+            admin.password_hash = hash_password(password)
+            updated.append("password")
+        if restore_access and (
+            admin.role != "admin" or admin.status != UserStatus.ACTIVE.value or not admin.is_active
+        ):
+            admin.role = "admin"
+            admin.status = UserStatus.ACTIVE.value
+            admin.is_active = True
+            updated.append("access")
+
+        if not updated:
+            print(f"==> Admin already up to date ({email})")
+            return
+
+        session.add(admin)
         await session.commit()
-        print(f"==> Admin user created: {email}")
+        print(f"==> Admin {' and '.join(updated)} updated: {email}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--reset-password",
+        "--restore-access",
         action="store_true",
-        help="set the existing admin's password from ADMIN_PASSWORD",
+        help="also make the account an active admin again",
     )
-    asyncio.run(seed_admin(reset_password=parser.parse_args().reset_password))
+    asyncio.run(seed_admin(restore_access=parser.parse_args().restore_access))
