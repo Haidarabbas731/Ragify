@@ -1,4 +1,4 @@
-import { Check, Search, TriangleAlert } from "lucide-react";
+import { Check, FileText, Search, TriangleAlert } from "lucide-react";
 import type { AgentActivity as AgentActivityState } from "../../hooks/useChatStream";
 
 interface AgentActivityProps {
@@ -24,6 +24,12 @@ function describe(activity: AgentActivityState): string {
         activity.documents ?? 0,
         "document",
       )}`;
+    case "listing":
+      return "Looking up your documents";
+    case "listed":
+      return activity.documents
+        ? `Found ${count(activity.documents, "document")}`
+        : "No documents uploaded yet";
     case "empty":
       return "No matching passages found";
     case "failed":
@@ -36,8 +42,9 @@ function describe(activity: AgentActivityState): string {
 /**
  * Live status of the chat agent while it works on an answer.
  *
- * Shows "Thinking", then "Searching your documents" with the search the assistant chose,
- * then "Reading N passages from M documents". The label swaps with a short ease-out
+ * Shows "Thinking", then either "Searching your documents" with the search the assistant
+ * chose and "Reading N passages from M documents", or "Looking up your documents" and
+ * "Found N documents". The label swaps with a short ease-out
  * (see `.step-in`); the pulsing dots stay put so the bubble never changes size.
  * Rendered as <output> so changes are announced politely to screen readers.
  */
@@ -59,6 +66,11 @@ export function AgentActivity({ activity }: AgentActivityProps) {
             />
           ) : phase === "searching" ? (
             <Search
+              className="w-4 h-4 text-primary shrink-0 animate-pulse"
+              aria-hidden="true"
+            />
+          ) : phase === "listing" ? (
+            <FileText
               className="w-4 h-4 text-primary shrink-0 animate-pulse"
               aria-hidden="true"
             />
@@ -89,6 +101,7 @@ export function AgentActivity({ activity }: AgentActivityProps) {
             {describe(activity)}
             {phase === "searching" ||
             phase === "reading" ||
+            phase === "listing" ||
             phase === "thinking"
               ? "…"
               : ""}
