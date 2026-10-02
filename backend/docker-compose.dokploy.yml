@@ -8,6 +8,9 @@
 # Topology: api and worker are separate services (independent crash/restart,
 # no shared in-process state) talking to shared postgres/redis/milvus
 # services over the internal Dokploy network. Only `api` needs to be exposed.
+#
+# Smaller option for demos: docker-compose.dokploy-lite.yml runs Milvus Lite inside the api
+# container instead of the standalone Milvus service (no ~3-4 GB image). Same variables.
 
 services:
 
@@ -85,9 +88,9 @@ services:
       B2_APPLICATION_KEY_ID: ${B2_APPLICATION_KEY_ID}
       B2_APPLICATION_KEY: ${B2_APPLICATION_KEY}
       B2_BUCKET_NAME: ${B2_BUCKET_NAME}
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-models/gemini-embedding-001}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-embed-v4.0}
       EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-1024}
       MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-50}
       MAX_UPLOAD_BATCH: ${MAX_UPLOAD_BATCH:-10}
@@ -142,9 +145,9 @@ services:
       B2_APPLICATION_KEY_ID: ${B2_APPLICATION_KEY_ID}
       B2_APPLICATION_KEY: ${B2_APPLICATION_KEY}
       B2_BUCKET_NAME: ${B2_BUCKET_NAME}
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-models/gemini-embedding-001}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-embed-v4.0}
       EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-1024}
       MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-50}
       CHUNK_SIZE: ${CHUNK_SIZE:-1000}
