@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.db.database import get_session
 from app.models.user import User
 from app.schemas.chat import ChatQuery, ChatResponse
+from app.services.ai_settings_service import resolve_chat_provider
 from app.services.chat_service import execute_rag_query, execute_rag_query_stream
 from app.services.providers.base import ProviderError
 from app.services.redis_service import check_rate_limit
@@ -93,6 +94,9 @@ async def chat_query(
                 detail=f"Rate limit exceeded. Maximum {settings.RATE_LIMIT_PER_MINUTE} requests per minute.",
             )
 
+        # The user's own model and key if they saved them, else the server defaults
+        provider = await resolve_chat_provider(db, current_user.user_id)
+
         # Handle streaming vs non-streaming
         if request.stream:
             # Return streaming response (SSE)
@@ -102,6 +106,7 @@ async def chat_query(
                         query=request.query,
                         user_id=current_user.user_id,
                         db=db,
+                        provider=provider,
                         conversation_id=request.conversation_id,
                         collection_id=request.collection_id,
                         top_k=request.top_k,
@@ -154,6 +159,7 @@ async def chat_query(
                 query=request.query,
                 user_id=current_user.user_id,
                 db=db,
+                provider=provider,
                 conversation_id=request.conversation_id,
                 collection_id=request.collection_id,
                 top_k=request.top_k,
