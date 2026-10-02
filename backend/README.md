@@ -78,40 +78,61 @@ backend/
 
 ## ⚙️ Configuration
 
-### Required Environment Variables
+### Environment Variables
 
-Edit `.env` file:
+Copy `.env.example` to `.env` and fill it in. The essentials:
 
 ```bash
-# Database (Docker)
+# Database and Redis (Docker)
 DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/knowledge_base
-
-# Redis (Docker)
 REDIS_URL=redis://localhost:6379/0
 
-# Google Gemini (Get from https://aistudio.google.com)
-GOOGLE_API_KEY=your-google-api-key-here
-GEMINI_MODEL=gemini-2.0-flash-exp
-EMBEDDING_MODEL=models/gemini-embedding-001
-EMBEDDING_DIMENSION=1024  # Options: 768 (standard), 1024 (recommended), 3072 (max)
+# Chat model: the default for everyone who has not saved their own key
+LLM_PROVIDER=gemini                  # gemini | openrouter
+GOOGLE_API_KEY=your-google-api-key   # https://aistudio.google.com/apikey
+GEMINI_MODEL=gemini-2.5-flash
+OPENROUTER_API_KEY=                  # https://openrouter.ai/keys
+OPENROUTER_MODEL=openai/gpt-4o-mini
 
-# Milvus Vector DB (Zilliz Cloud - Free Tier)
-MILVUS_HOST=your-cluster.cloud.zilliz.com
-MILVUS_PORT=19530
-MILVUS_TOKEN=your-zilliz-token
+# Embeddings (Cohere). Changing the model or dimension needs a re-index (see below)
+COHERE_API_KEY=your-cohere-api-key
+EMBEDDING_MODEL=embed-v4.0
+EMBEDDING_DIMENSION=1024             # embed-v4.0 supports 256, 512, 1024, 1536
 
-# Backblaze B2 Storage (Free 10GB)
-B2_APPLICATION_KEY_ID=your-key-id
-B2_APPLICATION_KEY=your-key
-B2_BUCKET_NAME=your-bucket-name
+# Vector DB: a local Milvus Lite file for dev, or a Milvus/Zilliz URL
+VECTOR_DB_URI=./milvus_ragify.db
+VECTOR_DB_TOKEN=
 
-# Email (Resend - Free 100/day)
+# File storage: local for dev, b2 for production
+STORAGE_BACKEND=local
+
+# Email (Resend) and security
 RESEND_API_KEY=your-resend-api-key
 EMAIL_FROM_ADDRESS=noreply@yourdomain.com
-
-# JWT Security (generate with: openssl rand -hex 32)
-JWT_SECRET_KEY=your-secret-key-here
+JWT_SECRET_KEY=your-secret-key-here  # generate with: openssl rand -hex 32
 ```
+
+### Which API key does chat use?
+
+1. **The user's own key**, if they saved one in Profile > Preferences (provider, model and key are theirs).
+2. Otherwise **the server key from `.env`** for `LLM_PROVIDER`.
+3. If neither exists, chat asks the user to add a key.
+
+Saved keys are stored encrypted. The encryption key is derived from `JWT_SECRET_KEY`
+(or set `APP_ENCRYPTION_KEY` to use a dedicated one), so changing either makes saved keys
+unreadable and users must enter them again.
+
+### Re-indexing after changing the embedding model
+
+Vectors from different embedding models are not comparable, so the Milvus collection records
+the model and dimension that built it, and the app refuses to open it with a different setup:
+
+```
+Collection 'knowledge_base' was built with embeddings '...' but the app is configured for '...'
+```
+
+To switch: stop the worker, delete the collection (or the Milvus Lite data), clear the
+`documents` rows and stored files, then restart and re-upload your documents.
 
 ---
 
@@ -281,8 +302,9 @@ git push origin dev
 # 4. Add secret environment variables in dashboard:
 #    - DATABASE_URL (from Neon/Aiven)
 #    - REDIS_URL (from Upstash)
-#    - GOOGLE_API_KEY
-#    - MILVUS_HOST, MILVUS_TOKEN
+#    - GOOGLE_API_KEY (or OPENROUTER_API_KEY) for the default chat model
+#    - COHERE_API_KEY (embeddings)
+#    - VECTOR_DB_URI, VECTOR_DB_TOKEN (Milvus/Zilliz)
 #    - B2_APPLICATION_KEY_ID, B2_APPLICATION_KEY
 #    - RESEND_API_KEY
 #    - JWT_SECRET_KEY (generate with: openssl rand -hex 32)
@@ -355,8 +377,9 @@ And change envVars to:
 DATABASE_URL=postgresql+asyncpg://user:pass@host.aivencloud.com:12345/knowledge_base
 REDIS_URL=redis://default:password@abc-123.upstash.io:6379
 GOOGLE_API_KEY=your-google-api-key
-MILVUS_HOST=your-cluster.cloud.zilliz.com
-MILVUS_TOKEN=your-milvus-token
+COHERE_API_KEY=your-cohere-api-key
+VECTOR_DB_URI=https://your-cluster.cloud.zilliz.com
+VECTOR_DB_TOKEN=your-milvus-token
 B2_APPLICATION_KEY_ID=your-b2-key-id
 B2_APPLICATION_KEY=your-b2-application-key
 B2_BUCKET_NAME=your-bucket-name
