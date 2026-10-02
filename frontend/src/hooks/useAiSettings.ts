@@ -19,6 +19,7 @@ import type {
   AiSettingsUpdate,
   AiTestResult,
 } from "../types/api";
+import { useDebouncedValue } from "./useDebouncedValue";
 
 const SETTINGS_KEY = ["ai", "settings"];
 
@@ -83,15 +84,42 @@ export function useTestAiSettings() {
 }
 
 /**
- * List models for a provider (only providers with a catalog return any)
+ * Short non-reversible fingerprint (FNV-1a). Lets a query refetch when the typed key changes
+ * without putting the key itself into the cache key.
+ */
+function fingerprint(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16);
+}
+
+/**
+ * List models for a provider.
+ *
+ * OpenRouter's list is public. Gemini's needs a key: the one being typed (once the user
+ * pauses), else the saved or server key, which the backend picks. With no key it is empty.
  * @param provider - Provider to list models for
+ * @param apiKey - Key the user is typing, if any
  * @returns Models with React Query state
  */
-export function useAiModels(provider: AiProvider) {
+export function useAiModels(provider: AiProvider, apiKey: string) {
+  const typedKey = useDebouncedValue(apiKey.trim(), 600);
+  const keyForRequest =
+    provider === "gemini" && typedKey.length >= 8 ? typedKey : undefined;
+
   return useQuery<AiModel[]>({
-    queryKey: ["ai", "models", provider],
-    queryFn: () => listAiModels(provider),
-    enabled: provider === "openrouter",
+    queryKey: [
+      "ai",
+      "models",
+      provider,
+      keyForRequest ? fingerprint(keyForRequest) : "saved",
+    ],
+    queryFn: () => listAiModels(provider, keyForRequest),
     staleTime: 1000 * 60 * 60,
+    // A rejected key will not fix itself; show the message instead of retrying
+    retry: false,
   });
 }
