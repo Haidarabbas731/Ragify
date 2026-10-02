@@ -7,7 +7,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_user
 from app.core.config import settings
-from app.core.crypto import EncryptionUnavailableError, encryption_enabled
 from app.db.database import get_session
 from app.models.user import User
 from app.schemas.ai_settings import (
@@ -26,7 +25,13 @@ from app.services.ai_settings_service import (
 )
 from app.services.model_catalog import list_openrouter_models
 from app.services.providers.base import ProviderAuthError, ProviderError
-from app.services.providers.registry import PROVIDERS, Provider, default_model, get_chat_provider
+from app.services.providers.registry import (
+    PROVIDERS,
+    Provider,
+    default_model,
+    get_chat_provider,
+    server_key_available,
+)
 from app.services.redis_service import check_rate_limit
 
 logger = logging.getLogger(__name__)
@@ -50,10 +55,9 @@ async def get_settings(
         model=row.model if row else None,
         has_key=row is not None,
         key_last4=row.key_last4 if row else None,
-        key_storage_enabled=encryption_enabled(),
-        fallback_enabled=settings.ALLOW_SERVER_KEY_FALLBACK,
         default_provider=settings.LLM_PROVIDER,
         default_model=default_model(settings.LLM_PROVIDER),
+        default_available=server_key_available(settings.LLM_PROVIDER),
         providers=list(PROVIDERS),
     )
 
@@ -73,11 +77,6 @@ async def update_settings(
         await save_ai_settings(
             db, current_user.user_id, request.provider, request.model, request.api_key
         )
-    except EncryptionUnavailableError as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Saving API keys is not enabled on this server.",
-        ) from e
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 

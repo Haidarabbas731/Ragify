@@ -63,6 +63,12 @@ class ProviderAuthError(ProviderError):
     status_code = 400
 
 
+class ProviderKeyMissingError(ProviderAuthError):
+    """Neither the user nor the server has an API key for the chat model."""
+
+    user_message = "No AI API key is set. Add your own key in Profile > Preferences to use chat."
+
+
 @dataclass(frozen=True)
 class ToolSpec:
     """A tool the model may call. ``parameters`` is a JSON Schema object."""

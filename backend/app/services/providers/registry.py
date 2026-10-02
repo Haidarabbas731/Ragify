@@ -2,12 +2,17 @@ from functools import lru_cache
 from typing import Literal, get_args
 
 from app.core.config import settings
-from app.services.providers.base import ChatProvider, ProviderAuthError
+from app.services.providers.base import ChatProvider, ProviderKeyMissingError
 from app.services.providers.gemini import GeminiProvider
 from app.services.providers.openai_compat import OpenAICompatProvider
 
 Provider = Literal["gemini", "openrouter"]
 PROVIDERS: tuple[str, ...] = get_args(Provider)
+
+
+def server_key_available(provider: str) -> bool:
+    """Whether the server (.env) has an API key for a provider."""
+    return bool(settings.GOOGLE_API_KEY if provider == "gemini" else settings.OPENROUTER_API_KEY)
 
 
 def default_model(provider: str) -> str:
@@ -21,13 +26,13 @@ def _build(provider: str, model: str | None, api_key: str | None) -> ChatProvide
     if provider == "gemini":
         key = api_key or settings.GOOGLE_API_KEY
         if not key:
-            raise ProviderAuthError("No Gemini API key configured")
+            raise ProviderKeyMissingError("No Gemini API key configured")
         return GeminiProvider(key, model or default_model(provider))
 
     if provider == "openrouter":
         key = api_key or settings.OPENROUTER_API_KEY
         if not key:
-            raise ProviderAuthError("No OpenRouter API key configured")
+            raise ProviderKeyMissingError("No OpenRouter API key configured")
         return OpenAICompatProvider(
             api_key=key,
             model=model or default_model(provider),
@@ -58,6 +63,6 @@ def get_chat_provider(
 
     Raises:
         ValueError: If the provider name is unknown
-        ProviderAuthError: If no API key is available for the provider
+        ProviderKeyMissingError: If no API key is available for the provider
     """
     return _build(provider or settings.LLM_PROVIDER, model, api_key)

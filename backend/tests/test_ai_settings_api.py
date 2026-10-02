@@ -5,7 +5,6 @@ Tests for the /ai endpoints (called as functions, so no HTTP stack or Redis is n
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from cryptography.fernet import Fernet
 from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -20,12 +19,9 @@ KEY = "sk-or-v1-TOPSECRETKEY1234"
 
 
 @pytest.fixture(autouse=True)
-def server_setup():
-    """Enable key storage and let the rate limiter allow everything."""
-    with (
-        patch.object(settings, "APP_ENCRYPTION_KEY", Fernet.generate_key().decode()),
-        patch("app.api.v1.ai_settings.check_rate_limit", new=AsyncMock(return_value=True)),
-    ):
+def allow_rate_limit():
+    """Redis is not available in unit tests; let the rate limiter allow everything."""
+    with patch("app.api.v1.ai_settings.check_rate_limit", new=AsyncMock(return_value=True)):
         yield
 
 
@@ -41,9 +37,32 @@ async def test_get_settings_for_a_user_without_saved_settings(session: AsyncSess
 
     assert result.has_key is False
     assert result.provider is None
-    assert result.key_storage_enabled is True
     assert result.default_provider == settings.LLM_PROVIDER
     assert result.providers == ["gemini", "openrouter"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("server_key", "expected"), [("server-key", True), (None, False)])
+async def test_default_available_reflects_whether_the_server_has_a_key(
+    session: AsyncSession, sample_user, server_key, expected
+):
+    """The UI uses this to tell users without a key of their own that they must add one."""
+    with (
+        patch.object(settings, "LLM_PROVIDER", "gemini"),
+        patch.object(settings, "GOOGLE_API_KEY", server_key),
+    ):
+        result = await api.get_settings(sample_user, session)
+
+    assert result.default_available is expected
+
+
+@pytest.mark.asyncio
+async def test_saving_works_without_any_encryption_setup(session: AsyncSession, sample_user):
+    """No extra server configuration is needed to save a key."""
+    with patch.object(settings, "APP_ENCRYPTION_KEY", None):
+        result = await api.update_settings(update(), sample_user, session)
+
+    assert result.has_key is True
 
 
 @pytest.mark.asyncio
@@ -77,19 +96,6 @@ async def test_first_save_without_a_key_is_a_400(session: AsyncSession, sample_u
         await api.update_settings(update(api_key=None), sample_user, session)
 
     assert exc.value.status_code == 400
-
-
-@pytest.mark.asyncio
-async def test_saving_is_a_503_when_the_server_has_no_encryption_key(
-    session: AsyncSession, sample_user
-):
-    """Without APP_ENCRYPTION_KEY the endpoint says the feature is disabled."""
-    with patch.object(settings, "APP_ENCRYPTION_KEY", None):
-        with pytest.raises(HTTPException) as exc:
-            await api.update_settings(update(), sample_user, session)
-
-        assert exc.value.status_code == 503
-        assert (await api.get_settings(sample_user, session)).key_storage_enabled is False
 
 
 @pytest.mark.asyncio

@@ -45,13 +45,11 @@ class Settings(BaseSettings):
 
     # Chat model provider: "gemini" or "openrouter"
     LLM_PROVIDER: str = "gemini"
-    # Users can save their own provider API key and model (Profile > Preferences). Keys are
-    # encrypted at rest with this Fernet key; without it the feature is disabled.
-    # Generate one: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    # Optional: key used to encrypt users' saved provider API keys. When empty (the default)
+    # one is derived from JWT_SECRET_KEY, so saving keys works with no extra setup. Either
+    # way, changing the secret makes saved keys unreadable and users must enter them again.
+    # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     APP_ENCRYPTION_KEY: str | None = None
-    # When a user has not saved their own key, chat uses the server's key and model.
-    # Set to false to require every user to bring their own key.
-    ALLOW_SERVER_KEY_FALLBACK: bool = True
     # Chat generation includes retrieved document context, so give calls more room than a
     # bare prompt needs before the request is aborted as timed out (all providers).
     GEMINI_RAG_TIMEOUT_SECONDS: int = 30
@@ -125,7 +123,7 @@ class Settings(BaseSettings):
     PASSWORD_RESET_TOKEN_EXPIRY: int = 900  # 15 minutes in seconds
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", case_sensitive=True
+        env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore"
     )
 
 

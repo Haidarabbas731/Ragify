@@ -5,11 +5,9 @@ Unit tests for ai_settings_service.py - per-user provider, model and API key.
 from unittest.mock import patch
 
 import pytest
-from cryptography.fernet import Fernet
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
-from app.core.crypto import EncryptionUnavailableError
 from app.services.ai_settings_service import (
     check_connection,
     delete_ai_settings,
@@ -17,15 +15,13 @@ from app.services.ai_settings_service import (
     resolve_chat_provider,
     save_ai_settings,
 )
-from app.services.providers.base import ProviderAuthError, ProviderRateLimitError
+from app.services.providers.base import (
+    ProviderAuthError,
+    ProviderKeyMissingError,
+    ProviderRateLimitError,
+)
+from app.services.providers.registry import _build
 from tests.fakes import FakeProvider, text_turn
-
-
-@pytest.fixture(autouse=True)
-def encryption_key():
-    """Enable per-user key storage with a fresh server key."""
-    with patch.object(settings, "APP_ENCRYPTION_KEY", Fernet.generate_key().decode()):
-        yield
 
 
 @pytest.mark.asyncio
@@ -90,18 +86,6 @@ async def test_update_with_a_key_replaces_it(session: AsyncSession, sample_user)
 
 
 @pytest.mark.asyncio
-async def test_save_without_a_server_encryption_key_is_refused(session: AsyncSession, sample_user):
-    """Without APP_ENCRYPTION_KEY the feature is off and nothing is stored."""
-    with (
-        patch.object(settings, "APP_ENCRYPTION_KEY", None),
-        pytest.raises(EncryptionUnavailableError),
-    ):
-        await save_ai_settings(session, sample_user.user_id, "gemini", "m", "key-111111")
-
-    assert await get_ai_settings(session, sample_user.user_id) is None
-
-
-@pytest.mark.asyncio
 async def test_delete_removes_the_settings(session: AsyncSession, sample_user):
     """Deleting returns True once, and the user is back on the server defaults."""
     await save_ai_settings(session, sample_user.user_id, "gemini", "m", "key-111111")
@@ -135,24 +119,24 @@ async def test_resolve_uses_the_users_own_provider_model_and_decrypted_key(
 
 @pytest.mark.asyncio
 async def test_resolve_without_settings_uses_the_server_defaults(session: AsyncSession, sample_user):
-    """No saved settings: the server default provider is used."""
-    with (
-        patch.object(settings, "ALLOW_SERVER_KEY_FALLBACK", True),
-        patch("app.services.ai_settings_service.get_chat_provider") as build,
-    ):
-        await resolve_chat_provider(session, sample_user.user_id)
+    """A user with no saved settings runs on the server's configured provider and key."""
+    with patch("app.services.ai_settings_service.get_chat_provider") as build:
+        provider = await resolve_chat_provider(session, sample_user.user_id)
 
     build.assert_called_once_with()
+    assert provider is build.return_value
 
 
 @pytest.mark.asyncio
-async def test_resolve_without_settings_and_fallback_off_asks_for_a_key(
+async def test_resolve_without_user_or_server_key_asks_the_user_to_add_one(
     session: AsyncSession, sample_user
 ):
-    """With the fallback disabled, a user without a key gets a clear instruction."""
+    """If the server has no key either, chat tells the user to add their own."""
+    _build.cache_clear()  # a provider cached by another test would hide the missing key
     with (
-        patch.object(settings, "ALLOW_SERVER_KEY_FALLBACK", False),
-        pytest.raises(ProviderAuthError) as exc,
+        patch.object(settings, "LLM_PROVIDER", "gemini"),
+        patch.object(settings, "GOOGLE_API_KEY", None),
+        pytest.raises(ProviderKeyMissingError) as exc,
     ):
         await resolve_chat_provider(session, sample_user.user_id)
 
@@ -167,7 +151,7 @@ async def test_resolve_with_an_unreadable_key_asks_the_user_to_save_it_again(
     await save_ai_settings(session, sample_user.user_id, "gemini", "m", "key-111111")
 
     with (
-        patch.object(settings, "APP_ENCRYPTION_KEY", Fernet.generate_key().decode()),
+        patch.object(settings, "JWT_SECRET_KEY", "rotated-secret"),
         pytest.raises(ProviderAuthError) as exc,
     ):
         await resolve_chat_provider(session, sample_user.user_id)

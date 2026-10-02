@@ -7,10 +7,10 @@ from unittest.mock import patch
 import pytest
 
 from app.core.config import settings
-from app.services.providers.base import ProviderAuthError
+from app.services.providers.base import ProviderKeyMissingError
 from app.services.providers.gemini import GeminiProvider
 from app.services.providers.openai_compat import OpenAICompatProvider
-from app.services.providers.registry import _build, get_chat_provider
+from app.services.providers.registry import _build, get_chat_provider, server_key_available
 
 
 @pytest.fixture(autouse=True)
@@ -73,14 +73,32 @@ def test_providers_are_cached_per_provider_model_and_key():
 
 
 @pytest.mark.parametrize("provider", ["gemini", "openrouter"])
-def test_missing_key_raises_auth_error(provider):
+def test_missing_key_tells_the_user_to_add_one(provider):
     """A provider with no key configured fails clearly instead of at request time."""
     with (
         patch.object(settings, "GOOGLE_API_KEY", None),
         patch.object(settings, "OPENROUTER_API_KEY", None),
-        pytest.raises(ProviderAuthError),
+        pytest.raises(ProviderKeyMissingError) as exc,
     ):
         get_chat_provider(provider)
+
+    assert "Profile > Preferences" in exc.value.user_message
+
+
+@pytest.mark.parametrize(
+    ("provider", "setting", "value", "expected"),
+    [
+        ("gemini", "GOOGLE_API_KEY", "k", True),
+        ("gemini", "GOOGLE_API_KEY", None, False),
+        ("gemini", "GOOGLE_API_KEY", "", False),
+        ("openrouter", "OPENROUTER_API_KEY", "k", True),
+        ("openrouter", "OPENROUTER_API_KEY", None, False),
+    ],
+)
+def test_server_key_available(provider, setting, value, expected):
+    """Reports whether .env has a usable key for the provider."""
+    with patch.object(settings, setting, value):
+        assert server_key_available(provider) is expected
 
 
 def test_unknown_provider_is_rejected():
