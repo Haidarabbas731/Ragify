@@ -23,6 +23,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { AgentActivity } from "../components/chat/AgentActivity";
 import { CollectionFilter } from "../components/chat/CollectionFilter";
 import { DeleteConfirmDialog } from "../components/chat/DeleteConfirmDialog";
 import { MarkdownContent } from "../components/chat/MarkdownContent";
@@ -82,7 +83,8 @@ export function ChatPage() {
   const deleteConversationMutation = useDeleteConversation();
 
   // Streaming hook
-  const { isStreaming, streamChat } = useChatStream();
+  const { isStreaming, currentResponse, activity, streamChat } =
+    useChatStream();
 
   // Load conversation messages when conversation data changes
   useEffect(() => {
@@ -594,7 +596,7 @@ export function ChatPage() {
 
                         {/* Source documents */}
                         {msg.sources && msg.sources.length > 0 && (
-                          <p className="mt-3 flex items-start gap-1.5 text-xs text-muted-foreground font-sans">
+                          <p className="fade-in-soft mt-3 flex items-start gap-1.5 text-xs text-muted-foreground font-sans">
                             <FileText className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                             <span className="min-w-0 break-words">
                               {[
@@ -611,28 +613,9 @@ export function ChatPage() {
                 </div>
               ))}
 
-              {/* Streaming Indicator */}
-              {isStreaming && (
-                <div className="flex justify-start animate-in fade-in duration-300">
-                  <div className="bg-card border border-border rounded-xl rounded-tl-none px-5 py-4 shadow-md">
-                    <div className="flex items-center gap-3">
-                      <div className="flex gap-1.5">
-                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                        <div
-                          className="w-2 h-2 bg-primary rounded-full animate-pulse"
-                          style={{ animationDelay: "0.2s" }}
-                        />
-                        <div
-                          className="w-2 h-2 bg-primary rounded-full animate-pulse"
-                          style={{ animationDelay: "0.4s" }}
-                        />
-                      </div>
-                      <span className="text-sm text-muted-foreground font-sans">
-                        Thinking...
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              {/* Agent status: shown until the answer starts streaming */}
+              {isStreaming && !currentResponse && (
+                <AgentActivity activity={activity ?? { phase: "thinking" }} />
               )}
 
               {/* Scroll anchor */}

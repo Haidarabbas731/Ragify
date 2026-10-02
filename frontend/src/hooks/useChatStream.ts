@@ -23,14 +23,51 @@ interface ChatStreamOptions {
 
 interface SourceCitation {
   document_name: string;
+  filename: string;
   chunk_index: number;
   relevance_score: number;
+}
+
+/**
+ * What the chat agent is doing while an answer is being prepared.
+ * thinking: deciding what to do; searching: running a document search;
+ * reading: has results and is writing the answer; empty / failed: search ended badly.
+ */
+export type AgentPhase =
+  | "thinking"
+  | "searching"
+  | "reading"
+  | "empty"
+  | "failed";
+
+export interface AgentActivity {
+  phase: AgentPhase;
+  query?: string;
+  chunks?: number;
+  documents?: number;
+}
+
+/** One JSON event from the chat SSE stream. */
+interface StreamEvent {
+  chunk?: string;
+  done?: boolean;
+  error?: string;
+  conversation_id?: string;
+  sources?: SourceCitation[];
+  tool_call?: { name: string; query: string };
+  tool_result?: {
+    name: string;
+    chunks: number;
+    documents: number;
+    error: boolean;
+  };
 }
 
 interface ChatStreamState {
   isStreaming: boolean;
   currentResponse: string;
   error: string | null;
+  activity: AgentActivity | null;
 }
 
 /**
@@ -42,6 +79,7 @@ export function useChatStream() {
     isStreaming: false,
     currentResponse: "",
     error: null,
+    activity: null,
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -65,6 +103,7 @@ export function useChatStream() {
         isStreaming: true,
         currentResponse: "",
         error: null,
+        activity: { phase: "thinking" },
       });
 
       // Create abort controller for cancellation
@@ -106,63 +145,99 @@ export function useChatStream() {
         let fullResponse = "";
         let sources: SourceCitation[] = [];
         let conversationIdFromStream = "";
+        let finished = false;
+        // A network read can end mid-line; keep the unfinished part for the next read
+        let buffer = "";
 
-        while (true) {
+        while (!finished) {
           const { done, value } = await reader.read();
 
           if (done) {
             break;
           }
 
-          // Decode chunk
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
 
           for (const line of lines) {
             // SSE format: "data: {json}\n\n"
-            if (line.startsWith("data: ")) {
-              const dataStr = line.slice(6); // Remove "data: " prefix
+            if (!line.startsWith("data: ")) continue;
 
-              try {
-                const data = JSON.parse(dataStr);
+            let data: StreamEvent;
+            try {
+              data = JSON.parse(line.slice(6));
+            } catch (parseError) {
+              console.error("Failed to parse SSE data:", parseError);
+              continue;
+            }
 
-                // Handle different message types
-                if (data.error) {
-                  throw new Error(data.error);
-                }
+            // Errors are thrown outside the parse guard so they reach the caller
+            if (data.error) {
+              throw new Error(data.error);
+            }
 
-                if (data.done) {
-                  // Stream complete - extract metadata
-                  if (data.conversation_id) {
-                    conversationIdFromStream = data.conversation_id;
-                  }
-                  if (data.sources) {
-                    sources = data.sources;
-                  }
+            if (data.tool_call) {
+              setState((prev) => ({
+                ...prev,
+                activity: { phase: "searching", query: data.tool_call?.query },
+              }));
+            }
 
-                  setState({
-                    isStreaming: false,
-                    currentResponse: fullResponse,
-                    error: null,
-                  });
-                  onComplete?.(fullResponse, sources, conversationIdFromStream);
-                  return;
-                }
+            if (data.tool_result) {
+              const {
+                chunks,
+                documents,
+                error: searchFailed,
+              } = data.tool_result;
+              setState((prev) => ({
+                ...prev,
+                activity: {
+                  phase: searchFailed
+                    ? "failed"
+                    : chunks > 0
+                      ? "reading"
+                      : "empty",
+                  chunks,
+                  documents,
+                },
+              }));
+            }
 
-                if (data.chunk) {
-                  // Append chunk to response
-                  fullResponse += data.chunk;
-                  setState((prev) => ({
-                    ...prev,
-                    currentResponse: fullResponse,
-                  }));
-                  onChunk?.(data.chunk);
-                }
-              } catch (parseError) {
-                console.error("Failed to parse SSE data:", parseError);
+            if (data.chunk) {
+              fullResponse += data.chunk;
+              setState((prev) => ({
+                ...prev,
+                currentResponse: fullResponse,
+              }));
+              onChunk?.(data.chunk);
+            }
+
+            if (data.done) {
+              if (data.conversation_id) {
+                conversationIdFromStream = data.conversation_id;
               }
+              if (data.sources) {
+                sources = data.sources;
+              }
+
+              setState({
+                isStreaming: false,
+                currentResponse: fullResponse,
+                error: null,
+                activity: null,
+              });
+              finished = true;
+              onComplete?.(fullResponse, sources, conversationIdFromStream);
+              break;
             }
           }
+        }
+
+        if (!finished) {
+          throw new Error(
+            "The connection closed before the answer finished. Please try again.",
+          );
         }
       } catch (error) {
         // Handle abort
@@ -171,6 +246,7 @@ export function useChatStream() {
             isStreaming: false,
             currentResponse: "",
             error: "Request cancelled",
+            activity: null,
           });
           return;
         }
@@ -182,6 +258,7 @@ export function useChatStream() {
           isStreaming: false,
           currentResponse: "",
           error: errorMessage,
+          activity: null,
         });
         onError?.(errorMessage);
       }
@@ -207,6 +284,7 @@ export function useChatStream() {
       isStreaming: false,
       currentResponse: "",
       error: null,
+      activity: null,
     });
   }, []);
 
