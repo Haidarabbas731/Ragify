@@ -8,38 +8,45 @@ import pytest
 from cryptography.fernet import Fernet
 
 from app.core.config import settings
-from app.core.crypto import (
-    EncryptionUnavailableError,
-    SecretDecryptionError,
-    decrypt_secret,
-    encrypt_secret,
-    encryption_enabled,
-)
+from app.core.crypto import SecretDecryptionError, decrypt_secret, encrypt_secret
 
 
-@pytest.fixture
-def key() -> str:
-    """A fresh Fernet key, installed as the server's encryption key."""
-    value = Fernet.generate_key().decode()
-    with patch.object(settings, "APP_ENCRYPTION_KEY", value):
-        yield value
+@pytest.fixture(autouse=True)
+def derived_key():
+    """Default setup: no explicit encryption key, so one is derived from JWT_SECRET_KEY."""
+    with (
+        patch.object(settings, "APP_ENCRYPTION_KEY", None),
+        patch.object(settings, "JWT_SECRET_KEY", "a-jwt-secret-for-tests"),
+    ):
+        yield
 
 
-def test_round_trip_and_ciphertext_hides_the_secret(key):
-    """Encrypt then decrypt returns the secret; the stored token does not contain it."""
+def test_works_with_no_extra_configuration():
+    """Without APP_ENCRYPTION_KEY, encryption still works (derived from the JWT secret)."""
+    assert decrypt_secret(encrypt_secret("sk-or-v1-supersecret")) == "sk-or-v1-supersecret"
+
+
+def test_ciphertext_hides_the_secret_and_is_salted():
+    """The stored token does not contain the secret, and equal secrets encrypt differently."""
     token = encrypt_secret("sk-or-v1-supersecret")
 
     assert "supersecret" not in token
-    assert decrypt_secret(token) == "sk-or-v1-supersecret"
-
-
-def test_same_secret_encrypts_differently_each_time(key):
-    """Tokens are salted, so equal secrets cannot be spotted in the database."""
     assert encrypt_secret("same") != encrypt_secret("same")
 
 
-def test_decrypting_with_a_different_key_fails_clearly(key):
-    """After the server key changes, old tokens raise SecretDecryptionError."""
+def test_changing_the_jwt_secret_makes_saved_secrets_unreadable_with_a_clear_error():
+    """Rotating JWT_SECRET_KEY means saved keys must be re-entered; it fails clearly."""
+    token = encrypt_secret("secret")
+
+    with (
+        patch.object(settings, "JWT_SECRET_KEY", "a-different-secret"),
+        pytest.raises(SecretDecryptionError),
+    ):
+        decrypt_secret(token)
+
+
+def test_the_derived_key_is_not_the_jwt_secret_itself():
+    """A token cannot be opened by using the raw JWT secret as the key (domain separation)."""
     token = encrypt_secret("secret")
 
     with (
@@ -49,23 +56,17 @@ def test_decrypting_with_a_different_key_fails_clearly(key):
         decrypt_secret(token)
 
 
-def test_damaged_token_fails_clearly(key):
+def test_an_explicit_encryption_key_takes_precedence():
+    """APP_ENCRYPTION_KEY, when set, is used instead of the derived key."""
+    explicit = Fernet.generate_key().decode()
+    with patch.object(settings, "APP_ENCRYPTION_KEY", explicit):
+        token = encrypt_secret("secret")
+
+        assert Fernet(explicit.encode()).decrypt(token.encode()) == b"secret"
+        assert decrypt_secret(token) == "secret"
+
+
+def test_damaged_token_fails_clearly():
     """Garbage in the column raises SecretDecryptionError, not a cryptography internals error."""
     with pytest.raises(SecretDecryptionError):
         decrypt_secret("not-a-token")
-
-
-@pytest.mark.parametrize("missing", [None, ""])
-def test_without_a_server_key_the_feature_is_disabled(missing):
-    """No APP_ENCRYPTION_KEY: nothing can be encrypted or decrypted."""
-    with patch.object(settings, "APP_ENCRYPTION_KEY", missing):
-        assert encryption_enabled() is False
-        with pytest.raises(EncryptionUnavailableError):
-            encrypt_secret("secret")
-        with pytest.raises(EncryptionUnavailableError):
-            decrypt_secret("token")
-
-
-def test_encryption_enabled_with_a_key(key):
-    """A configured key enables the feature."""
-    assert encryption_enabled() is True

@@ -28,10 +28,11 @@ class AISettingsResponse(BaseModel):
     model: str | None
     has_key: bool
     key_last4: str | None
-    key_storage_enabled: bool
-    fallback_enabled: bool
     default_provider: str
     default_model: str
+    # Whether the server (.env) has a key for its default provider. If not, a user without
+    # their own key cannot chat and must add one.
+    default_available: bool
     providers: list[str]
 
 

@@ -4,13 +4,7 @@ from datetime import UTC, datetime
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.core.config import settings
-from app.core.crypto import (
-    EncryptionUnavailableError,
-    SecretDecryptionError,
-    decrypt_secret,
-    encrypt_secret,
-)
+from app.core.crypto import SecretDecryptionError, decrypt_secret, encrypt_secret
 from app.models.user_ai_settings import UserAISettings
 from app.prompts.chat_prompt import SEARCH_TOOL_NAME
 from app.services.chat_service import SEARCH_TOOL
@@ -52,7 +46,6 @@ async def save_ai_settings(
         UserAISettings: The saved settings
 
     Raises:
-        EncryptionUnavailableError: If the server has no APP_ENCRYPTION_KEY
         ValueError: If there is no usable key: none stored, or the provider changed without a new key
     """
     row = await get_ai_settings(db, user_id)
@@ -104,11 +97,11 @@ def stored_api_key(row: UserAISettings) -> str:
     Decrypt a user's stored API key.
 
     Raises:
-        ProviderAuthError: If the key can no longer be read (the server key changed)
+        ProviderAuthError: If the key can no longer be read (the encryption secret changed)
     """
     try:
         return decrypt_secret(row.encrypted_api_key)
-    except (EncryptionUnavailableError, SecretDecryptionError) as e:
+    except SecretDecryptionError as e:
         raise ProviderAuthError(
             str(e),
             user_message="Your saved API key can no longer be read. Please save it again in your settings.",
@@ -119,8 +112,8 @@ async def resolve_chat_provider(db: AsyncSession, user_id: str) -> ChatProvider:
     """
     Pick the chat provider for a user's request.
 
-    A user's own saved provider, model and key win. Otherwise the server defaults are used,
-    unless ALLOW_SERVER_KEY_FALLBACK is off.
+    The user's own saved provider, model and key win. Otherwise the server's configured
+    provider, model and key (from .env) are used.
 
     Args:
         db: Database session
@@ -130,17 +123,11 @@ async def resolve_chat_provider(db: AsyncSession, user_id: str) -> ChatProvider:
         ChatProvider: Provider to run the chat agent with
 
     Raises:
-        ProviderAuthError: If the user has no usable key and the server fallback is off
+        ProviderKeyMissingError: If the user has no key and the server has none either
     """
     row = await get_ai_settings(db, user_id)
     if row is not None:
         return get_chat_provider(row.provider, row.model, stored_api_key(row))
-
-    if not settings.ALLOW_SERVER_KEY_FALLBACK:
-        raise ProviderAuthError(
-            "No user API key and server fallback disabled",
-            user_message="Add your API key in Profile > Preferences to use chat.",
-        )
     return get_chat_provider()
 
 
