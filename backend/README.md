@@ -364,6 +364,21 @@ And change envVars to:
     property: connectionString
 ```
 
+### Dokploy: standalone Milvus or Milvus Lite
+
+Two compose files deploy the same app with the same environment variables
+(`.env.dokploy.example`). Pick one in Dokploy's compose path; switch any time.
+
+| | `docker-compose.dokploy.yml` | `docker-compose.dokploy-lite.yml` |
+| --- | --- | --- |
+| Vector store | Standalone Milvus service (~3-4 GB image) | Milvus Lite inside the `api` container |
+| Services | postgres, redis, milvus, api, worker | postgres, redis, api (worker and Lite run inside it) |
+| Best for | Real production, more data | Demos and small deployments |
+| Index storage | `milvus_data` volume | `milvus_lite_data` volume (back it up by copying the volume) |
+
+Switching between them changes where vectors live, so re-upload documents afterwards.
+After moving to Lite, delete the old `milvus_data` volume on the server to reclaim the space.
+
 ### Environment Variables Setup
 
 **Never commit secrets!** Add these in **Render Dashboard → Environment**:

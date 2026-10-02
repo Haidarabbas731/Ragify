@@ -15,6 +15,8 @@ htmlcov/
 venv/
 .env
 .env.local
+# Any other env file (.env.dokploy holds production secrets and must never be baked in)
+.env.*
 *.log
 .DS_Store
 .vscode/

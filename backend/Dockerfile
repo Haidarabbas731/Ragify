@@ -34,7 +34,11 @@ ENV PATH="/app/.venv/bin:$PATH"
 COPY --chown=appuser:appgroup . .
 
 # Make startup scripts executable
-RUN chmod +x scripts/start-api.sh scripts/start-worker.sh
+RUN chmod +x scripts/start-api.sh scripts/start-worker.sh scripts/start-with-lite.sh
+
+# Writable folder for the Milvus Lite database (mount a volume here when using
+# docker-compose.dokploy-lite.yml; unused with standalone Milvus)
+RUN mkdir -p /app/milvus_data && chown -R appuser:appgroup /app/milvus_data
 
 USER appuser
 

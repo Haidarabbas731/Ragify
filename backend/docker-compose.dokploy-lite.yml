@@ -1,0 +1,48 @@
+# Dokploy compose using Milvus Lite instead of the standalone Milvus service (~3-4 GB image).
+#
+# Meant for demos and small deployments. Point Dokploy's compose path at this file instead of
+# docker-compose.dokploy.yml; to go back to standalone Milvus, point it back. Both use the
+# same environment variables (see .env.dokploy.example), so nothing else changes.
+#
+# It reuses docker-compose.dokploy.yml (postgres, redis, and the api service with its whole
+# environment block) and overrides only what differs:
+#   - no `milvus` and no `worker` service: Milvus Lite, the ARQ worker and the API run
+#     together in the `api` container (scripts/start-with-lite.sh), because Lite allows one
+#     process per database file
+#   - the Lite database lives in its own volume, `milvus_lite_data`, mounted at /app/milvus_data
+#   - the script sets VECTOR_DB_URI itself, replacing the standalone address inherited below
+#
+# Back up the index by copying that volume. Switching to standalone Milvus later needs the
+# documents re-uploaded (the vectors live in a different store).
+#
+# Requires Docker Compose v2.24+ (for `!override`).
+
+services:
+
+  postgres:
+    extends:
+      file: docker-compose.dokploy.yml
+      service: postgres
+
+  redis:
+    extends:
+      file: docker-compose.dokploy.yml
+      service: redis
+
+  api:
+    extends:
+      file: docker-compose.dokploy.yml
+      service: api
+    command: ["bash", "./scripts/start-with-lite.sh"]
+    volumes:
+      - milvus_lite_data:/app/milvus_data
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  milvus_lite_data:
