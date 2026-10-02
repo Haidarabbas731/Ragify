@@ -5,8 +5,12 @@ from pymilvus import DataType, MilvusClient
 
 from app.core.config import settings
 from app.core.singleton import async_singleton
+from app.services.system_state_service import get_state, set_state
 
 logger = logging.getLogger(__name__)
+
+# system_state key holding which embedding setup (model:dimension) built the vector index
+FINGERPRINT_KEY = "embedding_fingerprint"
 
 
 class MilvusService:
@@ -44,6 +48,11 @@ class MilvusService:
             self.client = None
             raise
 
+    def _row_count(self) -> int:
+        """Number of vectors currently stored in the collection."""
+        stats = self.client.get_collection_stats(self.collection_name)  # type: ignore
+        return int(stats.get("row_count", 0))
+
     def _ensure_connected(self):
         if self.client is None:
             raise RuntimeError("Milvus not connected. Call connect() first.")
@@ -72,25 +81,25 @@ class MilvusService:
         self.index_mismatch = None
 
         if self.client.has_collection(self.collection_name):  # type: ignore
-            built_with = self.client.describe_collection(self.collection_name).get("description")  # type: ignore
-            if built_with != settings.embedding_fingerprint:
-                self.index_mismatch = (
-                    f"Collection '{self.collection_name}' was built with embeddings "
-                    f"'{built_with or 'unknown'}' but the app is configured for "
-                    f"'{settings.embedding_fingerprint}'. Vectors from different models are "
-                    "not comparable: drop the collection and re-upload your documents."
-                )
-                logger.error(self.index_mismatch)
-                return
+            recorded = await get_state(FINGERPRINT_KEY)
+            if recorded != settings.embedding_fingerprint:
+                if self._row_count() == 0:
+                    # Nothing in the index to protect: adopt the current embedding setup
+                    await set_state(FINGERPRINT_KEY, settings.embedding_fingerprint)
+                else:
+                    self.index_mismatch = (
+                        f"Collection '{self.collection_name}' was built with embeddings "
+                        f"'{recorded or 'unknown'}' but the app is configured for "
+                        f"'{settings.embedding_fingerprint}'. Vectors from different models "
+                        "are not comparable: drop the collection and re-upload your documents."
+                    )
+                    logger.error(self.index_mismatch)
+                    return
             self.client.load_collection(self.collection_name)  # type: ignore
             logger.info(f"Collection '{self.collection_name}' already exists, loaded")
             return
 
-        schema = MilvusClient.create_schema(
-            auto_id=False,
-            enable_dynamic_field=False,
-            description=settings.embedding_fingerprint,
-        )
+        schema = MilvusClient.create_schema(auto_id=False, enable_dynamic_field=False)
         schema.add_field("chunk_id", DataType.VARCHAR, is_primary=True, max_length=36)
         schema.add_field("user_id", DataType.VARCHAR, max_length=36)
         schema.add_field("document_id", DataType.VARCHAR, max_length=36)
@@ -113,6 +122,7 @@ class MilvusService:
             index_params=index_params,
         )
         self.client.load_collection(self.collection_name)  # type: ignore
+        await set_state(FINGERPRINT_KEY, settings.embedding_fingerprint)
         logger.info(f"Collection '{self.collection_name}' created with IVF_FLAT index")
 
     async def insert_chunks(

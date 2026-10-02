@@ -1,24 +1,37 @@
 """
 Unit tests for the embedding-model guard on the Milvus collection.
 
-A collection records which embedding model and dimension built it; opening it with a
-different configuration must fail loudly instead of mixing incompatible vectors.
+The fingerprint (embedding model and dimension) is recorded in the database, because Milvus
+Lite does not persist collection descriptions. Opening a non-empty index built with a
+different setup is blocked instead of mixing incompatible vectors; an empty one is adopted.
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from app.core.config import settings
-from app.services.milvus_service import MilvusService
+from app.services.milvus_service import FINGERPRINT_KEY, MilvusService
 
 
 @pytest.fixture
 def milvus():
-    """MilvusService with a mocked client."""
+    """MilvusService with a mocked client that has an existing, loaded collection."""
     service = MilvusService()
     service.client = MagicMock()
+    service.client.has_collection.return_value = True
+    service.client.get_collection_stats.return_value = {"row_count": 0}
     return service
+
+
+@pytest.fixture
+def state():
+    """Mock the database-backed state; yields (get_state, set_state) mocks."""
+    with (
+        patch("app.services.milvus_service.get_state", new=AsyncMock(return_value=None)) as get,
+        patch("app.services.milvus_service.set_state", new=AsyncMock()) as set_,
+    ):
+        yield get, set_
 
 
 def test_fingerprint_is_model_and_dimension():
@@ -29,29 +42,61 @@ def test_fingerprint_is_model_and_dimension():
 
 
 @pytest.mark.asyncio
-async def test_existing_collection_with_matching_fingerprint_is_loaded(milvus):
-    """A collection built with the current embedding setup loads normally."""
-    milvus.client.has_collection.return_value = True
-    milvus.client.describe_collection.return_value = {"description": settings.embedding_fingerprint}
+async def test_matching_record_loads_the_collection(milvus, state):
+    """A collection recorded as built with the current setup loads normally."""
+    get, set_ = state
+    get.return_value = settings.embedding_fingerprint
+    milvus.client.get_collection_stats.return_value = {"row_count": 500}
 
     await milvus._init_collection()
 
+    assert milvus.index_mismatch is None
     milvus.client.load_collection.assert_called_once_with(milvus.collection_name)
-    milvus.client.create_collection.assert_not_called()
+    set_.assert_not_called()
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("built_with", ["models/gemini-embedding-001:1024", "", None])
-async def test_existing_collection_with_other_fingerprint_is_flagged_not_fatal(milvus, built_with):
-    """A collection from another model (or an unlabeled one) connects but is marked unusable."""
-    milvus.client.has_collection.return_value = True
-    milvus.client.describe_collection.return_value = {"description": built_with}
+@pytest.mark.parametrize("recorded", ["models/gemini-embedding-001:1024", None])
+async def test_non_empty_index_from_another_setup_is_flagged_not_fatal(milvus, state, recorded):
+    """Existing vectors from another (or unknown) model block search, but connecting still works."""
+    get, set_ = state
+    get.return_value = recorded
+    milvus.client.get_collection_stats.return_value = {"row_count": 12}
 
-    await milvus._init_collection()  # must not raise: cleanup has to be able to run
+    await milvus._init_collection()  # must not raise: the cleanup has to be able to run
 
-    assert "drop the collection and re-upload" in milvus.index_mismatch
+    assert (recorded or "unknown") in milvus.index_mismatch
     assert settings.embedding_fingerprint in milvus.index_mismatch
+    assert "drop the collection and re-upload" in milvus.index_mismatch
     milvus.client.load_collection.assert_not_called()
+    set_.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("recorded", ["models/gemini-embedding-001:1024", None])
+async def test_empty_index_adopts_the_current_setup(milvus, state, recorded):
+    """With nothing stored there is nothing to protect, so the new setup is just recorded."""
+    get, set_ = state
+    get.return_value = recorded
+    milvus.client.get_collection_stats.return_value = {"row_count": 0}
+
+    await milvus._init_collection()
+
+    assert milvus.index_mismatch is None
+    set_.assert_awaited_once_with(FINGERPRINT_KEY, settings.embedding_fingerprint)
+    milvus.client.load_collection.assert_called_once_with(milvus.collection_name)
+
+
+@pytest.mark.asyncio
+async def test_a_new_collection_records_the_setup(milvus, state):
+    """Creating a collection records which embedding setup it is for."""
+    _, set_ = state
+    milvus.client.has_collection.return_value = False
+
+    await milvus._init_collection()
+
+    milvus.client.create_collection.assert_called_once()
+    set_.assert_awaited_once_with(FINGERPRINT_KEY, settings.embedding_fingerprint)
 
 
 @pytest.mark.asyncio
@@ -71,8 +116,9 @@ async def test_a_mismatched_index_refuses_search_and_insert_with_the_reason(milv
 
 
 @pytest.mark.asyncio
-async def test_drop_and_recreate_clears_the_mismatch(milvus):
-    """The cleanup path rebuilds the collection with the current fingerprint and unblocks the index."""
+async def test_drop_and_recreate_clears_the_mismatch_and_records_the_setup(milvus, state):
+    """The cleanup path rebuilds the collection and unblocks the index."""
+    _, set_ = state
     milvus.index_mismatch = "built with other embeddings"
     milvus.client.has_collection.side_effect = [True, False]  # exists, then gone after drop
 
@@ -80,18 +126,5 @@ async def test_drop_and_recreate_clears_the_mismatch(milvus):
 
     milvus.client.drop_collection.assert_called_once_with(milvus.collection_name)
     assert milvus.index_mismatch is None
-    assert milvus.client.create_collection.call_args.kwargs["schema"].description == (
-        settings.embedding_fingerprint
-    )
+    set_.assert_awaited_once_with(FINGERPRINT_KEY, settings.embedding_fingerprint)
     milvus.ensure_index_usable()  # no longer raises
-
-
-@pytest.mark.asyncio
-async def test_new_collection_records_the_fingerprint(milvus):
-    """Creating a collection stores the fingerprint in its description."""
-    milvus.client.has_collection.return_value = False
-
-    await milvus._init_collection()
-
-    schema = milvus.client.create_collection.call_args.kwargs["schema"]
-    assert schema.description == settings.embedding_fingerprint
