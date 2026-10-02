@@ -107,6 +107,27 @@ async def test_stream_collects_tool_calls(provider, agen):
 
 
 @pytest.mark.asyncio
+async def test_tools_without_parameters_omit_the_schema(provider, agen):
+    """A tool that takes no arguments is declared without a parameter schema."""
+    set_stream(provider, agen(make_chunk(text_part("ok"))))
+    with_args = ToolSpec(
+        name="search_documents",
+        description="Search",
+        parameters={"type": "object", "properties": {"query": {"type": "string"}}},
+    )
+    no_args = ToolSpec(
+        name="list_documents", description="List", parameters={"type": "object", "properties": {}}
+    )
+
+    await run(provider, tools=[with_args, no_args])
+
+    config = provider._client.aio.models.generate_content_stream.call_args.kwargs["config"]
+    declarations = {d.name: d for d in config.tools[0].function_declarations}
+    assert declarations["list_documents"].parameters_json_schema is None
+    assert declarations["search_documents"].parameters_json_schema == with_args.parameters
+
+
+@pytest.mark.asyncio
 async def test_config_carries_system_timeout_and_retries(provider, agen):
     """System prompt, timeout and the 503 retry policy reach the request config."""
     set_stream(provider, agen(make_chunk(text_part("ok"))))

@@ -114,7 +114,10 @@ class GeminiProvider:
                         types.FunctionDeclaration(
                             name=t.name,
                             description=t.description,
-                            parameters_json_schema=t.parameters,
+                            # Gemini declarations omit the schema for tools without parameters
+                            parameters_json_schema=t.parameters
+                            if t.parameters.get("properties")
+                            else None,
                         )
                         for t in tools
                     ]
