@@ -53,12 +53,15 @@ async def save_ai_settings(
 
     Raises:
         EncryptionUnavailableError: If the server has no APP_ENCRYPTION_KEY
-        ValueError: If there is no stored key and none was provided
+        ValueError: If there is no usable key: none stored, or the provider changed without a new key
     """
     row = await get_ai_settings(db, user_id)
 
     if api_key is None and row is None:
         raise ValueError("An API key is required")
+    if api_key is None and row is not None and row.provider != provider:
+        # The stored key belongs to the old provider and would not work with the new one
+        raise ValueError("Enter an API key for the new provider")
 
     if row is None:
         row = UserAISettings(user_id=user_id)
