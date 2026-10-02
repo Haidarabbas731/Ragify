@@ -13,6 +13,12 @@ class UserRegister(BaseModel):
     )
 
 
+class AuthConfigResponse(BaseModel):
+    """Public sign-up settings the login and register screens need (no secrets)."""
+
+    invite_only: bool
+
+
 class UserLogin(BaseModel):
     """Schema for user login."""
 
