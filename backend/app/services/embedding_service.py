@@ -5,6 +5,7 @@ import cohere
 import httpx
 
 from app.core.config import settings
+from app.core.singleton import async_singleton
 from app.services.providers.base import (
     ProviderAuthError,
     ProviderRateLimitError,
@@ -144,10 +145,7 @@ class EmbeddingService:
         return (await self._embed([query], "search_query"))[0]
 
 
-# Singleton instance
-_embedding_service: EmbeddingService | None = None
-
-
+@async_singleton
 async def get_embedding_service() -> EmbeddingService:
     """
     Get or create the embedding service singleton.
@@ -155,11 +153,6 @@ async def get_embedding_service() -> EmbeddingService:
     Returns:
         EmbeddingService: Embedding service configured from settings
     """
-    global _embedding_service
-
-    if _embedding_service is None:
-        _embedding_service = EmbeddingService(
-            settings.COHERE_API_KEY, settings.EMBEDDING_MODEL, settings.EMBEDDING_DIMENSION
-        )
-
-    return _embedding_service
+    return EmbeddingService(
+        settings.COHERE_API_KEY, settings.EMBEDDING_MODEL, settings.EMBEDDING_DIMENSION
+    )

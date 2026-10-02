@@ -7,7 +7,8 @@ deleting users, and viewing system statistics.
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.dependencies import get_current_admin, get_db
+from app.api.dependencies import get_current_admin
+from app.db.database import get_session
 from app.models.user import User
 from app.schemas.admin import (
     AdminUserListParams,
@@ -35,7 +36,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def list_users(
     params: AdminUserListParams = Depends(),
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     List all users with pagination and filters (admin only).
@@ -72,7 +73,7 @@ async def list_users(
 async def get_user(
     user_id: str,
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Get detailed user information (admin only).
@@ -105,7 +106,7 @@ async def suspend_user_endpoint(
     suspend_data: SuspendUserRequest,
     request: Request,
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Suspend a user account and revoke all sessions (admin only).
@@ -152,7 +153,7 @@ async def activate_user_endpoint(
     user_id: str,
     request: Request,
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Activate a suspended user account (admin only).
@@ -190,7 +191,7 @@ async def delete_user_endpoint(
     user_id: str,
     request: Request,
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Soft delete a user account (admin only).
@@ -236,7 +237,7 @@ async def delete_user_endpoint(
 @router.get("/stats", response_model=SystemStatsResponse)
 async def get_stats(
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Get system-wide statistics (admin only).

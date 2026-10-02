@@ -22,8 +22,9 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.dependencies import get_current_user, get_db
+from app.api.dependencies import get_current_user
 from app.core.config import settings
+from app.db.database import get_session
 from app.models.collection import Collection
 from app.models.document import Document, DocumentStatus
 from app.models.user import User
@@ -64,7 +65,7 @@ async def upload_document(
     category: str | None = Form(None, description="Optional category tag"),
     tags: str | None = Form(None, description="Optional comma-separated tags"),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
     arq: ArqRedis = Depends(get_arq_redis),
 ) -> Document:
     """
@@ -220,7 +221,7 @@ async def bulk_upload_documents(
         None, description="Optional comma-separated tags for all documents"
     ),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
     arq: ArqRedis = Depends(get_arq_redis),
 ) -> dict:
     """
@@ -425,7 +426,7 @@ async def status_stream_options():
 @router.get("/status-stream")
 async def stream_document_status(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> StreamingResponse:
     """
     Stream real-time document status updates via Server-Sent Events (SSE).
@@ -568,7 +569,7 @@ async def search_documents(
     page: int = 1,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Search user's documents by text query.
@@ -651,7 +652,7 @@ async def search_documents(
 async def list_documents(
     params: DocumentListParams = Depends(),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     List user's documents with pagination and filters.
@@ -730,7 +731,7 @@ async def list_documents(
 async def batch_delete_documents(
     request: BatchDeleteRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
     arq: ArqRedis = Depends(get_arq_redis),
 ) -> dict:
     """
@@ -815,7 +816,7 @@ async def batch_delete_documents(
 async def batch_update_documents(
     request: BatchUpdateRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Batch update document collection assignments.
@@ -906,7 +907,7 @@ async def batch_update_documents(
 @router.post("/delete-all-mine", response_model=BatchDeleteResponse)
 async def delete_all_my_documents(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
     arq: ArqRedis = Depends(get_arq_redis),
 ) -> dict:
     """
@@ -987,7 +988,7 @@ async def delete_all_my_documents(
 @router.post("/retry-failed")
 async def retry_all_failed_documents(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
     arq: ArqRedis = Depends(get_arq_redis),
 ) -> dict:
     """
@@ -1072,7 +1073,7 @@ async def retry_all_failed_documents(
 async def retry_failed_document(
     document_id: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
     arq: ArqRedis = Depends(get_arq_redis),
 ) -> Document:
     """
@@ -1150,7 +1151,7 @@ async def update_document_metadata(
     category: str | None = Form(None),
     tags: str | None = Form(None),
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> Document:
     """
     Update document metadata.
@@ -1204,7 +1205,7 @@ async def update_document_metadata(
 async def delete_document(
     document_id: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
     arq: ArqRedis = Depends(get_arq_redis),
 ) -> None:
     """
@@ -1259,7 +1260,7 @@ async def delete_document(
 async def get_document(
     document_id: str,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Get document by ID with chunks and collection name.

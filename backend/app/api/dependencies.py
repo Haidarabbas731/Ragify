@@ -1,4 +1,3 @@
-from collections.abc import AsyncGenerator
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -140,15 +139,9 @@ class RefreshTokenBearer(TokenBearer):
             )
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Get database session dependency."""
-    async for session in get_session():
-        yield session
-
-
 async def get_current_user(
     token_details: dict = Depends(AccessTokenBearer()),  # noqa: B008
-    session: AsyncSession = Depends(get_db),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> User:
     """
     Get current authenticated user from JWT token.
@@ -221,7 +214,7 @@ async def get_current_admin(
 
 async def get_current_user_sse(
     request: Request,
-    session: AsyncSession = Depends(get_db),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> User:
     """
     Get current authenticated user for SSE connections.
@@ -317,7 +310,7 @@ async def get_current_user_sse(
 
 async def get_current_user_optional(
     token_details: dict | None = Depends(TokenBearer(auto_error=False)),  # noqa: B008
-    session: AsyncSession = Depends(get_db),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ) -> User | None:
     """
     Get current user if token is provided, otherwise return None.

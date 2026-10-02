@@ -4,6 +4,7 @@ from typing import Any
 from pymilvus import DataType, MilvusClient
 
 from app.core.config import settings
+from app.core.singleton import async_singleton
 
 logger = logging.getLogger(__name__)
 
@@ -303,16 +304,9 @@ class MilvusService:
             logger.info("Milvus disconnected")
 
 
-# Singleton instance
-_milvus_service: MilvusService | None = None
-
-
+@async_singleton
 async def get_milvus_service() -> MilvusService:
-    """Get or create Milvus service singleton."""
-    global _milvus_service
-
-    if _milvus_service is None:
-        _milvus_service = MilvusService()
-        await _milvus_service.connect()
-
-    return _milvus_service
+    """Get or create the Milvus service singleton (connected)."""
+    service = MilvusService()
+    await service.connect()
+    return service

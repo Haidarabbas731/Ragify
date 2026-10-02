@@ -6,7 +6,8 @@ Handles user profile retrieval, updates, password changes, and statistics.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.dependencies import get_current_user, get_db
+from app.api.dependencies import get_current_user
+from app.db.database import get_session
 from app.models.user import User
 from app.schemas.common import MessageResponse
 from app.schemas.user import (
@@ -68,7 +69,7 @@ async def get_current_user_profile(
 async def update_current_user_profile(
     data: UserUpdateRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Update current user profile.
@@ -126,7 +127,7 @@ async def update_current_user_profile(
 async def change_current_user_password(
     data: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Change current user password.
@@ -170,7 +171,7 @@ async def change_current_user_password(
 @router.get("/me/stats", response_model=UserStatsResponse)
 async def get_current_user_stats(
     current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Get current user dashboard statistics.

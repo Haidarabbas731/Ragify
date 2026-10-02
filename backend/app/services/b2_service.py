@@ -7,6 +7,7 @@ from b2sdk.v2 import B2Api, InMemoryAccountInfo
 from fastapi import UploadFile
 
 from app.core.config import settings
+from app.core.singleton import async_singleton
 
 logger = logging.getLogger(__name__)
 
@@ -393,10 +394,7 @@ class LocalStorageService:
             raise
 
 
-# Singleton instance
-_storage_service: B2Service | LocalStorageService | None = None
-
-
+@async_singleton
 async def get_b2_service() -> B2Service | LocalStorageService:
     """
     Get or create the storage service singleton, chosen by settings.STORAGE_BACKEND.
@@ -404,12 +402,6 @@ async def get_b2_service() -> B2Service | LocalStorageService:
     Returns:
         B2Service | LocalStorageService: Initialized storage service instance
     """
-    global _storage_service
-
-    if _storage_service is None:
-        _storage_service = (
-            LocalStorageService() if settings.STORAGE_BACKEND == "local" else B2Service()
-        )
-        await _storage_service.authorize()
-
-    return _storage_service
+    service = LocalStorageService() if settings.STORAGE_BACKEND == "local" else B2Service()
+    await service.authorize()
+    return service

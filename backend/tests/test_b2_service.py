@@ -287,9 +287,7 @@ async def test_delete_all_files_empty_bucket(b2_service):
 @pytest.mark.asyncio
 async def test_get_b2_service_singleton():
     """Test storage service singleton pattern when STORAGE_BACKEND=b2."""
-    import app.services.b2_service as b2_module
-
-    b2_module._storage_service = None
+    get_b2_service.reset()
     try:
         with (
             patch("app.services.b2_service.settings.STORAGE_BACKEND", "b2"),
@@ -305,7 +303,7 @@ async def test_get_b2_service_singleton():
             MockB2Service.assert_called_once()
             mock_instance.authorize.assert_called_once()
     finally:
-        b2_module._storage_service = None
+        get_b2_service.reset()
 
 
 @pytest.mark.asyncio
@@ -324,4 +322,4 @@ async def test_get_storage_service_local_backend(tmp_path):
 
             assert isinstance(service, LocalStorageService)
     finally:
-        b2_module._storage_service = None
+        get_b2_service.reset()

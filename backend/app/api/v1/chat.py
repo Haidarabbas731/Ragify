@@ -132,7 +132,7 @@ async def chat_query(
                             payload = {
                                 "done": True,
                                 "conversation_id": event["conversation_id"],
-                                "sources": event["sources"],
+                                "sources": [src.model_dump() for src in event["sources"]],
                             }
 
                         # Format as SSE (Server-Sent Events)
