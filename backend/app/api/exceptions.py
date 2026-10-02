@@ -84,6 +84,42 @@ async def app_exception_handler(request: Request, exc: AppException):
     )
 
 
+_MAX_LISTED_ERRORS = 3
+
+
+def _field_label(location: tuple) -> str:
+    """Readable name of the field an error is about, e.g. ("body", "invite_code") -> "Invite code"."""
+    names = [str(part) for part in location if part != "body" and not isinstance(part, int)]
+    return names[-1].replace("_", " ").capitalize() if names else "Request"
+
+
+def _friendly_reason(error: dict) -> str:
+    """Turn a validation error's technical message into something a user can act on."""
+    message = str(error.get("msg", "Invalid value")).removeprefix("Value error, ")
+    if "special-use or reserved name" in message:
+        return "use a real email address (domains like .local and .test cannot receive email)"
+    return message.removeprefix("value is not a valid email address: ")
+
+
+def summarize_validation_errors(errors: list[dict]) -> str:
+    """
+    Build one readable sentence from validation errors, e.g. "Email: use a real email address ...".
+
+    Args:
+        errors: Error dicts as returned by ``RequestValidationError.errors()``
+
+    Returns:
+        str: Up to three "Field: reason" entries joined with "; ", plus a count of the rest
+    """
+    parts = [
+        f"{_field_label(tuple(error.get('loc', ())))}: {_friendly_reason(error)}"
+        for error in errors[:_MAX_LISTED_ERRORS]
+    ]
+    if len(errors) > _MAX_LISTED_ERRORS:
+        parts.append(f"and {len(errors) - _MAX_LISTED_ERRORS} more")
+    return "; ".join(parts) or "Invalid request data"
+
+
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Handle FastAPI validation errors"""
     logger.warning(f"Validation error: {exc.errors()}")
@@ -93,6 +129,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={
             "error": "VALIDATION_ERROR",
             "message": "Invalid request data",
+            # Readable summary in `detail`, the field every form already reads
+            "detail": summarize_validation_errors(exc.errors()),
             "details": exc.errors(),
         },
     )
