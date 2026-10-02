@@ -155,10 +155,10 @@ html, body {
     overflow: hidden;
   }
 
-  /* Agent status step swap: short, ease-out, with a touch of blur to bridge the
-     old and new label so they read as one object changing state. */
-  .agent-step-in {
-    animation: agentStepIn 150ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  /* Short ease-out swap for a label that changes state in place (chat status, test
+     results), with a touch of blur to bridge old and new so they read as one object. */
+  .step-in {
+    animation: stepIn 150ms cubic-bezier(0.23, 1, 0.32, 1) both;
   }
 
   /* Plain fade for content that appears once, e.g. the source documents line. */
@@ -166,7 +166,7 @@ html, body {
     animation: fadeInSoft 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
   }
 
-  @keyframes agentStepIn {
+  @keyframes stepIn {
     from {
       opacity: 0;
       transform: translateY(4px);
@@ -182,7 +182,7 @@ html, body {
 
   /* Reduced motion keeps the fade (it aids comprehension) and drops the movement. */
   @media (prefers-reduced-motion: reduce) {
-    .agent-step-in {
+    .step-in {
       animation-name: fadeInSoft;
     }
   }

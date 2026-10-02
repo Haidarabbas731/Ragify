@@ -4,6 +4,14 @@
 
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { toast } from "sonner";
+import type {
+  AiModel,
+  AiProvider,
+  AiSettings,
+  AiSettingsUpdate,
+  AiTestResult,
+  MessageResponse,
+} from "../types/api";
 import type { TokenResponse } from "../types/auth";
 
 // Create axios instance with base configuration
@@ -157,6 +165,78 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+/**
+ * Get the current user's AI settings (the API key is never returned)
+ * @returns Saved provider and model, key status, and the server defaults
+ */
+export const getAiSettings = async (): Promise<AiSettings> => {
+  const { data } = await api.get("/ai/settings");
+  return data;
+};
+
+/**
+ * Save the current user's provider, model and API key
+ * @param settings - Provider and model; api_key is optional once one is stored
+ * @returns Updated settings
+ */
+export const saveAiSettings = async (
+  settings: AiSettingsUpdate,
+): Promise<AiSettings> => {
+  const { data } = await api.put("/ai/settings", settings);
+  return data;
+};
+
+/**
+ * Remove the saved key and model (chat goes back to the server defaults)
+ * @returns Success message
+ */
+export const resetAiSettings = async (): Promise<MessageResponse> => {
+  const { data } = await api.delete("/ai/settings");
+  return data;
+};
+
+/**
+ * Check that a provider, model and key work and support tool calling
+ * @param settings - Provider and model; omit api_key to test the stored key
+ * @returns Whether it worked, with a message to show
+ */
+export const testAiSettings = async (
+  settings: AiSettingsUpdate,
+): Promise<AiTestResult> => {
+  const { data } = await api.post("/ai/settings/test", settings);
+  return data;
+};
+
+/**
+ * List models the user can pick for a provider
+ * @param provider - Provider to list models for
+ * @returns Models (empty for providers without a list)
+ */
+export const listAiModels = async (
+  provider: AiProvider,
+): Promise<AiModel[]> => {
+  const { data } = await api.get("/ai/models", { params: { provider } });
+  return data;
+};
+
+/**
+ * Extract the server's error message from a failed request.
+ * FastAPI sends `detail` (a string); some endpoints send `message`.
+ * @param error - Error thrown by an API call
+ * @param fallback - Message to use when the server sent none
+ * @returns A message that is safe to show to the user
+ */
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  const data = (
+    error as {
+      response?: { data?: { detail?: unknown; message?: unknown } };
+    }
+  )?.response?.data;
+  if (typeof data?.detail === "string") return data.detail;
+  if (typeof data?.message === "string") return data.message;
+  return fallback;
+}
 
 export default api;
 

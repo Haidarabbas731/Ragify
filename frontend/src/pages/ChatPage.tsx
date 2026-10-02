@@ -290,7 +290,7 @@ export function ChatPage() {
               ? {
                   ...msg,
                   content: fullResponse,
-                  sources: sources as typeof msg.sources,
+                  sources,
                 }
               : msg,
           ),

@@ -4,13 +4,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { changePassword, getUserProfile, updateUserProfile } from "../lib/api";
-import type {
-  ChangePasswordRequest,
-  MessageResponse,
-  UserProfile,
-  UserUpdateRequest,
-} from "../types/api";
+import { getUserProfile, updateUserProfile } from "../lib/api";
+import type { UserProfile, UserUpdateRequest } from "../types/api";
 
 /**
  * Fetch current user profile
@@ -40,28 +35,6 @@ export function useUpdateUserProfile() {
     },
     onError: (error) => {
       toast.error(error.message || "Failed to update profile");
-    },
-  });
-}
-
-/**
- * Change user password
- * @returns Mutation for changing password
- */
-export function useChangePassword() {
-  return useMutation<MessageResponse, Error, ChangePasswordRequest>({
-    mutationFn: changePassword,
-    onSuccess: (data) => {
-      toast.success(
-        data.message || "Password changed successfully. Please login again.",
-      );
-      // Note: Backend revokes all sessions, user will be redirected to login
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to change password");
     },
   });
 }
