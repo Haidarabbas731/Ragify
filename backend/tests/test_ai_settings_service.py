@@ -63,6 +63,23 @@ async def test_update_without_a_key_keeps_the_stored_one(session: AsyncSession, 
 
 
 @pytest.mark.asyncio
+async def test_changing_provider_requires_a_new_key(session: AsyncSession, sample_user):
+    """A key for one provider is never silently reused with another."""
+    await save_ai_settings(session, sample_user.user_id, "gemini", "m", "key-111111")
+
+    with pytest.raises(ValueError, match="new provider"):
+        await save_ai_settings(session, sample_user.user_id, "openrouter", "vendor/m", None)
+
+    row = await get_ai_settings(session, sample_user.user_id)
+    assert (row.provider, row.model) == ("gemini", "m")
+
+    switched = await save_ai_settings(
+        session, sample_user.user_id, "openrouter", "vendor/m", "key-222222"
+    )
+    assert (switched.provider, switched.key_last4) == ("openrouter", "2222")
+
+
+@pytest.mark.asyncio
 async def test_update_with_a_key_replaces_it(session: AsyncSession, sample_user):
     """A new key replaces the old one and updates the displayed suffix."""
     await save_ai_settings(session, sample_user.user_id, "gemini", "m", "key-111111")
