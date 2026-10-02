@@ -28,7 +28,7 @@ services:
         until [ -s /tmp/milvus_lite_uri ]; do sleep 1; done
         export VECTOR_DB_URI="$$(cat /tmp/milvus_lite_uri)"
         arq app.tasks.worker.WorkerSettings &
-        exec ./scripts/start-api.sh
+        exec bash ./scripts/start-api.sh
     depends_on: !override
       postgres:
         condition: service_healthy
