@@ -5,7 +5,7 @@
 import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import api from "../lib/api";
+import api, { getApiErrorMessage } from "../lib/api";
 import type {
   AuthActions,
   AuthState,
@@ -105,9 +105,7 @@ export const useAuthStore = create<AuthStore>()(
 
           toast.success("Login successful!");
         } catch (error: unknown) {
-          const message =
-            (error as { response?: { data?: { detail?: string } } })?.response
-              ?.data?.detail || "Login failed";
+          const message = getApiErrorMessage(error, "Login failed");
           set({ isLoading: false, error: message });
           toast.error(message);
           throw error;

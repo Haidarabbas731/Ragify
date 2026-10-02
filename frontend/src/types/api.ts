@@ -278,3 +278,51 @@ export interface UpdateCollectionRequest {
   name?: string;
   description?: string;
 }
+
+/**
+ * Supported chat model providers
+ */
+export type AiProvider = "gemini" | "openrouter";
+
+/**
+ * The user's saved AI settings plus what chat uses when they have none.
+ * The API key itself is never returned, only its last 4 characters.
+ */
+export interface AiSettings {
+  provider: AiProvider | null;
+  model: string | null;
+  has_key: boolean;
+  key_last4: string | null;
+  key_storage_enabled: boolean;
+  fallback_enabled: boolean;
+  default_provider: AiProvider;
+  default_model: string;
+  providers: AiProvider[];
+}
+
+/**
+ * Save or test request. Omit api_key to keep (or test) the stored key.
+ */
+export interface AiSettingsUpdate {
+  provider: AiProvider;
+  model: string;
+  api_key?: string;
+}
+
+/**
+ * Result of a connection test
+ */
+export interface AiTestResult {
+  ok: boolean;
+  message: string;
+}
+
+/**
+ * A model the user can pick
+ */
+export interface AiModel {
+  id: string;
+  name: string;
+  context_length: number | null;
+  free: boolean;
+}

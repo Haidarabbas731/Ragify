@@ -7,7 +7,7 @@
 import { AlertCircle, Check, Eye, EyeOff, Lock, Shield, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import api from "../../lib/api";
+import api, { getApiErrorMessage } from "../../lib/api";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -182,9 +182,10 @@ export function ChangePasswordForm() {
         window.location.href = "/login";
       }, 2000);
     } catch (error: unknown) {
-      const errorMessage =
-        (error as { response?: { data?: { detail?: string } } }).response?.data
-          ?.detail || "Failed to change password";
+      const errorMessage = getApiErrorMessage(
+        error,
+        "Failed to change password",
+      );
 
       toast.error("Password Change Failed", {
         description: errorMessage,

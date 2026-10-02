@@ -6,6 +6,7 @@
 import { useCallback, useRef, useState } from "react";
 import api from "../lib/api";
 import { useAuthStore } from "../store/authStore";
+import type { SourceCitation } from "../types/api";
 
 interface ChatStreamOptions {
   query: string;
@@ -19,13 +20,6 @@ interface ChatStreamOptions {
     conversationId: string,
   ) => void;
   onError?: (error: string) => void;
-}
-
-interface SourceCitation {
-  document_name: string;
-  filename: string;
-  chunk_index: number;
-  relevance_score: number;
 }
 
 /**

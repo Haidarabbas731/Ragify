@@ -38,7 +38,7 @@ function describe(activity: AgentActivityState): string {
  *
  * Shows "Thinking", then "Searching your documents" with the search the assistant chose,
  * then "Reading N passages from M documents". The label swaps with a short ease-out
- * (see `.agent-step-in`); the pulsing dots stay put so the bubble never changes size.
+ * (see `.step-in`); the pulsing dots stay put so the bubble never changes size.
  * Rendered as <output> so changes are announced politely to screen readers.
  */
 export function AgentActivity({ activity }: AgentActivityProps) {
@@ -84,7 +84,7 @@ export function AgentActivity({ activity }: AgentActivityProps) {
           {/* Keyed so a new phase replays the swap animation */}
           <span
             key={phase}
-            className="agent-step-in text-sm text-muted-foreground font-sans"
+            className="step-in text-sm text-muted-foreground font-sans"
           >
             {describe(activity)}
             {phase === "searching" ||
@@ -97,7 +97,7 @@ export function AgentActivity({ activity }: AgentActivityProps) {
           {showQuery && (
             <span
               key={query}
-              className="agent-step-in min-w-0 max-w-[40ch] truncate rounded-md bg-muted px-2 py-0.5 text-xs text-foreground/80 font-mono"
+              className="step-in min-w-0 max-w-[40ch] truncate rounded-md bg-muted px-2 py-0.5 text-xs text-foreground/80 font-mono"
               title={query}
             >
               {query}

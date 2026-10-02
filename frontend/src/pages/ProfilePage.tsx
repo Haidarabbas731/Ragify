@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AiModelSettings } from "../components/profile/AiModelSettings";
 import { ChangePasswordForm } from "../components/profile/ChangePasswordForm";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -401,6 +402,11 @@ export function ProfilePage() {
                 </h2>
 
                 <div className="space-y-6">
+                  {/* AI model: provider, model and the user's own API key */}
+                  <div className="pb-6 border-b border-border">
+                    <AiModelSettings />
+                  </div>
+
                   {/* Theme Preference */}
                   <div className="flex items-center justify-between py-3 border-b border-border">
                     <div>

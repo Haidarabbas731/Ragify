@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   createCollection,
   deleteCollection,
+  getApiErrorMessage,
   getCollection,
   getCollections,
   updateCollection,
@@ -55,19 +56,7 @@ export const useCreateCollection = () => {
       toast.success("Collection created successfully");
     },
     onError: (error: unknown) => {
-      // Read both "detail" (FastAPI standard) and "message" (fallback)
-      const message =
-        (
-          error as {
-            response?: { data?: { detail?: string; message?: string } };
-          }
-        ).response?.data?.detail ||
-        (
-          error as {
-            response?: { data?: { detail?: string; message?: string } };
-          }
-        ).response?.data?.message ||
-        "Failed to create collection";
+      const message = getApiErrorMessage(error, "Failed to create collection");
       toast.error(message);
 
       // Invalidate queries to refetch collections list
@@ -100,19 +89,7 @@ export const useUpdateCollection = () => {
       toast.success("Collection updated successfully");
     },
     onError: (error: unknown) => {
-      // Read both "detail" (FastAPI standard) and "message" (fallback)
-      const message =
-        (
-          error as {
-            response?: { data?: { detail?: string; message?: string } };
-          }
-        ).response?.data?.detail ||
-        (
-          error as {
-            response?: { data?: { detail?: string; message?: string } };
-          }
-        ).response?.data?.message ||
-        "Failed to update collection";
+      const message = getApiErrorMessage(error, "Failed to update collection");
       toast.error(message);
 
       // Invalidate queries to refetch collections list on error
@@ -135,19 +112,7 @@ export const useDeleteCollection = () => {
       toast.success("Collection deleted successfully");
     },
     onError: (error: unknown) => {
-      // Read both "detail" (FastAPI standard) and "message" (fallback)
-      const message =
-        (
-          error as {
-            response?: { data?: { detail?: string; message?: string } };
-          }
-        ).response?.data?.detail ||
-        (
-          error as {
-            response?: { data?: { detail?: string; message?: string } };
-          }
-        ).response?.data?.message ||
-        "Failed to delete collection";
+      const message = getApiErrorMessage(error, "Failed to delete collection");
       toast.error(message);
 
       // Invalidate queries to refetch collections list on error
