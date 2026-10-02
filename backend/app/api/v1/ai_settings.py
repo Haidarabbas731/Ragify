@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -11,6 +11,7 @@ from app.db.database import get_session
 from app.models.user import User
 from app.schemas.ai_settings import (
     AIModel,
+    AIModelsRequest,
     AISettingsResponse,
     AISettingsUpdate,
     AITestResponse,
@@ -23,11 +24,10 @@ from app.services.ai_settings_service import (
     save_ai_settings,
     stored_api_key,
 )
-from app.services.model_catalog import list_openrouter_models
+from app.services.model_catalog import list_gemini_models, list_openrouter_models
 from app.services.providers.base import ProviderAuthError, ProviderError
 from app.services.providers.registry import (
     PROVIDERS,
-    Provider,
     default_model,
     get_chat_provider,
     server_key_available,
@@ -129,21 +129,38 @@ async def test_settings(
     return AITestResponse(ok=True, message=f"Connected. {request.model} responded and supports tools.")
 
 
-@router.get("/models", response_model=list[AIModel])
+@router.post("/models", response_model=list[AIModel])
 async def list_models(
-    provider: Provider = Query(...),
+    request: AIModelsRequest,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
 ) -> list[AIModel]:
     """
     List models the user can pick for a provider.
 
-    OpenRouter returns only models that support tool calling. Gemini has no list: users
-    type a model name.
+    OpenRouter returns only models that support tool calling (no key needed). Gemini lists
+    the chat models a key can use; the key is the one in the request, else the user's saved
+    Gemini key, else the server's. With no key available the list is empty and the user types
+    a model name. The key is used for this one call and never stored or logged.
     """
-    if provider != "openrouter":
-        return []
+    if not await check_rate_limit(
+        f"ai-models:{current_user.user_id}", max_requests=30, window_seconds=60
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many requests. Please wait a minute.",
+        )
 
     try:
-        return await list_openrouter_models()
+        if request.provider == "openrouter":
+            return await list_openrouter_models()
+
+        api_key = request.api_key
+        if api_key is None:
+            row = await get_ai_settings(db, current_user.user_id)
+            if row is not None and row.provider == "gemini":
+                api_key = stored_api_key(row)
+        api_key = api_key or settings.GOOGLE_API_KEY
+        return await list_gemini_models(api_key) if api_key else []
     except ProviderError as e:
         raise HTTPException(status_code=e.status_code, detail=e.user_message) from e

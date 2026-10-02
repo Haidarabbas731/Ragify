@@ -11,7 +11,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.v1 import ai_settings as api
 from app.core.config import settings
-from app.schemas.ai_settings import AIModel, AISettingsUpdate
+from app.schemas.ai_settings import AIModel, AIModelsRequest, AISettingsUpdate
 from app.services.providers.base import ProviderAuthError, ProviderUnavailableError
 from tests.fakes import FakeProvider, text_turn
 
@@ -222,29 +222,126 @@ async def test_test_connection_is_rate_limited(session: AsyncSession, sample_use
     assert exc.value.status_code == 429
 
 
+def models_request(provider="gemini", api_key=None) -> AIModelsRequest:
+    """A valid model-list request body."""
+    return AIModelsRequest(provider=provider, api_key=api_key)
+
+
 @pytest.mark.asyncio
-async def test_models_for_openrouter_come_from_the_catalog(sample_user):
-    """OpenRouter models are listed from the catalog."""
+async def test_models_for_openrouter_come_from_the_catalog_without_any_key(
+    session: AsyncSession, sample_user
+):
+    """OpenRouter's list is public: no key is needed and a typed key is ignored."""
     models = [AIModel(id="a/b", name="A B")]
     with patch("app.api.v1.ai_settings.list_openrouter_models", new=AsyncMock(return_value=models)):
-        assert await api.list_models("openrouter", sample_user) == models
+        result = await api.list_models(models_request("openrouter", KEY), sample_user, session)
+
+    assert result == models
 
 
 @pytest.mark.asyncio
-async def test_models_for_gemini_is_empty_so_users_type_a_name(sample_user):
-    """Gemini has no list; the UI shows a text field instead."""
-    assert await api.list_models("gemini", sample_user) == []
+async def test_gemini_models_use_the_typed_key_first(session: AsyncSession, sample_user):
+    """A key typed in the form wins, so users see their models before saving anything."""
+    await api.update_settings(update(provider="gemini", model="gemini-x", api_key="stored-gemini-key"), sample_user, session)
+    models = [AIModel(id="gemini-2.5-flash", name="Gemini 2.5 Flash")]
 
-
-@pytest.mark.asyncio
-async def test_models_catalog_failure_is_a_503(sample_user):
-    """If OpenRouter cannot be reached the user sees a friendly 503."""
-    failing = AsyncMock(side_effect=ProviderUnavailableError("down", user_message="Try again."))
     with (
-        patch("app.api.v1.ai_settings.list_openrouter_models", new=failing),
+        patch.object(settings, "GOOGLE_API_KEY", "server-key"),
+        patch("app.api.v1.ai_settings.list_gemini_models", new=AsyncMock(return_value=models)) as lister,
+    ):
+        result = await api.list_models(models_request(api_key="typed-gemini-key"), sample_user, session)
+
+    lister.assert_awaited_once_with("typed-gemini-key")
+    assert result == models
+
+
+@pytest.mark.asyncio
+async def test_gemini_models_fall_back_to_the_saved_key_then_the_server_key(
+    session: AsyncSession, sample_user
+):
+    """With nothing typed, the user's saved Gemini key is used; without one, the server's."""
+    lister = AsyncMock(return_value=[])
+    with (
+        patch.object(settings, "GOOGLE_API_KEY", "server-key"),
+        patch("app.api.v1.ai_settings.list_gemini_models", new=lister),
+    ):
+        await api.list_models(models_request(), sample_user, session)
+        lister.assert_awaited_with("server-key")
+
+        await api.update_settings(update(provider="gemini", model="gemini-x", api_key="stored-gemini-key"), sample_user, session)
+        await api.list_models(models_request(), sample_user, session)
+        lister.assert_awaited_with("stored-gemini-key")
+
+
+@pytest.mark.asyncio
+async def test_an_openrouter_key_is_never_sent_to_google(session: AsyncSession, sample_user):
+    """A saved key for another provider is not used for the Gemini list."""
+    await api.update_settings(update(provider="openrouter", model="vendor/model"), sample_user, session)
+    lister = AsyncMock(return_value=[])
+
+    with (
+        patch.object(settings, "GOOGLE_API_KEY", None),
+        patch("app.api.v1.ai_settings.list_gemini_models", new=lister),
+    ):
+        result = await api.list_models(models_request(), sample_user, session)
+
+    lister.assert_not_called()
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_gemini_models_are_empty_when_no_key_exists_anywhere(
+    session: AsyncSession, sample_user
+):
+    """With no key to ask Google with, the list is empty and the user types a model name."""
+    with (
+        patch.object(settings, "GOOGLE_API_KEY", None),
+        patch("app.api.v1.ai_settings.list_gemini_models", new=AsyncMock()) as lister,
+    ):
+        result = await api.list_models(models_request(), sample_user, session)
+
+    assert result == []
+    lister.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("error", "status"),
+    [
+        (ProviderAuthError("bad key"), 400),
+        (ProviderUnavailableError("down", user_message="Try again."), 503),
+    ],
+)
+async def test_model_list_failures_keep_their_status_and_safe_message(
+    session: AsyncSession, sample_user, error, status
+):
+    """A rejected key surfaces immediately as a clear message instead of an empty list."""
+    with (
+        patch("app.api.v1.ai_settings.list_gemini_models", new=AsyncMock(side_effect=error)),
         pytest.raises(HTTPException) as exc,
     ):
-        await api.list_models("openrouter", sample_user)
+        await api.list_models(models_request(api_key=KEY), sample_user, session)
 
-    assert exc.value.status_code == 503
-    assert exc.value.detail == "Try again."
+    assert exc.value.status_code == status
+    assert exc.value.detail == error.user_message
+
+
+@pytest.mark.asyncio
+async def test_model_listing_is_rate_limited(session: AsyncSession, sample_user):
+    """Too many list requests in a minute are refused with 429."""
+    with (
+        patch("app.api.v1.ai_settings.check_rate_limit", new=AsyncMock(return_value=False)),
+        pytest.raises(HTTPException) as exc,
+    ):
+        await api.list_models(models_request(), sample_user, session)
+
+    assert exc.value.status_code == 429
+
+
+def test_the_models_request_trims_and_validates_the_key():
+    """The same key rules apply as when saving."""
+    assert models_request(api_key=f"  {KEY}\n").api_key == KEY
+    with pytest.raises(ValidationError):
+        models_request(api_key="short")
+    with pytest.raises(ValidationError):
+        models_request(provider="openai")

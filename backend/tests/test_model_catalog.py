@@ -2,13 +2,15 @@
 Unit tests for the OpenRouter model catalog.
 """
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+from google.genai import errors
 
 import app.services.model_catalog as catalog
-from app.services.providers.base import ProviderUnavailableError
+from app.services.providers.base import ProviderAuthError, ProviderUnavailableError
 
 
 def model(id, name=None, tools=True, output=("text",), context=1000, pricing=None):
@@ -105,3 +107,102 @@ async def test_failures_raise_a_friendly_error_and_are_not_cached():
     patcher, _ = mock_http(data=RAW)
     with patcher:
         assert len(await catalog.list_openrouter_models()) == 2
+
+
+# Gemini
+
+
+def gemini_model(name, display=None, actions=("generateContent",), limit=1_000_000):
+    """One model as returned by Google's list call."""
+    return SimpleNamespace(
+        name=f"models/{name}",
+        display_name=display,
+        supported_actions=list(actions),
+        input_token_limit=limit,
+    )
+
+
+GEMINI_RAW = [
+    gemini_model("gemini-2.5-pro", "Gemini 2.5 Pro"),
+    gemini_model("gemini-2.5-flash", "Gemini 2.5 Flash"),
+    gemini_model("gemini-2.5-flash-preview-tts", "TTS"),
+    gemini_model("gemini-2.5-flash-image", "Nano Banana"),
+    gemini_model("gemini-2.5-computer-use-preview", "Computer Use"),
+    gemini_model("gemini-embedding-001", "Embedding", actions=("embedContent",)),
+    gemini_model("gemini-live-2.5-flash", "Live"),
+    gemini_model("gemini-no-chat", "Counts only", actions=("countTokens",)),
+    gemini_model("deep-research-pro", "Deep Research"),
+    gemini_model("antigravity-preview", "Agent"),
+]
+
+
+def mock_gemini(models=None, error=None):
+    """Patch the Gemini client so the model list is the given models (or raises the error)."""
+
+    async def pager():
+        for m in models or []:
+            yield m
+
+    client = MagicMock()
+    client.aio.models.list = AsyncMock(side_effect=error, return_value=pager())
+    return patch("app.services.model_catalog.genai.Client", return_value=client), client
+
+
+@pytest.fixture(autouse=True)
+def reset_gemini_cache():
+    """The Gemini list is cached per key; start every test empty."""
+    catalog._gemini_cache.clear()
+    yield
+    catalog._gemini_cache.clear()
+
+
+@pytest.mark.asyncio
+async def test_gemini_list_keeps_only_gemini_chat_models_sorted():
+    """Speech, image, agent, embedding and non-generation models are left out."""
+    patcher, _ = mock_gemini(GEMINI_RAW)
+    with patcher:
+        models = await catalog.list_gemini_models("key-aaaaaaaa")
+
+    assert [m.id for m in models] == ["gemini-2.5-flash", "gemini-2.5-pro"]
+    assert models[0].name == "Gemini 2.5 Flash"
+    assert models[0].context_length == 1_000_000
+    assert not any(m.free for m in models)
+
+
+@pytest.mark.asyncio
+async def test_gemini_list_is_cached_per_key_and_never_stores_the_raw_key():
+    """The same key reuses the result, another key asks again, and only hashes are kept."""
+    patcher, client = mock_gemini(GEMINI_RAW)
+    with patcher:
+        await catalog.list_gemini_models("key-aaaaaaaa")
+        await catalog.list_gemini_models("key-aaaaaaaa")
+        assert client.aio.models.list.await_count == 1
+
+        client.aio.models.list.return_value = mock_gemini(GEMINI_RAW)[1].aio.models.list.return_value
+        await catalog.list_gemini_models("key-bbbbbbbb")
+        assert client.aio.models.list.await_count == 2
+
+    assert len(catalog._gemini_cache) == 2
+    assert all("key-" not in cached_key for cached_key in catalog._gemini_cache)
+
+
+@pytest.mark.asyncio
+async def test_gemini_cache_stays_bounded():
+    """Old entries are dropped so many distinct keys cannot grow memory without limit."""
+    patcher, _ = mock_gemini(GEMINI_RAW)
+    with patcher, patch.object(catalog, "_GEMINI_CACHE_LIMIT", 2):
+        for i in range(5):
+            await catalog.list_gemini_models(f"key-{i}-xxxxxxxx")
+
+    assert len(catalog._gemini_cache) <= 2
+
+
+@pytest.mark.asyncio
+async def test_a_rejected_gemini_key_raises_an_auth_error_and_is_not_cached():
+    """An invalid key fails clearly, which doubles as early key validation."""
+    error = errors.ClientError(400, {"error": {"message": "API key not valid. Please pass a valid API key."}})
+    patcher, _ = mock_gemini(error=error)
+    with patcher, pytest.raises(ProviderAuthError):
+        await catalog.list_gemini_models("bad-key-xxxxxxxx")
+
+    assert catalog._gemini_cache == {}
