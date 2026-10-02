@@ -1,12 +1,10 @@
 from collections.abc import AsyncGenerator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
-from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
-
-# Ensure models are imported so SQLModel.metadata includes their tables for create_all
 
 async_engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
@@ -23,10 +21,18 @@ async_session_maker: async_sessionmaker[AsyncSession] = async_sessionmaker(
 )
 
 
-async def init_db() -> None:
-    """Create all database tables."""
-    async with async_engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
+async def check_connection() -> None:
+    """
+    Verify the database is reachable.
+
+    Schema changes are applied by Alembic (`alembic upgrade head`), never at app startup, so
+    two mechanisms cannot race to create the same table.
+
+    Raises:
+        Exception: If the database cannot be reached
+    """
+    async with async_engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

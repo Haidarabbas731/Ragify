@@ -12,7 +12,7 @@ from app.api.v1.admin import documents as admin_documents
 from app.api.v1.admin import users as admin_users
 from app.core.config import settings
 from app.core.logging import configure_logging
-from app.db.database import async_engine, init_db
+from app.db.database import async_engine, check_connection
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.size_limit import RequestSizeLimitMiddleware
@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
     redis_available = False
 
     try:
-        await init_db()
+        await check_connection()
         db_available = True
         logger.info("✓ Database connection established")
     except Exception as e:

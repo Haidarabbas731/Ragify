@@ -166,19 +166,15 @@ uv run pytest --cov=app       # With coverage
 
 ### Database Management
 
-**Auto-create tables (on API startup):**
+**Migrations (Alembic) create and change the tables.** The API does not create tables at
+startup, so apply migrations before the first run and after pulling new code (the Docker
+start script does this for you):
 ```bash
-# Tables are created automatically when you run:
-uv run uvicorn main:app --reload
-```
-
-**Manual migrations (optional - Alembic):**
-```bash
-# Generate migration
-uv run alembic revision --autogenerate -m "description"
-
 # Apply migrations
 uv run alembic upgrade head
+
+# Generate a migration after changing a model
+uv run alembic revision --autogenerate -m "description"
 
 # Rollback
 uv run alembic downgrade -1
@@ -551,8 +547,7 @@ uv sync --reinstall
 ### ✅ Phase 0: Setup & Foundation (Completed)
 - [x] Project structure setup
 - [x] Database models (User, Document, Collection, Conversation, InviteCode, AdminAuditLog)
-- [x] Database session management (`database.py` with `init_db()`)
-- [x] Auto-create tables on startup
+- [x] Database session management (`database.py`); tables are managed by Alembic migrations
 - [x] Docker Compose (PostgreSQL + Redis)
 - [x] Configuration management
 - [x] Security utilities (JWT, Argon2)
