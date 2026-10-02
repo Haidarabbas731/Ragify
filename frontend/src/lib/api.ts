@@ -10,6 +10,7 @@ import type {
   AiSettings,
   AiSettingsUpdate,
   AiTestResult,
+  AuthConfig,
   MessageResponse,
 } from "../types/api";
 import type { TokenResponse } from "../types/auth";
@@ -165,6 +166,15 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+/**
+ * Get the server's public sign-up settings (works without logging in)
+ * @returns Whether registration needs an invite code
+ */
+export const getAuthConfig = async (): Promise<AuthConfig> => {
+  const { data } = await api.get("/auth/config");
+  return data;
+};
 
 /**
  * Get the current user's AI settings (the API key is never returned)
