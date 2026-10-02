@@ -211,12 +211,17 @@ export const testAiSettings = async (
 /**
  * List models the user can pick for a provider
  * @param provider - Provider to list models for
- * @returns Models (empty for providers without a list)
+ * @param apiKey - Key to list Gemini models with (else the saved or server key is used)
+ * @returns Models (empty when Gemini has no key to ask with)
  */
 export const listAiModels = async (
   provider: AiProvider,
+  apiKey?: string,
 ): Promise<AiModel[]> => {
-  const { data } = await api.get("/ai/models", { params: { provider } });
+  const { data } = await api.post("/ai/models", {
+    provider,
+    ...(apiKey ? { api_key: apiKey } : {}),
+  });
   return data;
 };
 

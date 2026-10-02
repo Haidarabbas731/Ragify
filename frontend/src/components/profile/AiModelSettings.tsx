@@ -48,11 +48,7 @@ export function AiModelSettings() {
   const [showKey, setShowKey] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
 
-  const {
-    data: models,
-    isLoading: modelsLoading,
-    isError: modelsError,
-  } = useAiModels(provider);
+  const modelsQuery = useAiModels(provider, apiKey);
 
   // Fill the form from the saved settings (or the server defaults) once they load
   useEffect(() => {
@@ -124,6 +120,24 @@ export function AiModelSettings() {
       ? `Using the default model: ${PROVIDERS[settings.default_provider].label} · ${settings.default_model}`
       : "No API key is set. Add one below to use chat.";
 
+  const modelCount = modelsQuery.data?.length ?? 0;
+  const modelsStatus = modelsQuery.isLoading
+    ? "Loading models…"
+    : modelsQuery.isError
+      ? getApiErrorMessage(
+          modelsQuery.error,
+          "Couldn't load the model list. You can still type a model name.",
+        )
+      : modelCount === 0
+        ? provider === "gemini"
+          ? "Paste your API key to see available models, or type a model name."
+          : "Enter a model id."
+        : `${modelCount} ${
+            provider === "openrouter"
+              ? "models with tool calling"
+              : "Gemini chat models"
+          }. Type to search, or enter any id.`;
+
   return (
     <div className="space-y-5">
       <div>
@@ -165,26 +179,15 @@ export function AiModelSettings() {
         <Label htmlFor="ai-model" className="font-sans">
           Model
         </Label>
-        {provider === "openrouter" ? (
-          <ModelPicker
-            value={model}
-            onChange={setModel}
-            models={models}
-            isLoading={modelsLoading}
-            isError={modelsError}
-            placeholder={PROVIDERS[provider].modelPlaceholder}
-          />
-        ) : (
-          <Input
-            id="ai-model"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            placeholder={PROVIDERS[provider].modelPlaceholder}
-            autoComplete="off"
-            spellCheck={false}
-            className="font-mono text-sm"
-          />
-        )}
+        <ModelPicker
+          id="ai-model"
+          value={model}
+          onChange={setModel}
+          models={modelsQuery.data}
+          statusText={modelsStatus}
+          statusIsError={modelsQuery.isError}
+          placeholder={PROVIDERS[provider].modelPlaceholder}
+        />
       </div>
 
       <div className="space-y-2">

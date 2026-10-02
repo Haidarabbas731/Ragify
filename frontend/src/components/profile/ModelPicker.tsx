@@ -8,9 +8,13 @@ interface ModelPickerProps {
   onChange: (value: string) => void;
   /** Suggestions, e.g. OpenRouter models that support tool calling */
   models: AiModel[] | undefined;
-  isLoading: boolean;
-  isError: boolean;
+  /** Line under the field: loading, how many models, or why there are none */
+  statusText: string;
+  /** Show the status line as an error */
+  statusIsError?: boolean;
   placeholder?: string;
+  /** Id for the input, so a <label htmlFor> can point at it */
+  id?: string;
 }
 
 const MAX_SUGGESTIONS = 50;
@@ -24,9 +28,10 @@ export function ModelPicker({
   value,
   onChange,
   models,
-  isLoading,
-  isError,
+  statusText,
+  statusIsError = false,
   placeholder,
+  id,
 }: ModelPickerProps) {
   const listId = useId();
   const [open, setOpen] = useState(false);
@@ -67,6 +72,7 @@ export function ModelPicker({
   return (
     <div className="relative">
       <Input
+        id={id}
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
@@ -126,14 +132,12 @@ export function ModelPicker({
         </div>
       )}
 
-      <p className="mt-1.5 text-xs text-muted-foreground font-sans">
-        {isLoading
-          ? "Loading models…"
-          : isError
-            ? "Couldn't load the model list. You can still type a model id."
-            : models
-              ? `${models.length} models with tool calling. Type to search, or enter any id.`
-              : "Enter a model name."}
+      <p
+        className={`mt-1.5 text-xs font-sans ${
+          statusIsError ? "text-destructive" : "text-muted-foreground"
+        }`}
+      >
+        {statusText}
       </p>
     </div>
   );
