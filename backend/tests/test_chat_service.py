@@ -12,7 +12,6 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from google.genai import types
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
@@ -22,14 +21,18 @@ from app.prompts.chat_prompt import SEARCH_TOOL_NAME
 from app.schemas.chat import ChatResponse
 from app.services.chat_service import (
     EMPTY_RESPONSE_MESSAGE,
-    TIMEOUT_MESSAGE,
     _enrich_chunks_with_metadata,
     _no_results_hint,
     _save_to_conversation,
     execute_rag_query,
     execute_rag_query_stream,
 )
-from app.services.llm_service import StreamEvent
+from app.services.providers.base import (
+    Message,
+    ProviderTimeoutError,
+    StreamEvent,
+    ToolCall,
+)
 
 
 @pytest.fixture
@@ -88,40 +91,28 @@ def mock_chunks():
 
 def text_turn(*texts: str) -> list[StreamEvent]:
     """A model turn that only streams answer text."""
-    full = "".join(texts)
     events = [StreamEvent(kind="text", text=t) for t in texts]
     events.append(
-        StreamEvent(
-            kind="done",
-            model_content=types.Content(role="model", parts=[types.Part.from_text(text=full)]),
-        )
+        StreamEvent(kind="done", message=Message(role="assistant", text="".join(texts)))
     )
     return events
 
 
 def call_turn(name: str = SEARCH_TOOL_NAME, **args) -> list[StreamEvent]:
     """A model turn that requests a tool call."""
-    call = types.FunctionCall(name=name, args=args)
-    return [
-        StreamEvent(
-            kind="done",
-            function_calls=[call],
-            model_content=types.Content(role="model", parts=[types.Part(function_call=call)]),
-        )
-    ]
+    message = Message(role="assistant", tool_calls=[ToolCall(name=name, args=args, id="call_0")])
+    return [StreamEvent(kind="done", message=message)]
 
 
-class FakeLLM:
-    """Stand-in for LLMService: plays back scripted turns and records the requests."""
+class FakeProvider:
+    """Stand-in for a chat provider: plays back scripted turns and records the requests."""
 
     def __init__(self, turns: list[list[StreamEvent]]):
         self.turns = list(turns)
         self.requests: list[dict] = []
 
-    async def stream_turn(self, contents, system_instruction, tools=None, timeout=30):
-        self.requests.append(
-            {"contents": list(contents), "system": system_instruction, "tools": tools}
-        )
+    async def stream_turn(self, messages, system, tools=None, timeout=30):
+        self.requests.append({"messages": list(messages), "system": system, "tools": tools})
         for event in self.turns.pop(0):
             if isinstance(event, Exception):
                 raise event
@@ -146,7 +137,7 @@ def agent_env(mock_user_id, mock_conversation, mock_document, mock_chunks):
         patch("app.services.chat_service.get_embedding_service") as get_embed,
         patch("app.services.chat_service.get_milvus_service") as get_milvus,
         patch("app.services.chat_service.get_document_by_id") as get_doc,
-        patch("app.services.chat_service.get_llm_service") as get_llm,
+        patch("app.services.chat_service.get_chat_provider") as get_provider,
         patch("app.services.chat_service._save_to_conversation") as save,
     ):
         get_conv.return_value = mock_conversation
@@ -163,7 +154,7 @@ def agent_env(mock_user_id, mock_conversation, mock_document, mock_chunks):
         env.embedding_service = embedding_service
         env.milvus_service = milvus_service
         env.get_history = get_history
-        env.get_llm = get_llm
+        env.get_provider = get_provider
         env.get_doc = get_doc
         env.save = save
         env.conversation = mock_conversation
@@ -182,8 +173,8 @@ async def collect(stream) -> list[dict]:
 @pytest.mark.asyncio
 async def test_greeting_answers_without_searching(agent_env, mock_user_id):
     """The agent can answer small talk directly: one model call, no search, no sources."""
-    llm = FakeLLM([text_turn("Hello! ", "How can I help?")])
-    agent_env.get_llm.return_value = llm
+    llm = FakeProvider([text_turn("Hello! ", "How can I help?")])
+    agent_env.get_provider.return_value = llm
 
     events = await collect(execute_rag_query_stream("Hiii", mock_user_id, MagicMock()))
 
@@ -204,8 +195,8 @@ async def test_greeting_answers_without_searching(agent_env, mock_user_id):
 @pytest.mark.asyncio
 async def test_document_question_uses_search_tool(agent_env, mock_user_id):
     """A tool call triggers embed + Milvus search; the answer streams after the results."""
-    llm = FakeLLM([call_turn(query="vacation policy"), text_turn("You get 20 days.")])
-    agent_env.get_llm.return_value = llm
+    llm = FakeProvider([call_turn(query="vacation policy"), text_turn("You get 20 days.")])
+    agent_env.get_provider.return_value = llm
 
     events = await collect(
         execute_rag_query_stream("How many vacation days?", mock_user_id, MagicMock())
@@ -222,11 +213,12 @@ async def test_document_question_uses_search_tool(agent_env, mock_user_id):
 
     # Second model request carries the model's call and our function response
     assert len(llm.requests) == 2
-    second = llm.requests[1]["contents"]
-    assert second[-2].role == "model"
-    response = second[-1].parts[0].function_response
-    assert response.name == SEARCH_TOOL_NAME
-    results = response.response["results"]
+    second = llm.requests[1]["messages"]
+    assert second[-2].role == "assistant"
+    tool_result = second[-1].tool_results[0]
+    assert second[-1].role == "tool"
+    assert tool_result.call.name == SEARCH_TOOL_NAME
+    results = tool_result.result["results"]
     assert results[0]["document"] == "test_document.pdf"
     assert "vacation policy" in results[0]["text"]
     assert "score" not in results[0]
@@ -241,13 +233,13 @@ async def test_document_question_uses_search_tool(agent_env, mock_user_id):
 @pytest.mark.asyncio
 async def test_tool_call_cannot_override_user_or_collection(agent_env, mock_user_id):
     """user_id/collection_id come from the request even if the model tries to pass them."""
-    llm = FakeLLM(
+    llm = FakeProvider(
         [
             call_turn(query="salaries", user_id="someone-else", collection_id="other"),
             text_turn("Done."),
         ]
     )
-    agent_env.get_llm.return_value = llm
+    agent_env.get_provider.return_value = llm
 
     await collect(
         execute_rag_query_stream(
@@ -264,8 +256,8 @@ async def test_tool_call_cannot_override_user_or_collection(agent_env, mock_user
 @pytest.mark.asyncio
 async def test_tool_call_without_query_falls_back_to_user_message(agent_env, mock_user_id):
     """If the model sends no query argument, the user's message is searched."""
-    llm = FakeLLM([call_turn(), text_turn("ok")])
-    agent_env.get_llm.return_value = llm
+    llm = FakeProvider([call_turn(), text_turn("ok")])
+    agent_env.get_provider.return_value = llm
 
     events = await collect(execute_rag_query_stream("find the budget", mock_user_id, MagicMock()))
 
@@ -279,14 +271,14 @@ async def test_history_is_sent_as_chat_turns(agent_env, mock_user_id):
         {"role": "user", "content": "What is the leave policy?"},
         {"role": "assistant", "content": "It is 20 days."},
     ]
-    llm = FakeLLM([text_turn("Sure.")])
-    agent_env.get_llm.return_value = llm
+    llm = FakeProvider([text_turn("Sure.")])
+    agent_env.get_provider.return_value = llm
 
     await collect(execute_rag_query_stream("and sick leave?", mock_user_id, MagicMock()))
 
-    contents = llm.requests[0]["contents"]
-    assert [c.role for c in contents] == ["user", "model", "user"]
-    assert contents[-1].parts[0].text == "and sick leave?"
+    messages = llm.requests[0]["messages"]
+    assert [m.role for m in messages] == ["user", "assistant", "user"]
+    assert messages[-1].text == "and sick leave?"
 
 
 # Test: no results
@@ -296,13 +288,13 @@ async def test_history_is_sent_as_chat_turns(agent_env, mock_user_id):
 async def test_search_with_no_results_returns_note(agent_env, mock_user_id):
     """An empty search tells the model why via a note; no sources are returned."""
     agent_env.milvus_service.search_similar.return_value = []
-    llm = FakeLLM([call_turn(query="moon base"), text_turn("I couldn't find that.")])
-    agent_env.get_llm.return_value = llm
+    llm = FakeProvider([call_turn(query="moon base"), text_turn("I couldn't find that.")])
+    agent_env.get_provider.return_value = llm
 
     with patch("app.services.chat_service._no_results_hint", new=AsyncMock(return_value="hint!")):
         events = await collect(execute_rag_query_stream("moon base?", mock_user_id, MagicMock()))
 
-    response = llm.requests[1]["contents"][-1].parts[0].function_response.response
+    response = llm.requests[1]["messages"][-1].tool_results[0].result
     assert response == {"results": [], "note": "hint!"}
     assert events[1]["chunks"] == 0
     assert events[-1]["sources"] == []
@@ -314,10 +306,10 @@ async def test_search_with_no_results_returns_note(agent_env, mock_user_id):
 @pytest.mark.asyncio
 async def test_tool_rounds_are_capped(agent_env, mock_user_id):
     """After AGENT_MAX_TOOL_ROUNDS searches the model is asked again without tools."""
-    llm = FakeLLM(
+    llm = FakeProvider(
         [call_turn(query="a"), call_turn(query="b"), text_turn("Final answer.")]
     )
-    agent_env.get_llm.return_value = llm
+    agent_env.get_provider.return_value = llm
 
     with patch.object(settings, "AGENT_MAX_TOOL_ROUNDS", 2):
         events = await collect(execute_rag_query_stream("q", mock_user_id, MagicMock()))
@@ -330,14 +322,14 @@ async def test_tool_rounds_are_capped(agent_env, mock_user_id):
 @pytest.mark.asyncio
 async def test_unknown_tool_is_rejected_not_executed(agent_env, mock_user_id):
     """A call to a tool we didn't declare gets an error response and no search runs."""
-    llm = FakeLLM([call_turn(name="delete_everything"), text_turn("Sorry.")])
-    agent_env.get_llm.return_value = llm
+    llm = FakeProvider([call_turn(name="delete_everything"), text_turn("Sorry.")])
+    agent_env.get_provider.return_value = llm
 
     events = await collect(execute_rag_query_stream("do it", mock_user_id, MagicMock()))
 
     agent_env.milvus_service.search_similar.assert_not_called()
     assert all(e["type"] not in ("tool_start", "tool_end") for e in events)
-    response = llm.requests[1]["contents"][-1].parts[0].function_response.response
+    response = llm.requests[1]["messages"][-1].tool_results[0].result
     assert "Unknown tool" in response["error"]
 
 
@@ -345,14 +337,14 @@ async def test_unknown_tool_is_rejected_not_executed(agent_env, mock_user_id):
 async def test_search_failure_is_reported_to_model(agent_env, mock_user_id):
     """If search breaks, the UI event is flagged and the model still gets to answer."""
     agent_env.milvus_service.search_similar.side_effect = RuntimeError("milvus down")
-    llm = FakeLLM([call_turn(query="x"), text_turn("Search is unavailable right now.")])
-    agent_env.get_llm.return_value = llm
+    llm = FakeProvider([call_turn(query="x"), text_turn("Search is unavailable right now.")])
+    agent_env.get_provider.return_value = llm
 
     events = await collect(execute_rag_query_stream("x?", mock_user_id, MagicMock()))
 
     tool_end = next(e for e in events if e["type"] == "tool_end")
     assert tool_end["error"] is True
-    response = llm.requests[1]["contents"][-1].parts[0].function_response.response
+    response = llm.requests[1]["messages"][-1].tool_results[0].result
     assert "error" in response
     assert events[-1]["type"] == "done"
 
@@ -360,8 +352,8 @@ async def test_search_failure_is_reported_to_model(agent_env, mock_user_id):
 @pytest.mark.asyncio
 async def test_empty_model_answer_uses_fallback(agent_env, mock_user_id):
     """If the model produces no text at all, the user gets a clear message."""
-    llm = FakeLLM([text_turn()])
-    agent_env.get_llm.return_value = llm
+    llm = FakeProvider([text_turn()])
+    agent_env.get_provider.return_value = llm
 
     events = await collect(execute_rag_query_stream("hello", mock_user_id, MagicMock()))
 
@@ -371,14 +363,13 @@ async def test_empty_model_answer_uses_fallback(agent_env, mock_user_id):
 
 @pytest.mark.asyncio
 async def test_llm_timeout_raises_friendly_error(agent_env, mock_user_id):
-    """Model timeouts surface as TimeoutError with the user-facing message."""
-    llm = FakeLLM([[TimeoutError("slow")]])
-    agent_env.get_llm.return_value = llm
+    """Provider timeouts propagate (the API layer shows their user message) and nothing is saved."""
+    llm = FakeProvider([[ProviderTimeoutError("slow")]])
+    agent_env.get_provider.return_value = llm
 
-    with pytest.raises(TimeoutError, match="taking too long") as exc:
+    with pytest.raises(ProviderTimeoutError):
         await collect(execute_rag_query_stream("hi", mock_user_id, MagicMock()))
 
-    assert str(exc.value) == TIMEOUT_MESSAGE
     agent_env.save.assert_not_called()
 
 
@@ -396,8 +387,8 @@ async def test_empty_query_raises(query, mock_user_id):
 @pytest.mark.asyncio
 async def test_execute_rag_query_returns_chat_response(agent_env, mock_user_id):
     """The non-streaming API collects the stream into a ChatResponse."""
-    llm = FakeLLM([call_turn(query="vacation"), text_turn("20 ", "days.")])
-    agent_env.get_llm.return_value = llm
+    llm = FakeProvider([call_turn(query="vacation"), text_turn("20 ", "days.")])
+    agent_env.get_provider.return_value = llm
 
     response = await execute_rag_query("vacation?", mock_user_id, MagicMock())
 

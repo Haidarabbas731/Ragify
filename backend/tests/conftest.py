@@ -335,3 +335,14 @@ async def auth_headers(test_engine: AsyncEngine) -> dict:
 
     token = create_access_token({"sub": user_id})
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def agen():
+    """Build an async iterator over the given items (stands in for a streamed response)."""
+
+    async def _agen(*items):
+        for item in items:
+            yield item
+
+    return _agen

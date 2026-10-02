@@ -2,7 +2,6 @@ import logging
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
-from google.genai import types
 from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -24,28 +23,22 @@ from app.services.conversation_service import (
 )
 from app.services.document_service import get_document_by_id
 from app.services.embedding_service import get_embedding_service
-from app.services.llm_service import get_llm_service
 from app.services.milvus_service import get_milvus_service
+from app.services.providers.base import Message, ToolResult, ToolSpec
+from app.services.providers.registry import get_chat_provider
 
 logger = logging.getLogger(__name__)
 
-SEARCH_TOOL = types.Tool(
-    function_declarations=[
-        types.FunctionDeclaration(
-            name=SEARCH_TOOL_NAME,
-            description=SEARCH_TOOL_DESCRIPTION,
-            parameters_json_schema=SEARCH_TOOL_PARAMETERS,
-        )
-    ]
+SEARCH_TOOL = ToolSpec(
+    name=SEARCH_TOOL_NAME,
+    description=SEARCH_TOOL_DESCRIPTION,
+    parameters=SEARCH_TOOL_PARAMETERS,
 )
 
-TIMEOUT_MESSAGE = (
-    "The AI is taking too long to respond. Please try again or simplify your question."
-)
 EMPTY_RESPONSE_MESSAGE = "I wasn't able to put together an answer. Please try asking again."
 
 
-def _build_contents(history: list[dict], query: str) -> list[types.Content]:
+def _build_messages(history: list[dict], query: str) -> list[Message]:
     """
     Build the model conversation from stored history plus the new user message.
 
@@ -54,16 +47,15 @@ def _build_contents(history: list[dict], query: str) -> list[types.Content]:
         query: The user's new message
 
     Returns:
-        list[types.Content]: Alternating user/model turns ending with the new message
+        list[Message]: User/assistant turns ending with the new message
     """
-    contents: list[types.Content] = []
-    for message in history:
-        role = "user" if message.get("role") == "user" else "model"
-        text = message.get("content", "")
-        if text:
-            contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
-    contents.append(types.Content(role="user", parts=[types.Part.from_text(text=query)]))
-    return contents
+    messages = [
+        Message(role="user" if m.get("role") == "user" else "assistant", text=m["content"])
+        for m in history
+        if m.get("content")
+    ]
+    messages.append(Message(role="user", text=query))
+    return messages
 
 
 async def _enrich_chunks_with_metadata(
@@ -241,8 +233,8 @@ async def execute_rag_query_stream(
         history = await get_last_messages(
             db, conversation.conversation_id, limit=settings.CONVERSATION_HISTORY_LIMIT
         )
-        contents = _build_contents(history, query)
-        llm_service = await get_llm_service()
+        messages = _build_messages(history, query)
+        provider = get_chat_provider()
 
         answer_parts: list[str] = []
         all_chunks: list[dict] = []
@@ -251,10 +243,10 @@ async def execute_rag_query_stream(
         # Final round runs without tools so the model must answer with what it has.
         for round_index in range(max_rounds + 1):
             tools = [SEARCH_TOOL] if round_index < max_rounds else None
-            turn_done = None
+            assistant_turn: Message | None = None
 
-            async for event in llm_service.stream_turn(
-                contents,
+            async for event in provider.stream_turn(
+                messages,
                 AGENT_SYSTEM_PROMPT,
                 tools=tools,
                 timeout=settings.GEMINI_RAG_TIMEOUT_SECONDS,
@@ -263,26 +255,22 @@ async def execute_rag_query_stream(
                     answer_parts.append(event.text)
                     yield {"type": "text", "text": event.text}
                 else:
-                    turn_done = event
+                    assistant_turn = event.message
 
-            if turn_done is None or not turn_done.function_calls:
+            if assistant_turn is None or not assistant_turn.tool_calls:
                 break
 
-            contents.append(turn_done.model_content)  # type: ignore[arg-type]
-            response_parts: list[types.Part] = []
+            messages.append(assistant_turn)
+            results: list[ToolResult] = []
 
-            for call in turn_done.function_calls:
-                name = call.name or ""
+            for call in assistant_turn.tool_calls:
+                name = call.name
                 if name != SEARCH_TOOL_NAME:
                     logger.warning(f"Model requested unknown tool '{name}'")
-                    response_parts.append(
-                        types.Part.from_function_response(
-                            name=name, response={"error": f"Unknown tool: {name}"}
-                        )
-                    )
+                    results.append(ToolResult(call, {"error": f"Unknown tool: {name}"}))
                     continue
 
-                search_query = str((call.args or {}).get("query") or "").strip() or query
+                search_query = str(call.args.get("query") or "").strip() or query
                 yield {"type": "tool_start", "name": name, "query": search_query}
 
                 try:
@@ -305,9 +293,9 @@ async def execute_rag_query_stream(
                     "documents": len(extract_sources(chunks)),
                     "error": failed,
                 }
-                response_parts.append(types.Part.from_function_response(name=name, response=result))
+                results.append(ToolResult(call, result))
 
-            contents.append(types.Content(role="user", parts=response_parts))
+            messages.append(Message(role="tool", tool_results=results))
 
         answer = "".join(answer_parts).strip()
         if not answer:
@@ -325,10 +313,6 @@ async def execute_rag_query_stream(
         }
 
         logger.info(f"Completed agent query for conversation {conversation.conversation_id}")
-
-    except TimeoutError as e:
-        logger.error("LLM streaming request timed out")
-        raise TimeoutError(TIMEOUT_MESSAGE) from e
 
     except Exception as e:
         logger.error(f"Agent query failed: {e}")

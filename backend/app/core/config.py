@@ -43,21 +43,37 @@ class Settings(BaseSettings):
     B2_APPLICATION_KEY: str | None = None
     B2_BUCKET_NAME: str | None = None
 
-    # Google Gemini
-    GOOGLE_API_KEY: str
-    GEMINI_MODEL: str = "gemini-2.5-flash"
-    # RAG generation calls include retrieved document context, so give them more
-    # room than a bare prompt needs before the request is aborted as timed out.
+    # Chat model provider: "gemini" or "openrouter"
+    LLM_PROVIDER: str = "gemini"
+    # Chat generation includes retrieved document context, so give calls more room than a
+    # bare prompt needs before the request is aborted as timed out (all providers).
     GEMINI_RAG_TIMEOUT_SECONDS: int = 30
+
+    # Google Gemini (chat)
+    GOOGLE_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     # Thinking effort for chat/agent calls: "minimal", "low", "medium" or "high" (which
     # levels are valid depends on the model). Empty leaves the model default. If the
     # model rejects the setting, the call is retried without it.
     GEMINI_THINKING_LEVEL: str = "low"
-    EMBEDDING_MODEL: str = "models/gemini-embedding-001"
-    # Embedding dimension: 768 (standard), 1024 (better quality - CURRENT), 3072 (maximum)
-    # Higher = better semantic understanding but slower search and more storage
-    # 1024 provides best balance of quality vs performance
+
+    # OpenRouter (chat, OpenAI-compatible API)
+    OPENROUTER_API_KEY: str | None = None
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL: str = "openai/gpt-4o-mini"
+
+    # Cohere (embeddings)
+    COHERE_API_KEY: str
+    EMBEDDING_MODEL: str = "embed-v4.0"
+    # Embedding dimension. Cohere embed-v4.0 supports 256, 512, 1024 or 1536.
+    # Changing the model or dimension requires re-indexing: vectors from different models
+    # are not comparable (the Milvus collection records which model built it).
     EMBEDDING_DIMENSION: int = 1024
+
+    @property
+    def embedding_fingerprint(self) -> str:
+        """Identifies the embedding setup that built the vector index (model and dimension)."""
+        return f"{self.EMBEDDING_MODEL}:{self.EMBEDDING_DIMENSION}"
 
     # File Upload
     MAX_FILE_SIZE_MB: int = 50

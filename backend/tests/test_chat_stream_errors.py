@@ -1,43 +1,57 @@
 """
-Unit tests for the user-facing error messages of the chat SSE stream.
+Unit tests for the user-facing error messages of the chat API.
 """
 
 import pytest
-from google.genai import errors
 
-from app.api.v1.chat import (
-    BUSY_MESSAGE,
-    GENERIC_STREAM_ERROR,
-    RATE_LIMITED_MESSAGE,
-    _friendly_stream_error,
+from app.api.v1.chat import GENERIC_STREAM_ERROR, _friendly_error
+from app.services.providers.base import (
+    ProviderAuthError,
+    ProviderError,
+    ProviderRateLimitError,
+    ProviderTimeoutError,
+    ProviderUnavailableError,
 )
-
-
-def api_error(cls, code: int) -> errors.APIError:
-    """Build a provider error with a noisy payload that must never reach users."""
-    return cls(code, {"error": {"message": "quota details https://ai.dev/rate-limit id=abc123"}})
 
 
 @pytest.mark.parametrize(
-    ("error", "expected"),
+    "error",
     [
-        (api_error(errors.ClientError, 429), RATE_LIMITED_MESSAGE),
-        (api_error(errors.ServerError, 503), BUSY_MESSAGE),
-        (api_error(errors.ServerError, 500), BUSY_MESSAGE),
-        (api_error(errors.ClientError, 400), GENERIC_STREAM_ERROR),
-        (RuntimeError("db password=hunter2"), GENERIC_STREAM_ERROR),
+        ProviderRateLimitError("quota details https://ai.dev/rate-limit id=abc123"),
+        ProviderUnavailableError("503 id=abc123"),
+        ProviderTimeoutError("timed out id=abc123"),
+        ProviderAuthError("invalid key id=abc123"),
+        ProviderError("id=abc123"),
     ],
 )
-def test_provider_and_unexpected_errors_are_sanitized(error, expected):
-    """Provider payloads and unexpected exceptions never leak into the message."""
-    message = _friendly_stream_error(error)
+def test_provider_errors_show_their_user_message_not_the_payload(error):
+    """Provider failures show a safe message; the technical detail never reaches users."""
+    message = _friendly_error(error)
 
-    assert message == expected
+    assert message == error.user_message
     assert "abc123" not in message
-    assert "hunter2" not in message
 
 
-@pytest.mark.parametrize("error", [TimeoutError("The AI is taking too long."), ValueError("Query cannot be empty")])
-def test_timeouts_and_validation_errors_keep_their_message(error):
-    """Our own already-friendly errors pass through unchanged."""
-    assert _friendly_stream_error(error) == str(error)
+def test_each_provider_error_has_its_own_message_and_status():
+    """Rate limit, outage, timeout and bad key are distinguishable to users and clients."""
+    errors = [
+        ProviderRateLimitError,
+        ProviderUnavailableError,
+        ProviderTimeoutError,
+        ProviderAuthError,
+        ProviderError,
+    ]
+
+    assert len({e.user_message for e in errors}) == len(errors)
+    assert {e.status_code for e in errors} == {429, 503, 504, 400, 502}
+    assert ProviderAuthError.status_code != 401  # 401 would log users out in the frontend
+
+
+def test_validation_errors_keep_their_message():
+    """Our own already-friendly ValueErrors pass through unchanged."""
+    assert _friendly_error(ValueError("Query cannot be empty")) == "Query cannot be empty"
+
+
+def test_unexpected_errors_are_sanitized():
+    """Unexpected exceptions never leak into the message."""
+    assert _friendly_error(RuntimeError("db password=hunter2")) == GENERIC_STREAM_ERROR
