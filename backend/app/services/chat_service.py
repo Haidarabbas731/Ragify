@@ -1,18 +1,20 @@
 import logging
-import re
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
+from google.genai import types
 from sqlmodel import func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
 from app.models.document import Document
 from app.prompts.chat_prompt import (
-    DIRECT_RESPONSE_PROMPT,
-    SYSTEM_PROMPT,
-    format_context_with_metadata,
-    format_user_prompt,
+    AGENT_SYSTEM_PROMPT,
+    SEARCH_TOOL_DESCRIPTION,
+    SEARCH_TOOL_NAME,
+    SEARCH_TOOL_PARAMETERS,
+    extract_sources,
+    format_search_results,
 )
 from app.schemas.chat import ChatResponse, SourceCitation
 from app.services.conversation_service import (
@@ -27,319 +29,41 @@ from app.services.milvus_service import get_milvus_service
 
 logger = logging.getLogger(__name__)
 
+SEARCH_TOOL = types.Tool(
+    function_declarations=[
+        types.FunctionDeclaration(
+            name=SEARCH_TOOL_NAME,
+            description=SEARCH_TOOL_DESCRIPTION,
+            parameters_json_schema=SEARCH_TOOL_PARAMETERS,
+        )
+    ]
+)
 
-async def classify_query_intent(query: str) -> tuple[str, str]:
+TIMEOUT_MESSAGE = (
+    "The AI is taking too long to respond. Please try again or simplify your question."
+)
+EMPTY_RESPONSE_MESSAGE = "I wasn't able to put together an answer. Please try asking again."
+
+
+def _build_contents(history: list[dict], query: str) -> list[types.Content]:
     """
-    Classify query intent using hybrid approach (regex + LLM fallback).
+    Build the model conversation from stored history plus the new user message.
 
     Args:
-        query: User's question
+        history: Previous messages (dicts with ``role`` and ``content``)
+        query: The user's new message
 
     Returns:
-        tuple[str, str]: (intent_type, confidence)
-        - intent_type: 'direct' (skip RAG) or 'rag' (use RAG)
-        - confidence: 'high' (regex match) or 'medium' (LLM classification) or 'low' (fallback)
+        list[types.Content]: Alternating user/model turns ending with the new message
     """
-    query_lower = query.lower().strip()
-
-    # STEP 1: Fast Regex Patterns (handles 80% of cases in <1ms)
-    # =========================================================
-
-    # Pattern 1: Greetings (very high confidence)
-    greeting_patterns = [
-        r"^(hi|hello|hey|greetings|good morning|good afternoon|good evening)[\s!?.]*$",
-        r"^(how are you|how\'s it going|what\'s up|sup)[\s!?.]*$",
-        r"^(thanks|thank you|thx|thank you very much)[\s!?.]*$",
-        r"^(bye|goodbye|see you|later|farewell)[\s!?.]*$",
-    ]
-    for pattern in greeting_patterns:
-        if re.match(pattern, query_lower):
-            logger.info(f"Intent: GREETING (regex match) - '{query[:50]}...'")
-            return ("direct", "high")
-
-    # Pattern 2: System/Capability Questions (high confidence)
-    system_patterns = [
-        r"^(what can you do|what are your capabilities|how do you work)",
-        r"^(who are you|what are you|tell me about yourself)",
-        r"^(help|how to use|usage|instructions)",
-        r"^(what (is|are) (this|your) (system|app|tool|ragify))",
-    ]
-    for pattern in system_patterns:
-        if re.search(pattern, query_lower):
-            logger.info(f"Intent: SYSTEM (regex match) - '{query[:50]}...'")
-            return ("direct", "high")
-
-    # Pattern 3: Document Keywords (high confidence for RAG)
-    document_keywords = [
-        "document",
-        "file",
-        "pdf",
-        "report",
-        "policy",
-        "contract",
-        "according to",
-        "in the document",
-        "based on",
-        "what does",
-        "explain",
-        "summarize",
-        "tell me about",
-        "find",
-        "search",
-        "show me",
-        "where",
-        "when",
-        "how many",
-        "list",
-        "describe",
-    ]
-    if any(keyword in query_lower for keyword in document_keywords):
-        logger.info(f"Intent: DOCUMENT (keyword match) - '{query[:50]}...'")
-        return ("rag", "high")
-
-    # STEP 2: LLM Fallback for Ambiguous Cases (handles remaining 20%)
-    # ================================================================
-
-    logger.info(f"Intent: UNCERTAIN - Using LLM classification for '{query[:50]}...'")
-
-    try:
-        # Use fast Gemini Flash model for quick classification
-        classification_prompt = f"""Classify this user query into ONE category:
-
-Query: "{query}"
-
-Categories:
-1. GREETING - Simple greetings, thank you, small talk
-2. SYSTEM - Questions about the system itself, capabilities, how to use
-3. DOCUMENT - Questions that require searching through documents or knowledge base
-
-Respond with ONLY ONE WORD: GREETING, SYSTEM, or DOCUMENT
-
-Classification:"""
-
-        # Fast LLM call (Gemini Flash 1.5 - ~200ms)
-        llm_service = await get_llm_service()
-        classification = await llm_service.generate_response(
-            system_prompt="You are a query classifier. Respond with only one word.",
-            user_prompt=classification_prompt,
-            max_tokens=10,  # Only need 1 word
-            temperature=0.0,  # Deterministic
-            timeout=10,
-        )
-
-        classification = classification.strip().upper()
-
-        if classification in ["GREETING", "SYSTEM"]:
-            logger.info(f"Intent: {classification} (LLM fallback) - '{query[:50]}...'")
-            return ("direct", "medium")
-        else:  # DOCUMENT or anything else defaults to RAG (safer)
-            logger.info(f"Intent: DOCUMENT (LLM fallback) - '{query[:50]}...'")
-            return ("rag", "medium")
-
-    except Exception as e:
-        # STEP 3: Error Fallback - Default to RAG (safer than direct)
-        logger.warning(f"LLM classification failed: {e}. Defaulting to RAG.")
-        return ("rag", "low")
-
-
-async def _generate_direct_response(
-    query: str,
-    user_id: str,
-    db: AsyncSession,
-    conversation_id: str,
-) -> str:
-    """
-    Generate direct response without RAG retrieval (for greetings/system questions).
-
-    Args:
-        query: User's question
-        user_id: User ID
-        db: Database session
-        conversation_id: Conversation ID
-
-    Returns:
-        str: Direct response text
-    """
-    logger.info(f"Generating direct response for query: {query[:50]}...")
-
-    # Get conversation history for context
-    conversation_history = await get_last_messages(
-        db, conversation_id, limit=settings.CONVERSATION_HISTORY_LIMIT
-    )
-
-    # Build simple prompt without document context
-    history_section = ""
-    if conversation_history:
-        history_section = "\n\nPrevious conversation:\n"
-        for msg in conversation_history:
-            role = "User" if msg["role"] == "user" else "Assistant"
-            history_section += f"{role}: {msg['content']}\n"
-
-    user_prompt = f"{history_section}\n\nUser: {query}\n\nAssistant:"
-
-    # Call LLM with direct response prompt
-    llm_service = await get_llm_service()
-    response_text = await llm_service.generate_response(
-        DIRECT_RESPONSE_PROMPT, user_prompt, timeout=10
-    )
-
-    logger.info(f"Generated direct response ({len(response_text)} chars)")
-    return response_text
-
-
-async def execute_rag_query(
-    query: str,
-    user_id: str,
-    db: AsyncSession,
-    conversation_id: str | None = None,
-    collection_id: str | None = None,
-    top_k: int = 5,
-) -> ChatResponse:
-    """
-    Execute complete RAG (Retrieval-Augmented Generation) query flow.
-
-    Flow:
-    1. Get or create conversation
-    2. Generate query embedding
-    3. Search Milvus for similar chunks
-    4. Enrich chunks with document metadata
-    5. Handle no results edge case
-    6. Format context from results
-    7. Get conversation history (last 5 messages)
-    8. Build RAG prompt with conversation context
-    9. Call LLM for answer
-    10. Save user query and assistant response to conversation
-    11. Return response with sources
-
-    Args:
-        query: User's question
-        user_id: User ID for data isolation
-        db: Database session
-        conversation_id: Optional conversation ID (creates new if None)
-        collection_id: Optional collection filter
-        top_k: Number of chunks to retrieve (default: 5)
-
-    Returns:
-        ChatResponse: AI response with sources and conversation_id
-
-    Raises:
-        ValueError: If query is empty
-        TimeoutError: If LLM times out
-        Exception: If any step fails
-    """
-    if not query or not query.strip():
-        raise ValueError("Query cannot be empty")
-
-    logger.info(f"Starting RAG query for user {user_id}: {query[:100]}...")
-
-    try:
-        # Step 1: Get or create conversation
-        conversation = await get_or_create_conversation(db, user_id, conversation_id)
-
-        # Step 2: Classify query intent (SMART ROUTING)
-        intent, confidence = await classify_query_intent(query)
-        logger.info(f"Query intent: {intent} (confidence: {confidence})")
-
-        # Step 3: Direct response path (skip RAG for greetings/system questions)
-        if intent == "direct":
-            response_text = await _generate_direct_response(
-                query, user_id, db, conversation.conversation_id
-            )
-
-            # Save to conversation (no sources)
-            await _save_to_conversation(
-                db, conversation.conversation_id, query, response_text, []
-            )
-
-            return ChatResponse(
-                answer=response_text,
-                sources=[],
-                conversation_id=conversation.conversation_id,
-                timestamp=datetime.now(UTC),
-            )
-
-        # Step 4: Continue with RAG pipeline for document questions
-        # Generate query embedding
-        embedding_service = await get_embedding_service()
-        query_embedding = await embedding_service.embed_query(query)
-        logger.info(f"Generated query embedding ({len(query_embedding)} dims)")
-
-        # Step 3: Search Milvus for similar chunks
-        milvus_service = await get_milvus_service()
-        chunks = await milvus_service.search_similar(
-            user_id=user_id,
-            query_embedding=query_embedding,
-            top_k=top_k,
-            collection_id=collection_id,
-        )
-        logger.info(f"Found {len(chunks)} similar chunks")
-
-        # Step 4: Enrich chunks with document metadata
-        enriched_chunks = await _enrich_chunks_with_metadata(db, chunks, user_id)
-
-        # Step 5: Handle no results edge case
-        if not enriched_chunks:
-            response_text = await _generate_no_results_response(user_id, db)
-            await _save_to_conversation(
-                db, conversation.conversation_id, query, response_text, []
-            )
-            return ChatResponse(
-                answer=response_text,
-                sources=[],
-                conversation_id=conversation.conversation_id,
-                timestamp=datetime.now(UTC),
-            )
-
-        # Step 6: Format context and extract sources
-        formatted_context, sources = format_context_with_metadata(enriched_chunks)
-
-        # Step 7: Get conversation history for context
-        conversation_history = await get_last_messages(
-            db, conversation.conversation_id, limit=settings.CONVERSATION_HISTORY_LIMIT
-        )
-
-        # Step 8: Build prompts with conversation history
-        user_prompt = format_user_prompt(formatted_context, query, conversation_history)
-
-        # Step 9: Call LLM for response
-        llm_service = await get_llm_service()
-        response_text = await llm_service.generate_response(
-            SYSTEM_PROMPT, user_prompt, timeout=settings.GEMINI_RAG_TIMEOUT_SECONDS
-        )
-        logger.info(f"Generated LLM response ({len(response_text)} chars)")
-
-        # Step 10: Save to conversation
-        await _save_to_conversation(
-            db, conversation.conversation_id, query, response_text, sources
-        )
-
-        # Step 11: Return response
-        return ChatResponse(
-            answer=response_text,
-            sources=[
-                SourceCitation(
-                    document_id=src["document_id"],
-                    document_name=src["document_name"],
-                    filename=src["filename"],
-                    chunk_index=src["chunk_index"],
-                    chunk_text=src["chunk_text"],
-                    relevance_score=src["relevance_score"],
-                )
-                for src in sources
-            ],
-            conversation_id=conversation.conversation_id,
-            timestamp=datetime.now(UTC),
-        )
-
-    except TimeoutError as e:
-        logger.error("LLM request timed out")
-        raise TimeoutError(
-            "The AI is taking too long to respond. Please try again or simplify your question."
-        ) from e
-
-    except Exception as e:
-        logger.error(f"RAG query failed: {e}")
-        raise
+    contents: list[types.Content] = []
+    for message in history:
+        role = "user" if message.get("role") == "user" else "model"
+        text = message.get("content", "")
+        if text:
+            contents.append(types.Content(role=role, parts=[types.Part.from_text(text=text)]))
+    contents.append(types.Content(role="user", parts=[types.Part.from_text(text=query)]))
+    return contents
 
 
 async def _enrich_chunks_with_metadata(
@@ -366,9 +90,7 @@ async def _enrich_chunks_with_metadata(
         # Get document metadata
         document = await get_document_by_id(db, document_id)  # type:ignore
         if not document or document.user_id != user_id:  # Verify user ownership
-            logger.warning(
-                f"Document {document_id} not found or access denied for user {user_id}"
-            )
+            logger.warning(f"Document {document_id} not found or access denied for user {user_id}")
             continue
 
         # Add document name to chunk
@@ -379,58 +101,78 @@ async def _enrich_chunks_with_metadata(
     return enriched
 
 
-async def _generate_no_results_response(user_id: str, db: AsyncSession) -> str:
+async def _no_results_hint(user_id: str, db: AsyncSession) -> str:
     """
-    Generate helpful response when no results found.
+    Explain to the model why a search returned nothing.
 
-    Checks if user has any documents to provide more specific guidance.
+    Checks whether the user has any documents, or only ones still processing, so the
+    model can give specific guidance.
 
     Args:
         user_id: User ID
         db: Database session
 
     Returns:
-        str: Helpful error message tailored to user's situation
+        str: Short explanation passed to the model as the tool's ``note``
     """
-    # Check if user has any documents
     result = await db.exec(
         select(func.count(Document.document_id))  # type: ignore
         .where(Document.user_id == user_id)
         .where(Document.deleted_at.is_(None))  # type: ignore
     )
-    doc_count = result.one()
+    if result.one() == 0:
+        return "The user has not uploaded any documents yet."
 
-    if doc_count == 0:
-        # User has no documents at all
-        return (
-            "You haven't uploaded any documents yet. "
-            "Please upload documents to your knowledge base so I can answer your questions."
-        )
-
-    # Check if user has any active (processed) documents
     result = await db.exec(
         select(func.count(Document.document_id))  # type:ignore
         .where(Document.user_id == user_id)
         .where(Document.status == "active")
         .where(Document.deleted_at.is_(None))  # type: ignore
     )
-    active_count = result.one()
+    if result.one() == 0:
+        return "The user's documents are still being processed; searching will work shortly."
 
-    if active_count == 0:
-        # User has documents but they're all still processing
-        return (
-            "Your documents are still being processed. "
-            "Please wait a moment and try again."
-        )
+    return "No relevant excerpts were found for this search in the user's documents."
 
-    # User has active documents but no results found for this query
-    return (
-        "I don't have enough information in your documents to answer that question. "
-        "This could mean:\n"
-        "- The information isn't in your uploaded documents\n"
-        "- Try rephrasing your question with different keywords\n\n"
-        "You can also try uploading more relevant documents to expand my knowledge."
+
+async def _search_documents(
+    query: str,
+    user_id: str,
+    db: AsyncSession,
+    collection_id: str | None,
+    top_k: int,
+) -> tuple[dict, list[dict]]:
+    """
+    Run the ``search_documents`` tool: embed the query, search Milvus, attach metadata.
+
+    ``user_id`` and ``collection_id`` come from the authenticated request, never from the
+    model, so tool calls cannot reach another user's documents.
+
+    Args:
+        query: Search text chosen by the model
+        user_id: Authenticated user ID (data isolation)
+        db: Database session
+        collection_id: Optional collection filter from the request
+        top_k: Number of chunks to retrieve
+
+    Returns:
+        tuple[dict, list[dict]]: (tool response for the model, enriched chunks)
+    """
+    embedding_service = await get_embedding_service()
+    query_embedding = await embedding_service.embed_query(query)
+
+    milvus_service = await get_milvus_service()
+    chunks = await milvus_service.search_similar(
+        user_id=user_id,
+        query_embedding=query_embedding,
+        top_k=top_k,
+        collection_id=collection_id,
     )
+    enriched_chunks = await _enrich_chunks_with_metadata(db, chunks, user_id)
+    logger.info(f"Search '{query[:80]}' found {len(enriched_chunks)} chunks")
+
+    hint = None if enriched_chunks else await _no_results_hint(user_id, db)
+    return format_search_results(enriched_chunks, hint), enriched_chunks
 
 
 async def _save_to_conversation(
@@ -448,12 +190,9 @@ async def _save_to_conversation(
         conversation_id: Conversation ID
         user_query: User's question
         assistant_response: AI's response
-        sources: Source citations
+        sources: Source documents used for the answer
     """
-    # Save user message
     await add_message(db, conversation_id, "user", user_query)
-
-    # Save assistant message with sources
     await add_message(db, conversation_id, "assistant", assistant_response, sources)
 
     logger.info(f"Saved messages to conversation {conversation_id}")
@@ -466,19 +205,18 @@ async def execute_rag_query_stream(
     conversation_id: str | None = None,
     collection_id: str | None = None,
     top_k: int = 5,
-) -> AsyncIterator[str | dict]:
+) -> AsyncIterator[dict]:
     """
-    Execute RAG query with streaming response.
+    Run the chat agent and stream what it does.
 
-    This function performs the same RAG flow as execute_rag_query but streams
-    the LLM response word-by-word for better user experience.
+    The model decides per turn whether to answer directly or to call ``search_documents``
+    (up to ``AGENT_MAX_TOOL_ROUNDS`` times), then streams the final answer.
 
-    Flow:
-    1-7. Same as execute_rag_query (prepare context)
-    8. Build prompt with conversation history
-    9. Stream LLM response chunks
-    10. Save complete response to conversation after streaming finishes
-    11. Yield metadata (conversation_id and sources)
+    Yields dict events:
+        {"type": "text", "text": str}                      answer text as it is generated
+        {"type": "tool_start", "name": str, "query": str}  the agent started a search
+        {"type": "tool_end", "name": str, "chunks": int, "documents": int, "error": bool}
+        {"type": "done", "conversation_id": str, "sources": list[dict]}   always last
 
     Args:
         query: User's question
@@ -486,123 +224,165 @@ async def execute_rag_query_stream(
         db: Database session
         conversation_id: Optional conversation ID (creates new if None)
         collection_id: Optional collection filter
-        top_k: Number of chunks to retrieve (default: 5)
-
-    Yields:
-        str: Response text chunks as they are generated
-        dict: Metadata at the end containing conversation_id and sources
+        top_k: Number of chunks to retrieve per search (default: 5)
 
     Raises:
         ValueError: If query is empty
-        TimeoutError: If LLM times out
+        TimeoutError: If the LLM times out
         Exception: If any step fails
     """
     if not query or not query.strip():
         raise ValueError("Query cannot be empty")
 
-    logger.info(f"Starting streaming RAG query for user {user_id}: {query[:100]}...")
+    logger.info(f"Starting agent query for user {user_id}: {query[:100]}...")
 
     try:
-        # Step 1: Get/create conversation
         conversation = await get_or_create_conversation(db, user_id, conversation_id)
-
-        # Step 2: Classify query intent (SMART ROUTING)
-        intent, confidence = await classify_query_intent(query)
-        logger.info(f"Streaming query intent: {intent} (confidence: {confidence})")
-
-        # Step 3: Direct response path (skip RAG for greetings/system questions)
-        if intent == "direct":
-            response_text = await _generate_direct_response(
-                query, user_id, db, conversation.conversation_id
-            )
-
-            # Save to conversation (no sources)
-            await _save_to_conversation(
-                db, conversation.conversation_id, query, response_text, []
-            )
-
-            # Yield response and metadata
-            yield response_text
-            yield {
-                "conversation_id": conversation.conversation_id,
-                "sources": [],
-            }
-            return
-
-        # Steps 4-5: Continue with RAG pipeline - generate embedding
-        embedding_service = await get_embedding_service()
-        query_embedding = await embedding_service.embed_query(query)
-
-        # Steps 6-7: Search Milvus and enrich chunks
-        milvus_service = await get_milvus_service()
-        chunks = await milvus_service.search_similar(
-            user_id=user_id,
-            query_embedding=query_embedding,
-            top_k=top_k,
-            collection_id=collection_id,
-        )
-        enriched_chunks = await _enrich_chunks_with_metadata(db, chunks, user_id)
-
-        # Step 5: Handle no results
-        if not enriched_chunks:
-            response_text = await _generate_no_results_response(user_id, db)
-            await _save_to_conversation(
-                db, conversation.conversation_id, query, response_text, []
-            )
-            yield response_text
-            return
-
-        # Steps 6-7: Format context and get conversation history
-        formatted_context, sources = format_context_with_metadata(enriched_chunks)
-        conversation_history = await get_last_messages(
+        history = await get_last_messages(
             db, conversation.conversation_id, limit=settings.CONVERSATION_HISTORY_LIMIT
         )
-
-        # Step 8: Build prompt
-        user_prompt = format_user_prompt(formatted_context, query, conversation_history)
-
-        # Step 9: Stream LLM response
+        contents = _build_contents(history, query)
         llm_service = await get_llm_service()
-        full_response = []
 
-        async for chunk in llm_service.generate_response_stream(
-            SYSTEM_PROMPT, user_prompt, timeout=settings.GEMINI_RAG_TIMEOUT_SECONDS
-        ):
-            full_response.append(chunk)
-            yield chunk
+        answer_parts: list[str] = []
+        all_chunks: list[dict] = []
+        max_rounds = settings.AGENT_MAX_TOOL_ROUNDS
 
-        # Step 10: Save complete response to conversation
-        response_text = "".join(full_response)
-        await _save_to_conversation(
-            db, conversation.conversation_id, query, response_text, sources
-        )
+        # Final round runs without tools so the model must answer with what it has.
+        for round_index in range(max_rounds + 1):
+            tools = [SEARCH_TOOL] if round_index < max_rounds else None
+            turn_done = None
 
-        # Yield metadata at the end (conversation_id and sources)
-        yield {
-            "conversation_id": conversation.conversation_id,
-            "sources": [
-                {
-                    "document_id": src["document_id"],
-                    "document_name": src["document_name"],
-                    "filename": src["filename"],
-                    "chunk_index": src["chunk_index"],
-                    "chunk_text": src["chunk_text"],
-                    "relevance_score": src["relevance_score"],
+            async for event in llm_service.stream_turn(
+                contents,
+                AGENT_SYSTEM_PROMPT,
+                tools=tools,
+                timeout=settings.GEMINI_RAG_TIMEOUT_SECONDS,
+            ):
+                if event.kind == "text":
+                    answer_parts.append(event.text)
+                    yield {"type": "text", "text": event.text}
+                else:
+                    turn_done = event
+
+            if turn_done is None or not turn_done.function_calls:
+                break
+
+            contents.append(turn_done.model_content)  # type: ignore[arg-type]
+            response_parts: list[types.Part] = []
+
+            for call in turn_done.function_calls:
+                name = call.name or ""
+                if name != SEARCH_TOOL_NAME:
+                    logger.warning(f"Model requested unknown tool '{name}'")
+                    response_parts.append(
+                        types.Part.from_function_response(
+                            name=name, response={"error": f"Unknown tool: {name}"}
+                        )
+                    )
+                    continue
+
+                search_query = str((call.args or {}).get("query") or "").strip() or query
+                yield {"type": "tool_start", "name": name, "query": search_query}
+
+                try:
+                    result, chunks = await _search_documents(
+                        search_query, user_id, db, collection_id, top_k
+                    )
+                except Exception as e:
+                    logger.error(f"Document search failed: {e}")
+                    result = {"error": "Document search is temporarily unavailable."}
+                    chunks = []
+                    failed = True
+                else:
+                    failed = False
+
+                all_chunks.extend(chunks)
+                yield {
+                    "type": "tool_end",
+                    "name": name,
+                    "chunks": len(chunks),
+                    "documents": len(extract_sources(chunks)),
+                    "error": failed,
                 }
-                for src in sources
-            ],
+                response_parts.append(types.Part.from_function_response(name=name, response=result))
+
+            contents.append(types.Content(role="user", parts=response_parts))
+
+        answer = "".join(answer_parts).strip()
+        if not answer:
+            logger.warning("Agent finished without any answer text")
+            answer = EMPTY_RESPONSE_MESSAGE
+            yield {"type": "text", "text": answer}
+
+        sources = extract_sources(all_chunks)
+        await _save_to_conversation(db, conversation.conversation_id, query, answer, sources)
+
+        yield {
+            "type": "done",
+            "conversation_id": conversation.conversation_id,
+            "sources": sources,
         }
 
-        logger.info(
-            f"Completed streaming RAG query for conversation {conversation.conversation_id}"
-        )
+        logger.info(f"Completed agent query for conversation {conversation.conversation_id}")
 
     except TimeoutError as e:
         logger.error("LLM streaming request timed out")
-        raise TimeoutError(
-            "The AI is taking too long to respond. Please try again or simplify your question."
-        ) from e
+        raise TimeoutError(TIMEOUT_MESSAGE) from e
 
     except Exception as e:
-        logger.error(f"Streaming RAG query failed: {e}")
+        logger.error(f"Agent query failed: {e}")
         raise
+
+
+async def execute_rag_query(
+    query: str,
+    user_id: str,
+    db: AsyncSession,
+    conversation_id: str | None = None,
+    collection_id: str | None = None,
+    top_k: int = 5,
+) -> ChatResponse:
+    """
+    Run the chat agent and return the complete answer (non-streaming).
+
+    Args:
+        query: User's question
+        user_id: User ID for data isolation
+        db: Database session
+        conversation_id: Optional conversation ID (creates new if None)
+        collection_id: Optional collection filter
+        top_k: Number of chunks to retrieve per search (default: 5)
+
+    Returns:
+        ChatResponse: Answer, source documents and conversation_id
+
+    Raises:
+        ValueError: If query is empty
+        TimeoutError: If the LLM times out
+        Exception: If any step fails
+    """
+    answer_parts: list[str] = []
+    sources: list[dict] = []
+    result_conversation_id = ""
+
+    async for event in execute_rag_query_stream(
+        query=query,
+        user_id=user_id,
+        db=db,
+        conversation_id=conversation_id,
+        collection_id=collection_id,
+        top_k=top_k,
+    ):
+        if event["type"] == "text":
+            answer_parts.append(event["text"])
+        elif event["type"] == "done":
+            result_conversation_id = event["conversation_id"]
+            sources = event["sources"]
+
+    return ChatResponse(
+        answer="".join(answer_parts).strip(),
+        sources=[SourceCitation(**src) for src in sources],
+        conversation_id=result_conversation_id,
+        timestamp=datetime.now(UTC),
+    )

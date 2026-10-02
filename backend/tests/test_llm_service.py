@@ -1,411 +1,331 @@
 """
-Unit tests for llm_service.py - Google Gemini LLM integration.
+Unit tests for llm_service.py - Google Gemini integration (google-genai SDK).
 
 Tests:
-- LLM configuration
-- Response generation (success, empty prompts, timeout, errors)
-- Streaming response generation
+- Client configuration
+- Non-streamed generation (success, validation, timeout, errors)
+- Streamed turns with tool calls
+- Thinking-level fallback when a model rejects it
 - Singleton pattern
 """
 
-from unittest.mock import MagicMock, patch
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from google.genai import errors, types
 
+from app.core.config import settings
 from app.services.llm_service import LLMService, get_llm_service
 
-# Test: configure - Success
+
+def make_chunk(*parts: types.Part) -> types.GenerateContentResponse:
+    """Build a streamed response chunk with the given parts."""
+    return types.GenerateContentResponse(
+        candidates=[types.Candidate(content=types.Content(role="model", parts=list(parts)))]
+    )
+
+
+def text_part(text: str, thought: bool = False) -> types.Part:
+    """A text part, optionally marked as model thought."""
+    return types.Part(text=text, thought=thought or None)
+
+
+async def agen(*items):
+    """Async iterator over the given items (stands in for a streamed response)."""
+    for item in items:
+        yield item
+
+
+def thinking_error() -> errors.ClientError:
+    """The 400 the API returns when a thinking level is unsupported."""
+    return errors.ClientError(
+        400,
+        {"error": {"code": 400, "message": "Thinking level MINIMAL is not supported", "status": "INVALID_ARGUMENT"}},
+    )
+
+
+@pytest.fixture
+def service():
+    """LLMService with a mocked Gemini client."""
+    svc = LLMService()
+    svc._client = MagicMock()
+    return svc
+
+
+# Test: configure
 
 
 @pytest.mark.asyncio
 async def test_configure_success():
-    """Test successful Gemini API configuration."""
+    """Configuration creates the Gemini client with the API key."""
+    with patch("app.services.llm_service.genai.Client") as mock_client:
+        svc = LLMService()
 
-    with patch("app.services.llm_service.genai.configure") as mock_configure:
-        service = LLMService()
+        assert await svc.configure() is True
 
-        result = await service.configure()
-
-        assert result is True
-        assert service._configured is True
-        mock_configure.assert_called_once()
-
-
-# Test: configure - Failure
+        assert svc._configured is True
+        mock_client.assert_called_once_with(api_key=settings.GOOGLE_API_KEY)
 
 
 @pytest.mark.asyncio
 async def test_configure_failure():
-    """Test Gemini API configuration failure."""
-
-    with patch("app.services.llm_service.genai.configure") as mock_configure:
-        mock_configure.side_effect = Exception("Invalid API key")
-
-        service = LLMService()
+    """A client creation failure propagates and leaves the service unconfigured."""
+    with patch("app.services.llm_service.genai.Client", side_effect=Exception("Invalid API key")):
+        svc = LLMService()
 
         with pytest.raises(Exception, match="Invalid API key"):
-            await service.configure()
+            await svc.configure()
 
-        assert service._configured is False
+        assert svc._configured is False
 
 
-# Test: generate_response - Success
+# Test: generate_response
 
 
 @pytest.mark.asyncio
-async def test_generate_response_success():
-    """Test successful LLM response generation."""
+async def test_generate_response_success(service):
+    """Returns the model text and passes system prompt, limits and timeout through."""
+    service._client.aio.models.generate_content = AsyncMock(
+        return_value=SimpleNamespace(text="Hello there")
+    )
 
-    with patch("app.services.llm_service.genai.configure"), patch(
-        "app.services.llm_service.genai.GenerativeModel"
-    ) as mock_model_class:
-        # Setup mocks
-        mock_response = MagicMock()
-        mock_response.text = "This is a generated response."
+    result = await service.generate_response(
+        "Be brief.", "Say hi", timeout=7, max_tokens=20, temperature=0.0
+    )
 
-        mock_model = MagicMock()
-        mock_model.generate_content.return_value = mock_response
-        mock_model_class.return_value = mock_model
-
-        # Create and configure service
-        service = LLMService()
-        await service.configure()
-
-        # Generate response
-        result = await service.generate_response(
-            system_prompt="You are a helpful assistant.",
-            user_prompt="What is the capital of France?",
-        )
-
-        assert result == "This is a generated response."
-        mock_model.generate_content.assert_called_once()
-
-
-# Test: generate_response - Not configured
+    assert result == "Hello there"
+    kwargs = service._client.aio.models.generate_content.call_args.kwargs
+    assert kwargs["contents"] == "Say hi"
+    config = kwargs["config"]
+    assert config.system_instruction == "Be brief."
+    assert config.max_output_tokens == 20
+    assert config.temperature == 0.0
+    assert config.http_options.timeout == 7000
+    assert config.http_options.retry_options.attempts == 3
+    assert 503 in config.http_options.retry_options.http_status_codes
+    assert 429 not in config.http_options.retry_options.http_status_codes
+    assert config.automatic_function_calling.disable is True
 
 
 @pytest.mark.asyncio
 async def test_generate_response_not_configured():
-    """Test that generating response fails if service not configured."""
-
-    service = LLMService()
-
+    """Calling before configure() raises RuntimeError."""
     with pytest.raises(RuntimeError, match="not configured"):
-        await service.generate_response(
-            system_prompt="You are a helpful assistant.",
-            user_prompt="What is the capital of France?",
-        )
-
-
-# Test: generate_response - Empty system prompt
+        await LLMService().generate_response("sys", "user")
 
 
 @pytest.mark.asyncio
-async def test_generate_response_empty_system_prompt():
-    """Test that empty system prompt raises ValueError."""
+@pytest.mark.parametrize(
+    ("system", "user", "message"),
+    [("", "hi", "System prompt cannot be empty"), ("  ", "hi", "System prompt cannot be empty"),
+     ("sys", "", "User prompt cannot be empty"), ("sys", "  ", "User prompt cannot be empty")],
+)
+async def test_generate_response_rejects_empty_prompts(service, system, user, message):
+    """Empty system or user prompts are rejected before any API call."""
+    with pytest.raises(ValueError, match=message):
+        await service.generate_response(system, user)
 
-    with patch("app.services.llm_service.genai.configure"):
-        service = LLMService()
-        await service.configure()
-
-        with pytest.raises(ValueError, match="System prompt cannot be empty"):
-            await service.generate_response(
-                system_prompt="",
-                user_prompt="What is the capital of France?",
-            )
-
-
-# Test: generate_response - Empty user prompt
+    service._client.aio.models.generate_content.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_generate_response_empty_user_prompt():
-    """Test that empty user prompt raises ValueError."""
+async def test_generate_response_empty_response(service):
+    """An empty model reply is an error."""
+    service._client.aio.models.generate_content = AsyncMock(return_value=SimpleNamespace(text=""))
 
-    with patch("app.services.llm_service.genai.configure"):
-        service = LLMService()
-        await service.configure()
-
-        with pytest.raises(ValueError, match="User prompt cannot be empty"):
-            await service.generate_response(
-                system_prompt="You are a helpful assistant.",
-                user_prompt="   ",
-            )
-
-
-# Test: generate_response - Empty response
+    with pytest.raises(ValueError, match="empty response"):
+        await service.generate_response("sys", "user")
 
 
 @pytest.mark.asyncio
-async def test_generate_response_empty_response():
-    """Test that empty LLM response raises ValueError."""
+@pytest.mark.parametrize(
+    "error",
+    [TimeoutError("boom"), errors.ServerError(504, {"error": {"message": "Deadline expired"}})],
+)
+async def test_generate_response_timeout(service, error):
+    """Timeouts (client-side or 504) become TimeoutError."""
+    service._client.aio.models.generate_content = AsyncMock(side_effect=error)
 
-    with patch("app.services.llm_service.genai.configure"), patch(
-        "app.services.llm_service.genai.GenerativeModel"
-    ) as mock_model_class:
-        mock_response = MagicMock()
-        mock_response.text = ""
-
-        mock_model = MagicMock()
-        mock_model.generate_content.return_value = mock_response
-        mock_model_class.return_value = mock_model
-
-        service = LLMService()
-        await service.configure()
-
-        with pytest.raises(ValueError, match="empty response"):
-            await service.generate_response(
-                system_prompt="You are a helpful assistant.",
-                user_prompt="What is the capital of France?",
-            )
-
-
-# Test: generate_response - Timeout
+    with pytest.raises(TimeoutError, match="timed out after 5 seconds"):
+        await service.generate_response("sys", "user", timeout=5)
 
 
 @pytest.mark.asyncio
-async def test_generate_response_timeout():
-    """Test that LLM timeout is handled correctly."""
+async def test_generate_response_api_failure(service):
+    """Other API errors propagate unchanged."""
+    service._client.aio.models.generate_content = AsyncMock(side_effect=Exception("API error"))
 
-    with patch("app.services.llm_service.genai.configure"), patch(
-        "app.services.llm_service.genai.GenerativeModel"
-    ) as mock_model_class:
-        mock_model = MagicMock()
-        mock_model.generate_content.side_effect = TimeoutError("Request timed out")
-        mock_model_class.return_value = mock_model
-
-        service = LLMService()
-        await service.configure()
-
-        with pytest.raises(TimeoutError, match="timed out"):
-            await service.generate_response(
-                system_prompt="You are a helpful assistant.",
-                user_prompt="What is the capital of France?",
-                timeout=5,
-            )
+    with pytest.raises(Exception, match="API error"):
+        await service.generate_response("sys", "user")
 
 
-# Test: generate_response - API failure
+# Test: thinking-level fallback
 
 
 @pytest.mark.asyncio
-async def test_generate_response_api_failure():
-    """Test that LLM API failure is handled correctly."""
+async def test_unsupported_thinking_level_is_retried_without_it(service):
+    """If the model rejects the thinking level, the call is retried once without it."""
+    service._client.aio.models.generate_content = AsyncMock(
+        side_effect=[thinking_error(), SimpleNamespace(text="ok")]
+    )
 
-    with patch("app.services.llm_service.genai.configure"), patch(
-        "app.services.llm_service.genai.GenerativeModel"
-    ) as mock_model_class:
-        mock_model = MagicMock()
-        mock_model.generate_content.side_effect = Exception("API quota exceeded")
-        mock_model_class.return_value = mock_model
+    with patch.object(settings, "GEMINI_THINKING_LEVEL", "minimal"):
+        assert await service.generate_response("sys", "user") == "ok"
+        calls = service._client.aio.models.generate_content.call_args_list
+        assert calls[0].kwargs["config"].thinking_config is not None
+        assert calls[1].kwargs["config"].thinking_config is None
+        assert service._use_thinking_config is False
 
-        service = LLMService()
-        await service.configure()
-
-        with pytest.raises(Exception, match="API quota exceeded"):
-            await service.generate_response(
-                system_prompt="You are a helpful assistant.",
-                user_prompt="What is the capital of France?",
-            )
-
-
-# Test: generate_response_stream - Success
+        # Later calls skip the thinking config entirely
+        service._client.aio.models.generate_content = AsyncMock(return_value=SimpleNamespace(text="again"))
+        await service.generate_response("sys", "user")
+        assert service._client.aio.models.generate_content.call_args.kwargs["config"].thinking_config is None
 
 
 @pytest.mark.asyncio
-async def test_generate_response_stream_success():
-    """Test successful streaming LLM response generation."""
+async def test_thinking_level_empty_means_model_default(service):
+    """An empty GEMINI_THINKING_LEVEL sends no thinking config."""
+    service._client.aio.models.generate_content = AsyncMock(return_value=SimpleNamespace(text="ok"))
 
-    with patch("app.services.llm_service.genai.configure"), patch(
-        "app.services.llm_service.genai.GenerativeModel"
-    ) as mock_model_class:
-        # Mock streaming response chunks
-        mock_chunk1 = MagicMock()
-        mock_chunk1.text = "This is "
+    with patch.object(settings, "GEMINI_THINKING_LEVEL", ""):
+        await service.generate_response("sys", "user")
 
-        mock_chunk2 = MagicMock()
-        mock_chunk2.text = "a streaming "
-
-        mock_chunk3 = MagicMock()
-        mock_chunk3.text = "response."
-
-        mock_model = MagicMock()
-        mock_model.generate_content.return_value = [mock_chunk1, mock_chunk2, mock_chunk3]
-        mock_model_class.return_value = mock_model
-
-        service = LLMService()
-        await service.configure()
-
-        # Collect streamed chunks
-        chunks = []
-        async for chunk in service.generate_response_stream(
-            system_prompt="You are a helpful assistant.",
-            user_prompt="What is the capital of France?",
-        ):
-            chunks.append(chunk)
-
-        assert "".join(chunks) == "This is a streaming response."
+    assert service._client.aio.models.generate_content.call_args.kwargs["config"].thinking_config is None
 
 
-# Test: generate_response_stream - Not configured
+# Test: stream_turn
 
 
 @pytest.mark.asyncio
-async def test_generate_response_stream_not_configured():
-    """Test that streaming fails if service not configured."""
+async def test_stream_turn_yields_text_then_done(service):
+    """Text deltas stream out in order; hidden thoughts are skipped; done carries content."""
+    stream = agen(
+        make_chunk(text_part("thinking...", thought=True)),
+        make_chunk(text_part("Hello ")),
+        make_chunk(text_part("world")),
+    )
+    service._client.aio.models.generate_content_stream = AsyncMock(return_value=stream)
+    contents = [types.Content(role="user", parts=[types.Part.from_text(text="hi")])]
 
-    service = LLMService()
+    events = [e async for e in service.stream_turn(contents, "sys")]
 
+    assert [e.kind for e in events] == ["text", "text", "done"]
+    assert "".join(e.text for e in events if e.kind == "text") == "Hello world"
+    assert events[-1].function_calls == []
+    assert events[-1].model_content.role == "model"
+    # Original parts (including thoughts) are kept so signatures can be echoed back
+    assert len(events[-1].model_content.parts) == 3
+
+
+@pytest.mark.asyncio
+async def test_stream_turn_collects_function_calls(service):
+    """Function-call parts are reported on the done event and not streamed as text."""
+    call = types.FunctionCall(name="search_documents", args={"query": "privacy"})
+    service._client.aio.models.generate_content_stream = AsyncMock(
+        return_value=agen(make_chunk(types.Part(function_call=call)))
+    )
+    contents = [types.Content(role="user", parts=[types.Part.from_text(text="q")])]
+    tool = types.Tool(function_declarations=[types.FunctionDeclaration(name="search_documents")])
+
+    events = [e async for e in service.stream_turn(contents, "sys", tools=[tool])]
+
+    assert [e.kind for e in events] == ["done"]
+    assert events[0].function_calls[0].args == {"query": "privacy"}
+    config = service._client.aio.models.generate_content_stream.call_args.kwargs["config"]
+    assert config.tools == [tool]
+    assert config.automatic_function_calling.disable is True
+
+
+@pytest.mark.asyncio
+async def test_stream_turn_skips_chunks_without_content(service):
+    """Chunks with no candidates (e.g. usage-only) are ignored."""
+    service._client.aio.models.generate_content_stream = AsyncMock(
+        return_value=agen(types.GenerateContentResponse(), make_chunk(text_part("ok")))
+    )
+    contents = [types.Content(role="user", parts=[types.Part.from_text(text="q")])]
+
+    events = [e async for e in service.stream_turn(contents, "sys")]
+
+    assert [e.kind for e in events] == ["text", "done"]
+
+
+@pytest.mark.asyncio
+async def test_stream_turn_not_configured():
+    """Streaming before configure() raises RuntimeError."""
     with pytest.raises(RuntimeError, match="not configured"):
-        async for _ in service.generate_response_stream(
-            system_prompt="You are a helpful assistant.",
-            user_prompt="What is the capital of France?",
-        ):
+        async for _ in LLMService().stream_turn([MagicMock()], "sys"):
             pass
 
 
-# Test: generate_response_stream - Empty system prompt
+@pytest.mark.asyncio
+async def test_stream_turn_validates_inputs(service):
+    """Empty system prompt or contents are rejected."""
+    with pytest.raises(ValueError, match="System prompt cannot be empty"):
+        async for _ in service.stream_turn([MagicMock()], " "):
+            pass
+    with pytest.raises(ValueError, match="Contents cannot be empty"):
+        async for _ in service.stream_turn([], "sys"):
+            pass
 
 
 @pytest.mark.asyncio
-async def test_generate_response_stream_empty_system_prompt():
-    """Test that empty system prompt raises ValueError in streaming."""
+async def test_stream_turn_timeout(service):
+    """A timeout while streaming becomes TimeoutError."""
+    service._client.aio.models.generate_content_stream = AsyncMock(side_effect=TimeoutError("slow"))
+    contents = [types.Content(role="user", parts=[types.Part.from_text(text="q")])]
 
-    with patch("app.services.llm_service.genai.configure"):
-        service = LLMService()
-        await service.configure()
-
-        with pytest.raises(ValueError, match="System prompt cannot be empty"):
-            async for _ in service.generate_response_stream(
-                system_prompt="  ",
-                user_prompt="What is the capital of France?",
-            ):
-                pass
-
-
-# Test: generate_response_stream - Empty user prompt
+    with pytest.raises(TimeoutError, match="timed out"):
+        async for _ in service.stream_turn(contents, "sys", timeout=3):
+            pass
 
 
 @pytest.mark.asyncio
-async def test_generate_response_stream_empty_user_prompt():
-    """Test that empty user prompt raises ValueError in streaming."""
+async def test_stream_turn_api_failure(service):
+    """Other API errors propagate."""
+    service._client.aio.models.generate_content_stream = AsyncMock(side_effect=Exception("API error"))
+    contents = [types.Content(role="user", parts=[types.Part.from_text(text="q")])]
 
-    with patch("app.services.llm_service.genai.configure"):
-        service = LLMService()
-        await service.configure()
-
-        with pytest.raises(ValueError, match="User prompt cannot be empty"):
-            async for _ in service.generate_response_stream(
-                system_prompt="You are a helpful assistant.",
-                user_prompt="",
-            ):
-                pass
-
-
-# Test: generate_response_stream - Timeout
+    with pytest.raises(Exception, match="API error"):
+        async for _ in service.stream_turn(contents, "sys"):
+            pass
 
 
 @pytest.mark.asyncio
-async def test_generate_response_stream_timeout():
-    """Test that streaming timeout is handled correctly."""
+async def test_stream_turn_retries_without_unsupported_thinking(service):
+    """A rejected thinking level in a stream is retried without it before any output."""
+    calls = []
 
-    with patch("app.services.llm_service.genai.configure"), patch(
-        "app.services.llm_service.genai.GenerativeModel"
-    ) as mock_model_class:
-        mock_model = MagicMock()
-        mock_model.generate_content.side_effect = TimeoutError("Streaming timed out")
-        mock_model_class.return_value = mock_model
+    async def fake_stream(**kwargs):
+        calls.append(kwargs["config"].thinking_config)
+        if len(calls) == 1:
+            raise thinking_error()
+        return agen(make_chunk(text_part("fine")))
 
-        service = LLMService()
-        await service.configure()
+    service._client.aio.models.generate_content_stream = fake_stream
+    contents = [types.Content(role="user", parts=[types.Part.from_text(text="q")])]
 
-        with pytest.raises(TimeoutError, match="timed out"):
-            async for _ in service.generate_response_stream(
-                system_prompt="You are a helpful assistant.",
-                user_prompt="What is the capital of France?",
-                timeout=5,
-            ):
-                pass
+    with patch.object(settings, "GEMINI_THINKING_LEVEL", "minimal"):
+        events = [e async for e in service.stream_turn(contents, "sys")]
 
-
-# Test: generate_response_stream - API failure
+    assert [e.kind for e in events] == ["text", "done"]
+    assert calls[0] is not None
+    assert calls[1] is None
 
 
-@pytest.mark.asyncio
-async def test_generate_response_stream_api_failure():
-    """Test that streaming API failure is handled correctly."""
-
-    with patch("app.services.llm_service.genai.configure"), patch(
-        "app.services.llm_service.genai.GenerativeModel"
-    ) as mock_model_class:
-        mock_model = MagicMock()
-        mock_model.generate_content.side_effect = Exception("Streaming failed")
-        mock_model_class.return_value = mock_model
-
-        service = LLMService()
-        await service.configure()
-
-        with pytest.raises(Exception, match="Streaming failed"):
-            async for _ in service.generate_response_stream(
-                system_prompt="You are a helpful assistant.",
-                user_prompt="What is the capital of France?",
-            ):
-                pass
-
-
-# Test: generate_response_stream - Empty chunks
-
-
-@pytest.mark.asyncio
-async def test_generate_response_stream_empty_chunks():
-    """Test streaming with empty chunks (should be skipped)."""
-
-    with patch("app.services.llm_service.genai.configure"), patch(
-        "app.services.llm_service.genai.GenerativeModel"
-    ) as mock_model_class:
-        # Mock chunks with some empty
-        mock_chunk1 = MagicMock()
-        mock_chunk1.text = "Hello "
-
-        mock_chunk2 = MagicMock()
-        mock_chunk2.text = ""  # Empty chunk
-
-        mock_chunk3 = MagicMock()
-        mock_chunk3.text = "world"
-
-        mock_model = MagicMock()
-        mock_model.generate_content.return_value = [mock_chunk1, mock_chunk2, mock_chunk3]
-        mock_model_class.return_value = mock_model
-
-        service = LLMService()
-        await service.configure()
-
-        chunks = []
-        async for chunk in service.generate_response_stream(
-            system_prompt="You are a helpful assistant.",
-            user_prompt="Say hello",
-        ):
-            chunks.append(chunk)
-
-        assert "".join(chunks) == "Hello world"
-
-
-# Test: get_llm_service - Singleton
+# Test: singleton
 
 
 @pytest.mark.asyncio
 async def test_get_llm_service_singleton():
-    """Test that get_llm_service returns singleton instance."""
+    """get_llm_service returns one shared, configured instance."""
+    import app.services.llm_service as module
 
-    with patch("app.services.llm_service.genai.configure"):
-        # Reset singleton
-        import app.services.llm_service
+    module._llm_service = None
+    with patch("app.services.llm_service.genai.Client"):
+        first = await get_llm_service()
+        second = await get_llm_service()
 
-        app.services.llm_service._llm_service = None
-
-        # Get service twice
-        service1 = await get_llm_service()
-        service2 = await get_llm_service()
-
-        assert service1 is service2
-        assert service1._configured is True
+    assert first is second
+    assert first._configured is True
+    module._llm_service = None

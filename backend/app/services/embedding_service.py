@@ -1,10 +1,15 @@
+import asyncio
 import logging
 
-import google.generativeai as genai  # type: ignore
+from google import genai
+from google.genai import types
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Max concurrent embedding requests when embedding a batch of texts
+_BATCH_CONCURRENCY = 5
 
 
 class EmbeddingService:
@@ -14,11 +19,16 @@ class EmbeddingService:
         """Initialize Gemini API client."""
         self.model_name = settings.EMBEDDING_MODEL
         self.embedding_dim = settings.EMBEDDING_DIMENSION
-        self._configured = False
+        self._client: genai.Client | None = None
+
+    @property
+    def _configured(self) -> bool:
+        """Whether the Gemini client has been created."""
+        return self._client is not None
 
     async def configure(self) -> bool:
         """
-        Configure Gemini API with credentials.
+        Create the Gemini API client with credentials.
 
         Returns:
             bool: True if configuration successful
@@ -27,20 +37,49 @@ class EmbeddingService:
             Exception: If Gemini API key is invalid
         """
         try:
-            genai.configure(api_key=settings.GOOGLE_API_KEY)  # type: ignore
-            self._configured = True
+            self._client = genai.Client(api_key=settings.GOOGLE_API_KEY)
             logger.info(f"Gemini API configured successfully. Model: {self.model_name}")
             return True
 
         except Exception as e:
             logger.error(f"Gemini API configuration failed: {e}")
-            self._configured = False
+            self._client = None
             raise
 
     def _ensure_configured(self):
         """Ensure Gemini API is configured before operations."""
-        if not self._configured:
+        if self._client is None:
             raise RuntimeError("Gemini API not configured. Call configure() first.")
+
+    async def _embed(self, text: str, task_type: str) -> list[float]:
+        """
+        Embed one text with the given task type and validate its dimension.
+
+        Args:
+            text: Text to embed
+            task_type: Gemini task type (e.g. "retrieval_document", "retrieval_query")
+
+        Returns:
+            list[float]: Embedding vector
+
+        Raises:
+            ValueError: If the returned dimension does not match the configured one
+        """
+        assert self._client is not None  # guaranteed by _ensure_configured()
+        result = await self._client.aio.models.embed_content(
+            model=self.model_name,
+            contents=text,
+            config=types.EmbedContentConfig(
+                task_type=task_type,
+                output_dimensionality=self.embedding_dim,
+            ),
+        )
+        embedding = list(result.embeddings[0].values)  # type: ignore[index]
+
+        if len(embedding) != self.embedding_dim:
+            raise ValueError(f"Expected {self.embedding_dim}-dim embedding, got {len(embedding)}")
+
+        return embedding
 
     async def embed_text(self, text: str) -> list[float]:
         """
@@ -62,19 +101,7 @@ class EmbeddingService:
             raise ValueError("Text cannot be empty")
 
         try:
-            result = genai.embed_content(  # type: ignore
-                model=self.model_name,
-                content=text,
-                task_type="retrieval_document",  # For document indexing
-                output_dimensionality=self.embedding_dim,  # Specify desired dimension
-            )
-
-            embedding = result["embedding"]
-
-            if len(embedding) != self.embedding_dim:
-                raise ValueError(
-                    f"Expected {self.embedding_dim}-dim embedding, got {len(embedding)}"
-                )
+            embedding = await self._embed(text, "retrieval_document")
 
             logger.debug(f"Generated embedding for text ({len(text)} chars)")
             return embedding
@@ -109,21 +136,14 @@ class EmbeddingService:
             if not valid_texts:
                 raise ValueError("All texts are empty")
 
-            # Generate embeddings for valid texts only
-            embeddings = []
-            for _i, text in valid_texts:
-                result = genai.embed_content(  # type: ignore
-                    model=self.model_name,
-                    content=text,
-                    task_type="retrieval_document",
-                    output_dimensionality=self.embedding_dim,  # Specify desired dimension
-                )
-                embeddings.append(result["embedding"])
+            # Embed valid texts concurrently (bounded), preserving input order
+            semaphore = asyncio.Semaphore(_BATCH_CONCURRENCY)
 
-            # Validate dimensions
-            for emb in embeddings:
-                if len(emb) != self.embedding_dim:
-                    raise ValueError(f"Expected {self.embedding_dim}-dim embedding, got {len(emb)}")
+            async def embed_one(text: str) -> list[float]:
+                async with semaphore:
+                    return await self._embed(text, "retrieval_document")
+
+            embeddings = await asyncio.gather(*(embed_one(text) for _i, text in valid_texts))
 
             logger.info(f"Generated {len(embeddings)} embeddings in batch")
             return embeddings
@@ -152,19 +172,7 @@ class EmbeddingService:
             raise ValueError("Query cannot be empty")
 
         try:
-            result = genai.embed_content(  # type: ignore
-                model=self.model_name,
-                content=query,
-                task_type="retrieval_query",  # For query matching
-                output_dimensionality=self.embedding_dim,  # Specify desired dimension
-            )
-
-            embedding = result["embedding"]
-
-            if len(embedding) != self.embedding_dim:
-                raise ValueError(
-                    f"Expected {self.embedding_dim}-dim embedding, got {len(embedding)}"
-                )
+            embedding = await self._embed(query, "retrieval_query")
 
             logger.debug(f"Generated query embedding ({len(query)} chars)")
             return embedding
