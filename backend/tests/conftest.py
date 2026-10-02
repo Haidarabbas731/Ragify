@@ -4,18 +4,43 @@ import sys
 from collections.abc import AsyncGenerator
 
 import pytest
-from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.pool import NullPool
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
-from app.db.database import get_session
-from app.middleware.rate_limit import RateLimitMiddleware
-from app.models.user import User
-from main import app
+
+
+def _build_test_database_url(url: str) -> str:
+    """Return the test database URL derived from the configured DATABASE_URL.
+
+    Uses TEST_DATABASE_URL when set; otherwise appends ``_test`` to the database name
+    (``knowledge_base`` -> ``knowledge_base_test``).
+    """
+    explicit = os.environ.get("TEST_DATABASE_URL")
+    if explicit:
+        return explicit
+    parsed = make_url(url)
+    name = parsed.database or "knowledge_base"
+    if not name.endswith("_test"):
+        name = f"{name}_test"
+    return parsed.set(database=name).render_as_string(hide_password=False)
+
+
+# Point the whole app (engine, session maker, background tasks) at a dedicated test
+# database BEFORE any module that builds an engine from settings is imported, so tests
+# can never touch the development database.
+settings.DATABASE_URL = _build_test_database_url(settings.DATABASE_URL)
+
+from httpx import ASGITransport, AsyncClient  # noqa: E402
+
+from app.db.database import get_session  # noqa: E402
+from app.middleware.rate_limit import RateLimitMiddleware  # noqa: E402
+from app.models.user import User  # noqa: E402
+from main import app  # noqa: E402
 
 # Set environment variables for testing
 os.environ["TESTING"] = "true"
@@ -30,10 +55,31 @@ if sys.platform == "win32":
 settings.INVITE_ONLY = False
 
 
+async def _recreate_test_database() -> None:
+    """Drop (if present) and recreate the test database so every run starts clean."""
+    target = make_url(settings.DATABASE_URL)
+    db_name = target.database
+    if not db_name or not db_name.endswith("_test"):
+        raise RuntimeError(f"Refusing to run tests against non-test database: {db_name!r}")
+
+    admin_engine = create_async_engine(
+        target.set(database="postgres"),
+        isolation_level="AUTOCOMMIT",
+        poolclass=NullPool,
+    )
+    try:
+        async with admin_engine.connect() as conn:
+            await conn.execute(text(f'DROP DATABASE IF EXISTS "{db_name}" WITH (FORCE)'))
+            await conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+    finally:
+        await admin_engine.dispose()
+
+
 def pytest_configure(config):
-    """Configure pytest - set event loop policy early for Windows."""
+    """Configure pytest - set event loop policy early for Windows and reset the test DB."""
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    asyncio.run(_recreate_test_database())
 
 
 @pytest.fixture(scope="function")
