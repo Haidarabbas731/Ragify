@@ -3,7 +3,6 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from google.genai import errors as genai_errors
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -12,36 +11,32 @@ from app.db.database import get_session
 from app.models.user import User
 from app.schemas.chat import ChatQuery, ChatResponse
 from app.services.chat_service import execute_rag_query, execute_rag_query_stream
+from app.services.providers.base import ProviderError
 from app.services.redis_service import check_rate_limit
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["chat"])
 
-RATE_LIMITED_MESSAGE = "The AI service has reached its usage limit. Please try again in a minute."
-BUSY_MESSAGE = "The AI service is busy right now. Please try again in a moment."
-GENERIC_STREAM_ERROR = "Something went wrong while generating the answer. Please try again."
+GENERIC_STREAM_ERROR = ProviderError.user_message
 
 
-def _friendly_stream_error(error: Exception) -> str:
+def _friendly_error(error: Exception) -> str:
     """
-    Turn an exception raised mid-stream into a short message that is safe to show users.
+    Turn an exception raised while answering into a short message that is safe to show users.
 
     Provider error payloads (quota details, request IDs, URLs) stay in the server logs.
 
     Args:
-        error: Exception raised while streaming the chat response
+        error: Exception raised while producing the chat response
 
     Returns:
         str: User-facing message
     """
-    if isinstance(error, (TimeoutError, ValueError)):
+    if isinstance(error, ProviderError):
+        return error.user_message
+    if isinstance(error, ValueError):
         return str(error)
-    if isinstance(error, genai_errors.APIError):
-        if error.code == 429:
-            return RATE_LIMITED_MESSAGE
-        if error.code in (500, 502, 503, 504):
-            return BUSY_MESSAGE
     return GENERIC_STREAM_ERROR
 
 
@@ -140,7 +135,7 @@ async def chat_query(
 
                 except Exception as e:
                     logger.error(f"Streaming error: {e}")
-                    error_data = json.dumps({"error": _friendly_stream_error(e)})
+                    error_data = json.dumps({"error": _friendly_error(e)})
                     yield f"data: {error_data}\n\n"
 
             logger.info(f"Starting streaming chat for user {current_user.user_id}")
@@ -178,13 +173,10 @@ async def chat_query(
             detail=str(e),
         ) from e
 
-    except TimeoutError as e:
-        # LLM timeout
-        logger.error(f"LLM timeout for user {current_user.user_id}")
-        raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail=str(e),
-        ) from e
+    except ProviderError as e:
+        # Model provider failure (timeout, rate limit, bad key, outage)
+        logger.error(f"Provider error for user {current_user.user_id}: {e}")
+        raise HTTPException(status_code=e.status_code, detail=e.user_message) from e
 
     except Exception as e:
         # Unexpected error
