@@ -4,6 +4,7 @@ from app.models.conversation import Conversation  # noqa: F401
 from app.models.document import Document, DocumentStatus  # noqa: F401
 from app.models.invite_code import InviteCode, InviteCodeStatus  # noqa: F401
 from app.models.user import User, UserStatus  # noqa: F401
+from app.models.user_ai_settings import UserAISettings  # noqa: F401
 
 __all__ = [
     "User",
@@ -15,4 +16,5 @@ __all__ = [
     "InviteCode",
     "InviteCodeStatus",
     "AdminAuditLog",
+    "UserAISettings",
 ]

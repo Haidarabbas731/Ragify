@@ -21,6 +21,16 @@ class ProviderError(Exception):
     user_message = "Something went wrong while generating the answer. Please try again."
     status_code = 502
 
+    def __init__(self, message: str = "", *, user_message: str | None = None):
+        """
+        Args:
+            message: Technical detail, for logs
+            user_message: Overrides the class-level message shown to users
+        """
+        super().__init__(message)
+        if user_message:
+            self.user_message = user_message
+
 
 class ProviderTimeoutError(ProviderError, TimeoutError):
     """The provider did not answer in time."""

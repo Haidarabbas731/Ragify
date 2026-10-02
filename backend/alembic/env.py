@@ -6,16 +6,11 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from sqlmodel import SQLModel
 
+import app.models  # noqa: F401  (registers every table on SQLModel.metadata)
 from alembic import context
 
 # Import settings and database
 from app.core.config import settings
-from app.models.admin_audit_log import AdminAuditLog  # noqa: F401
-from app.models.collection import Collection  # noqa: F401
-from app.models.conversation import Conversation  # noqa: F401
-from app.models.document import Document  # noqa: F401
-from app.models.invite_code import InviteCode  # noqa: F401
-from app.models.user import User  # noqa: F401
 
 # Alembic Config object
 config = context.config

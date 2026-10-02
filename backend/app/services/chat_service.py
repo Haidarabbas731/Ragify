@@ -24,8 +24,7 @@ from app.services.conversation_service import (
 from app.services.document_service import get_document_by_id
 from app.services.embedding_service import get_embedding_service
 from app.services.milvus_service import get_milvus_service
-from app.services.providers.base import Message, ToolResult, ToolSpec
-from app.services.providers.registry import get_chat_provider
+from app.services.providers.base import ChatProvider, Message, ToolResult, ToolSpec
 
 logger = logging.getLogger(__name__)
 
@@ -194,6 +193,7 @@ async def execute_rag_query_stream(
     query: str,
     user_id: str,
     db: AsyncSession,
+    provider: ChatProvider,
     conversation_id: str | None = None,
     collection_id: str | None = None,
     top_k: int = 5,
@@ -214,6 +214,7 @@ async def execute_rag_query_stream(
         query: User's question
         user_id: User ID for data isolation
         db: Database session
+        provider: Chat model provider that runs the agent
         conversation_id: Optional conversation ID (creates new if None)
         collection_id: Optional collection filter
         top_k: Number of chunks to retrieve per search (default: 5)
@@ -234,7 +235,6 @@ async def execute_rag_query_stream(
             db, conversation.conversation_id, limit=settings.CONVERSATION_HISTORY_LIMIT
         )
         messages = _build_messages(history, query)
-        provider = get_chat_provider()
 
         answer_parts: list[str] = []
         all_chunks: list[dict] = []
@@ -323,6 +323,7 @@ async def execute_rag_query(
     query: str,
     user_id: str,
     db: AsyncSession,
+    provider: ChatProvider,
     conversation_id: str | None = None,
     collection_id: str | None = None,
     top_k: int = 5,
@@ -334,6 +335,7 @@ async def execute_rag_query(
         query: User's question
         user_id: User ID for data isolation
         db: Database session
+        provider: Chat model provider that runs the agent
         conversation_id: Optional conversation ID (creates new if None)
         collection_id: Optional collection filter
         top_k: Number of chunks to retrieve per search (default: 5)
@@ -354,6 +356,7 @@ async def execute_rag_query(
         query=query,
         user_id=user_id,
         db=db,
+        provider=provider,
         conversation_id=conversation_id,
         collection_id=collection_id,
         top_k=top_k,
