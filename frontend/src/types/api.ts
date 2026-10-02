@@ -293,10 +293,10 @@ export interface AiSettings {
   model: string | null;
   has_key: boolean;
   key_last4: string | null;
-  key_storage_enabled: boolean;
-  fallback_enabled: boolean;
   default_provider: AiProvider;
   default_model: string;
+  /** Whether the server has a key for its default provider. If not, users must add their own. */
+  default_available: boolean;
   providers: AiProvider[];
 }
 

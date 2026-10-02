@@ -24,10 +24,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { AgentActivity } from "../components/chat/AgentActivity";
+import { ApiKeyRequiredDialog } from "../components/chat/ApiKeyRequiredDialog";
 import { CollectionFilter } from "../components/chat/CollectionFilter";
 import { DeleteConfirmDialog } from "../components/chat/DeleteConfirmDialog";
 import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { Button } from "../components/ui/button";
+import { useAiSettings } from "../hooks/useAiSettings";
 import { useChatStream } from "../hooks/useChatStream";
 import { useCollections } from "../hooks/useCollections";
 import {
@@ -85,6 +87,16 @@ export function ChatPage() {
   // Streaming hook
   const { isStreaming, currentResponse, activity, streamChat } =
     useChatStream();
+
+  // Chat needs a key: the user's own, or the server's default. If neither exists, ask.
+  const { data: aiSettings } = useAiSettings();
+  const needsApiKey = Boolean(
+    aiSettings && !aiSettings.has_key && !aiSettings.default_available,
+  );
+  const [keyDialogOpen, setKeyDialogOpen] = useState(false);
+  useEffect(() => {
+    if (needsApiKey) setKeyDialogOpen(true);
+  }, [needsApiKey]);
 
   // Load conversation messages when conversation data changes
   useEffect(() => {
@@ -245,6 +257,10 @@ export function ChatPage() {
 
   const handleSendMessage = async () => {
     if (!message.trim() || isStreaming) return;
+    if (needsApiKey) {
+      setKeyDialogOpen(true);
+      return;
+    }
 
     const userMessage: DisplayMessage = {
       id: Date.now().toString(),
@@ -718,6 +734,11 @@ export function ChatPage() {
       `}</style>
 
       {/* Delete Confirmation Dialog */}
+      <ApiKeyRequiredDialog
+        open={keyDialogOpen}
+        onClose={() => setKeyDialogOpen(false)}
+      />
+
       <DeleteConfirmDialog
         isOpen={deleteDialogOpen}
         onClose={cancelDelete}

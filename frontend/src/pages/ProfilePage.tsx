@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AiModelSettings } from "../components/profile/AiModelSettings";
 import { ChangePasswordForm } from "../components/profile/ChangePasswordForm";
 import { Button } from "../components/ui/button";
@@ -31,9 +31,11 @@ export function ProfilePage() {
   const navigate = useNavigate();
   const { logout } = useAuthStore();
   const { darkMode, toggleDarkMode } = useDarkMode();
+  // /profile?tab=preferences opens that tab directly (used by the "add API key" prompt)
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<
     "profile" | "security" | "usage" | "preferences"
-  >("profile");
+  >(searchParams.get("tab") === "preferences" ? "preferences" : "profile");
 
   // Fetch user profile from API
   const { data: profile, isLoading, error } = useUserProfile();
@@ -408,7 +410,7 @@ export function ProfilePage() {
                   </div>
 
                   {/* Theme Preference */}
-                  <div className="flex items-center justify-between py-3 border-b border-border">
+                  <div className="flex items-center justify-between py-3">
                     <div>
                       <h3 className="font-semibold text-foreground font-sans">
                         Dark Mode
@@ -429,42 +431,6 @@ export function ProfilePage() {
                           darkMode ? "translate-x-6" : "translate-x-1"
                         }`}
                       />
-                    </button>
-                  </div>
-
-                  {/* Email Notifications */}
-                  <div className="flex items-center justify-between py-3 border-b border-border">
-                    <div>
-                      <h3 className="font-semibold text-foreground font-sans">
-                        Email Notifications
-                      </h3>
-                      <p className="text-sm text-muted-foreground font-sans">
-                        Receive updates about document processing
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary transition-colors"
-                    >
-                      <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6" />
-                    </button>
-                  </div>
-
-                  {/* Auto-save */}
-                  <div className="flex items-center justify-between py-3">
-                    <div>
-                      <h3 className="font-semibold text-foreground font-sans">
-                        Auto-save Chats
-                      </h3>
-                      <p className="text-sm text-muted-foreground font-sans">
-                        Automatically save chat conversations
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="relative inline-flex h-6 w-11 items-center rounded-full bg-primary transition-colors"
-                    >
-                      <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6" />
                     </button>
                   </div>
                 </div>
