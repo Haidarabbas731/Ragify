@@ -1,3 +1,4 @@
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -52,7 +53,11 @@ class Settings(BaseSettings):
     APP_ENCRYPTION_KEY: str | None = None
     # Chat generation includes retrieved document context, so give calls more room than a
     # bare prompt needs before the request is aborted as timed out (all providers).
-    GEMINI_RAG_TIMEOUT_SECONDS: int = 30
+    # The old name GEMINI_RAG_TIMEOUT_SECONDS is still accepted.
+    LLM_TIMEOUT_SECONDS: int = Field(
+        default=30,
+        validation_alias=AliasChoices("LLM_TIMEOUT_SECONDS", "GEMINI_RAG_TIMEOUT_SECONDS"),
+    )
 
     # Google Gemini (chat)
     GOOGLE_API_KEY: str | None = None
