@@ -11,9 +11,10 @@ import app.services.model_catalog as catalog
 from app.services.providers.base import ProviderUnavailableError
 
 
-def model(id, name=None, tools=True, output=("text",), context=1000):
+def model(id, name=None, tools=True, output=("text",), context=1000, pricing=None):
     """One entry of OpenRouter's /models response."""
     return {
+        "pricing": pricing if pricing is not None else {"prompt": "0.000001", "completion": "0.000002"},
         "id": id,
         "name": name or id,
         "context_length": context,
@@ -24,7 +25,7 @@ def model(id, name=None, tools=True, output=("text",), context=1000):
 
 RAW = [
     model("zeta/model", "Zeta"),
-    model("alpha/model:free", "alpha"),
+    model("alpha/model:free", "alpha", pricing={"prompt": "0", "completion": "0"}),
     model("no-tools/model", tools=False),
     model("image/model", output=("image",)),
 ]
@@ -61,6 +62,23 @@ async def test_only_tool_capable_text_models_are_listed_sorted_by_name():
     assert [m.id for m in models] == ["alpha/model:free", "zeta/model"]
     assert [m.free for m in models] == [True, False]
     assert models[0].context_length == 1000
+
+
+@pytest.mark.asyncio
+async def test_free_means_zero_priced_not_just_a_name_suffix():
+    """Routers like openrouter/free are free without the :free suffix; paid ':free' lookalikes are not."""
+    zero = {"prompt": "0", "completion": "0"}
+    patcher, _ = mock_http(
+        data=[
+            model("openrouter/free", pricing=zero),
+            model("half/free", pricing={"prompt": "0", "completion": "0.5"}),
+            model("no-pricing/model", pricing={}),
+        ]
+    )
+    with patcher:
+        models = {m.id: m.free for m in await catalog.list_openrouter_models()}
+
+    assert models == {"openrouter/free": True, "half/free": False, "no-pricing/model": False}
 
 
 @pytest.mark.asyncio
