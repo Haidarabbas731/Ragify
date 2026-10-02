@@ -58,7 +58,7 @@ class ProviderUnavailableError(ProviderError):
 class ProviderAuthError(ProviderError):
     """The API key is missing or was rejected."""
 
-    user_message = "The AI provider rejected the API key. Check it in your settings."
+    user_message = "The AI provider rejected the API key. Check that it is correct."
     # Deliberately not 401: the frontend treats 401 as an expired login session.
     status_code = 400
 

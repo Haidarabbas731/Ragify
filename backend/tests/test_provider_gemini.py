@@ -22,7 +22,7 @@ from app.services.providers.base import (
     ToolResult,
     ToolSpec,
 )
-from app.services.providers.gemini import GeminiProvider
+from app.services.providers.gemini import GeminiProvider, map_gemini_error
 
 USER_MESSAGES = [Message(role="user", text="hi")]
 TOOL = ToolSpec(name="search_documents", description="Search", parameters={"type": "object"})
@@ -254,3 +254,27 @@ async def test_validates_inputs(provider):
         await run(provider, messages=[])
 
     provider._client.aio.models.generate_content_stream.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("status", "message", "expected"),
+    [
+        (408, "timeout", ProviderTimeoutError),
+        (504, "deadline", ProviderTimeoutError),
+        (429, "quota", ProviderRateLimitError),
+        (401, "unauthorized", ProviderAuthError),
+        (403, "forbidden", ProviderAuthError),
+        (400, "API key not valid", ProviderAuthError),
+        (400, "Request contains an invalid argument", ProviderError),
+        (404, "model not found", ProviderError),
+        (418, "teapot", ProviderError),
+        (500, "internal", ProviderUnavailableError),
+        (502, "bad gateway", ProviderUnavailableError),
+        (599, "weird", ProviderUnavailableError),
+    ],
+)
+def test_map_gemini_error_covers_every_status_class(status, message, expected):
+    """Table-driven statuses, the 400-key special case, and the 5xx and other fallbacks."""
+    mapped = map_gemini_error(api_error(errors.APIError, status, message), 30)
+
+    assert type(mapped) is expected

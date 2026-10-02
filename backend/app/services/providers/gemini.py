@@ -31,6 +31,35 @@ _RETRY_OPTIONS = types.HttpRetryOptions(
 )
 
 
+# HTTP status -> the provider error it means. Statuses not listed are classified by
+# `_error_class`.
+_ERROR_BY_STATUS: dict[int, type[ProviderError]] = {
+    408: ProviderTimeoutError,
+    504: ProviderTimeoutError,
+    429: ProviderRateLimitError,
+    401: ProviderAuthError,
+    403: ProviderAuthError,
+}
+
+
+def _error_class(status: int, message: str) -> type[ProviderError]:
+    """Pick the provider error for an HTTP status that is not in the table."""
+    if status in _ERROR_BY_STATUS:
+        return _ERROR_BY_STATUS[status]
+    if status == 400 and "api key" in message.lower():  # Google reports bad keys as 400
+        return ProviderAuthError
+    return ProviderUnavailableError if status >= 500 else ProviderError
+
+
+def map_gemini_error(error: Exception, timeout: int) -> Exception:
+    """Translate SDK and network errors into `ProviderError`s; pass others through."""
+    if isinstance(error, TimeoutError) or "timeout" in type(error).__name__.lower():
+        return ProviderTimeoutError(f"LLM request timed out after {timeout} seconds")
+    if isinstance(error, errors.APIError):
+        return _error_class(error.code, str(error))(str(error))
+    return error
+
+
 class GeminiProvider:
     """Google Gemini chat provider (native SDK, so thinking control and signatures work)."""
 
@@ -131,23 +160,6 @@ class GeminiProvider:
             http_options=types.HttpOptions(timeout=timeout * 1000, retry_options=_RETRY_OPTIONS),
         )
 
-    @staticmethod
-    def _map_error(error: Exception, timeout: int) -> Exception:
-        """Translate SDK and network errors into `ProviderError`s; pass others through."""
-        if isinstance(error, TimeoutError) or "timeout" in type(error).__name__.lower():
-            return ProviderTimeoutError(f"LLM request timed out after {timeout} seconds")
-        if not isinstance(error, errors.APIError):
-            return error
-        if error.code in (408, 504):
-            return ProviderTimeoutError(str(error))
-        if error.code == 429:
-            return ProviderRateLimitError(str(error))
-        if error.code in (401, 403) or (error.code == 400 and "api key" in str(error).lower()):
-            return ProviderAuthError(str(error))
-        if error.code >= 500:
-            return ProviderUnavailableError(str(error))
-        return ProviderError(str(error))
-
     async def stream_turn(
         self,
         messages: list[Message],
@@ -206,7 +218,7 @@ class GeminiProvider:
                         yield StreamEvent(kind="text", text=part.text)
 
         except Exception as e:
-            mapped = self._map_error(e, timeout)
+            mapped = map_gemini_error(e, timeout)
             logger.error(f"Gemini streaming failed: {mapped}")
             if mapped is e:
                 raise
