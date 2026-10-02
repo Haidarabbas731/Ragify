@@ -27,7 +27,7 @@ services:
         python scripts/start_milvus_lite.py /app/storage/milvus_data/ragify.db /tmp/milvus_lite_uri &
         until [ -s /tmp/milvus_lite_uri ]; do sleep 1; done
         export VECTOR_DB_URI="$$(cat /tmp/milvus_lite_uri)"
-        arq app.tasks.worker.WorkerSettings &
+        arq app.tasks.worker.WorkerSettings --watch /app/app &
         exec bash ./scripts/start-api.sh
     depends_on: !override
       postgres:
