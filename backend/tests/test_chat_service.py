@@ -1,33 +1,35 @@
 """
-Unit tests for chat_service.py - RAG orchestration logic.
+Unit tests for chat_service.py - the tool-calling chat agent.
 
-Tests the complete RAG query flow including:
-- Query validation
-- Embedding generation
-- Vector search
-- Chunk enrichment
-- Context formatting
-- LLM response generation
-- Conversation saving
-- Error handling
+Covers:
+- Agent decides per turn: direct answer (no search) vs. `search_documents` tool call
+- Tool execution with user isolation (user/collection come from the request, not the model)
+- Tool round cap, unknown tools, search failures, timeouts, empty queries
+- Chunk enrichment, no-results hints, conversation saving
 """
 
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from google.genai import types
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.config import settings
 from app.models.conversation import Conversation
 from app.models.document import Document, DocumentStatus
+from app.prompts.chat_prompt import SEARCH_TOOL_NAME
 from app.schemas.chat import ChatResponse
 from app.services.chat_service import (
+    EMPTY_RESPONSE_MESSAGE,
+    TIMEOUT_MESSAGE,
     _enrich_chunks_with_metadata,
-    _generate_no_results_response,
+    _no_results_hint,
     _save_to_conversation,
     execute_rag_query,
     execute_rag_query_stream,
 )
+from app.services.llm_service import StreamEvent
 
 
 @pytest.fixture
@@ -81,226 +83,335 @@ def mock_chunks():
     ]
 
 
-# Test: execute_rag_query - Success case
+# Helpers to script the model
+
+
+def text_turn(*texts: str) -> list[StreamEvent]:
+    """A model turn that only streams answer text."""
+    full = "".join(texts)
+    events = [StreamEvent(kind="text", text=t) for t in texts]
+    events.append(
+        StreamEvent(
+            kind="done",
+            model_content=types.Content(role="model", parts=[types.Part.from_text(text=full)]),
+        )
+    )
+    return events
+
+
+def call_turn(name: str = SEARCH_TOOL_NAME, **args) -> list[StreamEvent]:
+    """A model turn that requests a tool call."""
+    call = types.FunctionCall(name=name, args=args)
+    return [
+        StreamEvent(
+            kind="done",
+            function_calls=[call],
+            model_content=types.Content(role="model", parts=[types.Part(function_call=call)]),
+        )
+    ]
+
+
+class FakeLLM:
+    """Stand-in for LLMService: plays back scripted turns and records the requests."""
+
+    def __init__(self, turns: list[list[StreamEvent]]):
+        self.turns = list(turns)
+        self.requests: list[dict] = []
+
+    async def stream_turn(self, contents, system_instruction, tools=None, timeout=30):
+        self.requests.append(
+            {"contents": list(contents), "system": system_instruction, "tools": tools}
+        )
+        for event in self.turns.pop(0):
+            if isinstance(event, Exception):
+                raise event
+            yield event
+
+
+@pytest.fixture
+def agent_env(mock_user_id, mock_conversation, mock_document, mock_chunks):
+    """Patch every collaborator of the agent; yields the mocks for assertions."""
+    mock_document.user_id = mock_user_id
+    for chunk in mock_chunks:
+        chunk["document_id"] = mock_document.document_id
+
+    embedding_service = MagicMock()
+    embedding_service.embed_query = AsyncMock(return_value=[0.1] * 1024)
+    milvus_service = MagicMock()
+    milvus_service.search_similar = AsyncMock(return_value=mock_chunks)
+
+    with (
+        patch("app.services.chat_service.get_or_create_conversation") as get_conv,
+        patch("app.services.chat_service.get_last_messages") as get_history,
+        patch("app.services.chat_service.get_embedding_service") as get_embed,
+        patch("app.services.chat_service.get_milvus_service") as get_milvus,
+        patch("app.services.chat_service.get_document_by_id") as get_doc,
+        patch("app.services.chat_service.get_llm_service") as get_llm,
+        patch("app.services.chat_service._save_to_conversation") as save,
+    ):
+        get_conv.return_value = mock_conversation
+        get_history.return_value = []
+        get_embed.return_value = embedding_service
+        get_milvus.return_value = milvus_service
+        get_doc.return_value = mock_document
+        save.return_value = None
+
+        class Env:
+            pass
+
+        env = Env()
+        env.embedding_service = embedding_service
+        env.milvus_service = milvus_service
+        env.get_history = get_history
+        env.get_llm = get_llm
+        env.get_doc = get_doc
+        env.save = save
+        env.conversation = mock_conversation
+        env.document = mock_document
+        yield env
+
+
+async def collect(stream) -> list[dict]:
+    """Drain an event stream into a list."""
+    return [event async for event in stream]
+
+
+# Test: direct answer, no tool call
 
 
 @pytest.mark.asyncio
-async def test_execute_rag_query_success(
-    session: AsyncSession, mock_user_id, mock_conversation, mock_document, mock_chunks
-):
-    """Test successful RAG query execution with all steps."""
+async def test_greeting_answers_without_searching(agent_env, mock_user_id):
+    """The agent can answer small talk directly: one model call, no search, no sources."""
+    llm = FakeLLM([text_turn("Hello! ", "How can I help?")])
+    agent_env.get_llm.return_value = llm
 
-    with patch(
-        "app.services.chat_service.get_or_create_conversation"
-    ) as mock_get_conversation, patch(
-        "app.services.chat_service.get_embedding_service"
-    ) as mock_get_embedding, patch(
-        "app.services.chat_service.get_milvus_service"
-    ) as mock_get_milvus, patch(
-        "app.services.chat_service.get_llm_service"
-    ) as mock_get_llm, patch(
-        "app.services.chat_service._enrich_chunks_with_metadata"
-    ) as mock_enrich, patch(
-        "app.services.chat_service._save_to_conversation"
-    ) as mock_save, patch(
-        "app.services.chat_service.get_last_messages"
-    ) as mock_get_messages, patch(
-        "app.services.chat_service.format_context_with_metadata"
-    ) as mock_format_context, patch(
-        "app.services.chat_service.format_user_prompt"
-    ) as mock_format_prompt:
-        # Setup mocks
-        mock_get_conversation.return_value = mock_conversation
+    events = await collect(execute_rag_query_stream("Hiii", mock_user_id, MagicMock()))
 
-        # Mock embedding service
-        mock_embedding_service = AsyncMock()
-        mock_embedding_service.embed_query.return_value = [0.1] * 1024
-        mock_get_embedding.return_value = mock_embedding_service
+    assert [e["type"] for e in events] == ["text", "text", "done"]
+    assert len(llm.requests) == 1
+    agent_env.embedding_service.embed_query.assert_not_called()
+    agent_env.milvus_service.search_similar.assert_not_called()
+    assert events[-1]["sources"] == []
+    # saved with the full text and no sources
+    saved = agent_env.save.call_args[0]
+    assert saved[3] == "Hello! How can I help?"
+    assert saved[4] == []
 
-        # Mock Milvus service
-        mock_milvus_service = AsyncMock()
-        mock_milvus_service.search_similar.return_value = mock_chunks
-        mock_get_milvus.return_value = mock_milvus_service
 
-        # Mock chunk enrichment
-        enriched_chunks = [
-            {**chunk, "document_name": "test_document.pdf"} for chunk in mock_chunks
+# Test: document question -> tool call -> answer
+
+
+@pytest.mark.asyncio
+async def test_document_question_uses_search_tool(agent_env, mock_user_id):
+    """A tool call triggers embed + Milvus search; the answer streams after the results."""
+    llm = FakeLLM([call_turn(query="vacation policy"), text_turn("You get 20 days.")])
+    agent_env.get_llm.return_value = llm
+
+    events = await collect(
+        execute_rag_query_stream("How many vacation days?", mock_user_id, MagicMock())
+    )
+
+    types_seen = [e["type"] for e in events]
+    assert types_seen == ["tool_start", "tool_end", "text", "done"]
+    assert events[0]["query"] == "vacation policy"
+    assert events[1]["chunks"] == 2
+    assert events[1]["documents"] == 1
+    assert events[1]["error"] is False
+
+    agent_env.embedding_service.embed_query.assert_awaited_once_with("vacation policy")
+
+    # Second model request carries the model's call and our function response
+    assert len(llm.requests) == 2
+    second = llm.requests[1]["contents"]
+    assert second[-2].role == "model"
+    response = second[-1].parts[0].function_response
+    assert response.name == SEARCH_TOOL_NAME
+    results = response.response["results"]
+    assert results[0]["document"] == "test_document.pdf"
+    assert "vacation policy" in results[0]["text"]
+    assert "score" not in results[0]
+
+    done = events[-1]
+    assert done["conversation_id"] == agent_env.conversation.conversation_id
+    assert len(done["sources"]) == 1
+    assert done["sources"][0]["filename"] == "test_document.pdf"
+    assert done["sources"][0]["document_name"] == "test_document.pdf"
+
+
+@pytest.mark.asyncio
+async def test_tool_call_cannot_override_user_or_collection(agent_env, mock_user_id):
+    """user_id/collection_id come from the request even if the model tries to pass them."""
+    llm = FakeLLM(
+        [
+            call_turn(query="salaries", user_id="someone-else", collection_id="other"),
+            text_turn("Done."),
         ]
-        mock_enrich.return_value = enriched_chunks
+    )
+    agent_env.get_llm.return_value = llm
 
-        # Mock LLM service
-        mock_llm_service = AsyncMock()
-        mock_llm_service.generate_response.return_value = "You get 15 vacation days per year."
-        mock_get_llm.return_value = mock_llm_service
-
-        # Mock conversation history
-        mock_get_messages.return_value = []
-
-        # Mock context formatting
-        mock_format_context.return_value = (
-            "Context: vacation policy...",
-            [
-                {
-                    "document_id": mock_chunks[0]["document_id"],
-                    "document_name": "test_document.pdf",
-                    "filename": "test_document.pdf",
-                    "chunk_index": 0,
-                    "chunk_text": mock_chunks[0]["chunk_text"],
-                    "relevance_score": mock_chunks[0]["score"],
-                }
-            ],
+    await collect(
+        execute_rag_query_stream(
+            "salaries?", mock_user_id, MagicMock(), collection_id="my-collection", top_k=3
         )
+    )
 
-        # Mock prompt formatting
-        mock_format_prompt.return_value = "User prompt with context..."
-
-        # Execute query
-        response = await execute_rag_query(
-            query="What is the vacation policy?",
-            user_id=mock_user_id,
-            db=session,
-            conversation_id=mock_conversation.conversation_id,
-            collection_id=None,
-            top_k=5,
-        )
-
-        # Assertions
-        assert isinstance(response, ChatResponse)
-        assert response.answer == "You get 15 vacation days per year."
-        assert response.conversation_id == mock_conversation.conversation_id
-        assert len(response.sources) > 0
-        assert response.sources[0].document_name == "test_document.pdf"
-
-        # Verify service calls
-        mock_get_conversation.assert_called_once()
-        mock_embedding_service.embed_query.assert_called_once_with(
-            "What is the vacation policy?"
-        )
-        mock_milvus_service.search_similar.assert_called_once()
-        mock_llm_service.generate_response.assert_called_once()
-        mock_save.assert_called_once()
-
-
-# Test: execute_rag_query - Empty query
+    kwargs = agent_env.milvus_service.search_similar.call_args.kwargs
+    assert kwargs["user_id"] == mock_user_id
+    assert kwargs["collection_id"] == "my-collection"
+    assert kwargs["top_k"] == 3
 
 
 @pytest.mark.asyncio
-async def test_execute_rag_query_empty_query(session: AsyncSession, mock_user_id):
-    """Test that empty query raises ValueError."""
+async def test_tool_call_without_query_falls_back_to_user_message(agent_env, mock_user_id):
+    """If the model sends no query argument, the user's message is searched."""
+    llm = FakeLLM([call_turn(), text_turn("ok")])
+    agent_env.get_llm.return_value = llm
+
+    events = await collect(execute_rag_query_stream("find the budget", mock_user_id, MagicMock()))
+
+    assert events[0]["query"] == "find the budget"
+
+
+@pytest.mark.asyncio
+async def test_history_is_sent_as_chat_turns(agent_env, mock_user_id):
+    """Previous messages become user/model turns before the new question."""
+    agent_env.get_history.return_value = [
+        {"role": "user", "content": "What is the leave policy?"},
+        {"role": "assistant", "content": "It is 20 days."},
+    ]
+    llm = FakeLLM([text_turn("Sure.")])
+    agent_env.get_llm.return_value = llm
+
+    await collect(execute_rag_query_stream("and sick leave?", mock_user_id, MagicMock()))
+
+    contents = llm.requests[0]["contents"]
+    assert [c.role for c in contents] == ["user", "model", "user"]
+    assert contents[-1].parts[0].text == "and sick leave?"
+
+
+# Test: no results
+
+
+@pytest.mark.asyncio
+async def test_search_with_no_results_returns_note(agent_env, mock_user_id):
+    """An empty search tells the model why via a note; no sources are returned."""
+    agent_env.milvus_service.search_similar.return_value = []
+    llm = FakeLLM([call_turn(query="moon base"), text_turn("I couldn't find that.")])
+    agent_env.get_llm.return_value = llm
+
+    with patch("app.services.chat_service._no_results_hint", new=AsyncMock(return_value="hint!")):
+        events = await collect(execute_rag_query_stream("moon base?", mock_user_id, MagicMock()))
+
+    response = llm.requests[1]["contents"][-1].parts[0].function_response.response
+    assert response == {"results": [], "note": "hint!"}
+    assert events[1]["chunks"] == 0
+    assert events[-1]["sources"] == []
+
+
+# Test: robustness
+
+
+@pytest.mark.asyncio
+async def test_tool_rounds_are_capped(agent_env, mock_user_id):
+    """After AGENT_MAX_TOOL_ROUNDS searches the model is asked again without tools."""
+    llm = FakeLLM(
+        [call_turn(query="a"), call_turn(query="b"), text_turn("Final answer.")]
+    )
+    agent_env.get_llm.return_value = llm
+
+    with patch.object(settings, "AGENT_MAX_TOOL_ROUNDS", 2):
+        events = await collect(execute_rag_query_stream("q", mock_user_id, MagicMock()))
+
+    assert [r["tools"] is not None for r in llm.requests] == [True, True, False]
+    assert events[-1]["type"] == "done"
+    assert agent_env.save.call_args[0][3] == "Final answer."
+
+
+@pytest.mark.asyncio
+async def test_unknown_tool_is_rejected_not_executed(agent_env, mock_user_id):
+    """A call to a tool we didn't declare gets an error response and no search runs."""
+    llm = FakeLLM([call_turn(name="delete_everything"), text_turn("Sorry.")])
+    agent_env.get_llm.return_value = llm
+
+    events = await collect(execute_rag_query_stream("do it", mock_user_id, MagicMock()))
+
+    agent_env.milvus_service.search_similar.assert_not_called()
+    assert all(e["type"] not in ("tool_start", "tool_end") for e in events)
+    response = llm.requests[1]["contents"][-1].parts[0].function_response.response
+    assert "Unknown tool" in response["error"]
+
+
+@pytest.mark.asyncio
+async def test_search_failure_is_reported_to_model(agent_env, mock_user_id):
+    """If search breaks, the UI event is flagged and the model still gets to answer."""
+    agent_env.milvus_service.search_similar.side_effect = RuntimeError("milvus down")
+    llm = FakeLLM([call_turn(query="x"), text_turn("Search is unavailable right now.")])
+    agent_env.get_llm.return_value = llm
+
+    events = await collect(execute_rag_query_stream("x?", mock_user_id, MagicMock()))
+
+    tool_end = next(e for e in events if e["type"] == "tool_end")
+    assert tool_end["error"] is True
+    response = llm.requests[1]["contents"][-1].parts[0].function_response.response
+    assert "error" in response
+    assert events[-1]["type"] == "done"
+
+
+@pytest.mark.asyncio
+async def test_empty_model_answer_uses_fallback(agent_env, mock_user_id):
+    """If the model produces no text at all, the user gets a clear message."""
+    llm = FakeLLM([text_turn()])
+    agent_env.get_llm.return_value = llm
+
+    events = await collect(execute_rag_query_stream("hello", mock_user_id, MagicMock()))
+
+    assert events[0] == {"type": "text", "text": EMPTY_RESPONSE_MESSAGE}
+    assert agent_env.save.call_args[0][3] == EMPTY_RESPONSE_MESSAGE
+
+
+@pytest.mark.asyncio
+async def test_llm_timeout_raises_friendly_error(agent_env, mock_user_id):
+    """Model timeouts surface as TimeoutError with the user-facing message."""
+    llm = FakeLLM([[TimeoutError("slow")]])
+    agent_env.get_llm.return_value = llm
+
+    with pytest.raises(TimeoutError, match="taking too long") as exc:
+        await collect(execute_rag_query_stream("hi", mock_user_id, MagicMock()))
+
+    assert str(exc.value) == TIMEOUT_MESSAGE
+    agent_env.save.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("query", ["", "   "])
+async def test_empty_query_raises(query, mock_user_id):
+    """Empty or whitespace queries are rejected before any model call."""
     with pytest.raises(ValueError, match="Query cannot be empty"):
-        await execute_rag_query("", mock_user_id, session)
+        await collect(execute_rag_query_stream(query, mock_user_id, MagicMock()))
 
+
+# Test: execute_rag_query (non-streaming wrapper)
+
+
+@pytest.mark.asyncio
+async def test_execute_rag_query_returns_chat_response(agent_env, mock_user_id):
+    """The non-streaming API collects the stream into a ChatResponse."""
+    llm = FakeLLM([call_turn(query="vacation"), text_turn("20 ", "days.")])
+    agent_env.get_llm.return_value = llm
+
+    response = await execute_rag_query("vacation?", mock_user_id, MagicMock())
+
+    assert isinstance(response, ChatResponse)
+    assert response.answer == "20 days."
+    assert response.conversation_id == agent_env.conversation.conversation_id
+    assert len(response.sources) == 1
+
+
+@pytest.mark.asyncio
+async def test_execute_rag_query_empty_query(mock_user_id):
+    """Non-streaming path also rejects an empty query."""
     with pytest.raises(ValueError, match="Query cannot be empty"):
-        await execute_rag_query("   ", mock_user_id, session)
-
-
-# Test: execute_rag_query - No results from Milvus
-
-
-@pytest.mark.asyncio
-async def test_execute_rag_query_no_results(
-    session: AsyncSession, mock_user_id, mock_conversation
-):
-    """Test RAG query when no similar chunks are found."""
-
-    with patch(
-        "app.services.chat_service.get_or_create_conversation"
-    ) as mock_get_conversation, patch(
-        "app.services.chat_service.get_embedding_service"
-    ) as mock_get_embedding, patch(
-        "app.services.chat_service.get_milvus_service"
-    ) as mock_get_milvus, patch(
-        "app.services.chat_service._enrich_chunks_with_metadata"
-    ) as mock_enrich, patch(
-        "app.services.chat_service._generate_no_results_response"
-    ) as mock_no_results, patch(
-        "app.services.chat_service._save_to_conversation"
-    ) as mock_save:
-        # Setup mocks
-        mock_get_conversation.return_value = mock_conversation
-
-        mock_embedding_service = AsyncMock()
-        mock_embedding_service.embed_query.return_value = [0.1] * 1024
-        mock_get_embedding.return_value = mock_embedding_service
-
-        mock_milvus_service = AsyncMock()
-        mock_milvus_service.search_similar.return_value = []
-        mock_get_milvus.return_value = mock_milvus_service
-
-        mock_enrich.return_value = []
-        mock_no_results.return_value = (
-            "I don't have enough information in your documents to answer that question."
-        )
-
-        # Execute query
-        response = await execute_rag_query(
-            query="What is the vacation policy?", user_id=mock_user_id, db=session
-        )
-
-        # Assertions
-        assert isinstance(response, ChatResponse)
-        assert "don't have enough information" in response.answer
-        assert len(response.sources) == 0
-        mock_no_results.assert_called_once()
-        mock_save.assert_called_once()
-
-
-# Test: execute_rag_query - LLM timeout
-
-
-@pytest.mark.asyncio
-async def test_execute_rag_query_llm_timeout(
-    session: AsyncSession, mock_user_id, mock_conversation, mock_chunks
-):
-    """Test that LLM timeout is handled properly."""
-
-    with patch(
-        "app.services.chat_service.get_or_create_conversation"
-    ) as mock_get_conversation, patch(
-        "app.services.chat_service.get_embedding_service"
-    ) as mock_get_embedding, patch(
-        "app.services.chat_service.get_milvus_service"
-    ) as mock_get_milvus, patch(
-        "app.services.chat_service._enrich_chunks_with_metadata"
-    ) as mock_enrich, patch(
-        "app.services.chat_service.get_llm_service"
-    ) as mock_get_llm, patch(
-        "app.services.chat_service.get_last_messages"
-    ) as mock_get_messages, patch(
-        "app.services.chat_service.format_context_with_metadata"
-    ) as mock_format_context, patch(
-        "app.services.chat_service.format_user_prompt"
-    ) as mock_format_prompt:
-        # Setup mocks
-        mock_get_conversation.return_value = mock_conversation
-
-        mock_embedding_service = AsyncMock()
-        mock_embedding_service.embed_query.return_value = [0.1] * 1024
-        mock_get_embedding.return_value = mock_embedding_service
-
-        mock_milvus_service = AsyncMock()
-        mock_milvus_service.search_similar.return_value = mock_chunks
-        mock_get_milvus.return_value = mock_milvus_service
-
-        enriched_chunks = [
-            {**chunk, "document_name": "test.pdf"} for chunk in mock_chunks
-        ]
-        mock_enrich.return_value = enriched_chunks
-
-        mock_get_messages.return_value = []
-        mock_format_context.return_value = ("Context...", [])
-        mock_format_prompt.return_value = "Prompt..."
-
-        # Mock LLM timeout
-        mock_llm_service = AsyncMock()
-        mock_llm_service.generate_response.side_effect = TimeoutError("LLM timed out")
-        mock_get_llm.return_value = mock_llm_service
-
-        # Execute query and expect TimeoutError
-        with pytest.raises(TimeoutError, match="taking too long"):
-            await execute_rag_query(
-                query="What is the vacation policy?", user_id=mock_user_id, db=session
-            )
+        await execute_rag_query("", mock_user_id, MagicMock())
 
 
 # Test: _enrich_chunks_with_metadata
@@ -311,28 +422,19 @@ async def test_enrich_chunks_with_metadata_success(
     session: AsyncSession, sample_user, mock_document, mock_chunks
 ):
     """Test chunk enrichment with document metadata."""
-
-    # Update document to use real user_id
     mock_document.user_id = sample_user.user_id
-
-    # Add document to session
     session.add(mock_document)
     await session.commit()
     await session.refresh(mock_document)
 
-    # Update chunks to use real document_id
     for chunk in mock_chunks:
         chunk["document_id"] = mock_document.document_id
 
     with patch("app.services.chat_service.get_document_by_id") as mock_get_doc:
         mock_get_doc.return_value = mock_document
 
-        # Enrich chunks
-        enriched = await _enrich_chunks_with_metadata(
-            session, mock_chunks, mock_document.user_id
-        )
+        enriched = await _enrich_chunks_with_metadata(session, mock_chunks, mock_document.user_id)
 
-        # Assertions
         assert len(enriched) == 2
         assert enriched[0]["document_name"] == "test_document.pdf"
         assert enriched[1]["document_name"] == "test_document.pdf"
@@ -344,12 +446,9 @@ async def test_enrich_chunks_with_metadata_wrong_user(
     session: AsyncSession, mock_user_id, mock_document, mock_chunks
 ):
     """Test that chunks from different user's documents are filtered out."""
-
-    # Update chunks to use real document_id
     for chunk in mock_chunks:
         chunk["document_id"] = mock_document.document_id
 
-    # Mock document with different user_id
     wrong_user_doc = Document(
         document_id=mock_document.document_id,
         user_id=str(uuid.uuid4()),  # Different user!
@@ -363,33 +462,25 @@ async def test_enrich_chunks_with_metadata_wrong_user(
     with patch("app.services.chat_service.get_document_by_id") as mock_get_doc:
         mock_get_doc.return_value = wrong_user_doc
 
-        # Enrich chunks - should return empty because user doesn't match
         enriched = await _enrich_chunks_with_metadata(session, mock_chunks, mock_user_id)
 
-        # Assertions - user isolation enforced
         assert len(enriched) == 0
 
 
-# Test: _generate_no_results_response
+# Test: _no_results_hint
 
 
 @pytest.mark.asyncio
-async def test_generate_no_results_response_no_documents(
-    session: AsyncSession, mock_user_id
-):
-    """Test no results response when user has no documents."""
-    response = await _generate_no_results_response(mock_user_id, session)
+async def test_no_results_hint_no_documents(session: AsyncSession, mock_user_id):
+    """Hint says so when the user has no documents."""
+    hint = await _no_results_hint(mock_user_id, session)
 
-    assert "haven't uploaded any documents yet" in response
+    assert "not uploaded any documents" in hint
 
 
 @pytest.mark.asyncio
-async def test_generate_no_results_response_processing_documents(
-    session: AsyncSession, sample_user
-):
-    """Test no results response when documents are still processing."""
-
-    # Create a processing document
+async def test_no_results_hint_processing_documents(session: AsyncSession, sample_user):
+    """Hint says so when documents are still processing."""
     doc = Document(
         document_id=str(uuid.uuid4()),
         user_id=sample_user.user_id,
@@ -402,18 +493,14 @@ async def test_generate_no_results_response_processing_documents(
     session.add(doc)
     await session.commit()
 
-    response = await _generate_no_results_response(sample_user.user_id, session)
+    hint = await _no_results_hint(sample_user.user_id, session)
 
-    assert "still being processed" in response
+    assert "still being processed" in hint
 
 
 @pytest.mark.asyncio
-async def test_generate_no_results_response_no_relevant_info(
-    session: AsyncSession, sample_user
-):
-    """Test no results response when user has active documents but no relevant info."""
-
-    # Create an active document
+async def test_no_results_hint_no_relevant_info(session: AsyncSession, sample_user):
+    """Hint is the generic one when active documents exist but nothing matched."""
     doc = Document(
         document_id=str(uuid.uuid4()),
         user_id=sample_user.user_id,
@@ -426,10 +513,9 @@ async def test_generate_no_results_response_no_relevant_info(
     session.add(doc)
     await session.commit()
 
-    response = await _generate_no_results_response(sample_user.user_id, session)
+    hint = await _no_results_hint(sample_user.user_id, session)
 
-    assert "don't have enough information" in response
-    assert "Try rephrasing your question" in response
+    assert "No relevant excerpts" in hint
 
 
 # Test: _save_to_conversation
@@ -438,172 +524,25 @@ async def test_generate_no_results_response_no_relevant_info(
 @pytest.mark.asyncio
 async def test_save_to_conversation_success(mock_conversation):
     """Test saving user query and assistant response to conversation."""
-
     with patch("app.services.chat_service.add_message") as mock_add_message:
         mock_add_message.return_value = None
 
         await _save_to_conversation(
-            MagicMock(),  # db session mock
+            MagicMock(),
             mock_conversation.conversation_id,
             "What is the policy?",
             "The policy is...",
             [{"document_id": "doc1", "score": 0.95}],
         )
 
-        # Verify add_message called twice (user + assistant)
         assert mock_add_message.call_count == 2
 
-        # Verify user message
         user_call = mock_add_message.call_args_list[0]
         assert user_call[0][1] == mock_conversation.conversation_id
         assert user_call[0][2] == "user"
         assert user_call[0][3] == "What is the policy?"
 
-        # Verify assistant message
         assistant_call = mock_add_message.call_args_list[1]
         assert assistant_call[0][1] == mock_conversation.conversation_id
         assert assistant_call[0][2] == "assistant"
         assert assistant_call[0][3] == "The policy is..."
-
-
-# Test: execute_rag_query_stream - Basic streaming
-
-
-@pytest.mark.asyncio
-async def test_execute_rag_query_stream_success(
-    session: AsyncSession, mock_user_id, mock_conversation, mock_chunks
-):
-    """Test streaming RAG query execution."""
-
-    with patch(
-        "app.services.chat_service.get_or_create_conversation"
-    ) as mock_get_conversation, patch(
-        "app.services.chat_service.get_embedding_service"
-    ) as mock_get_embedding, patch(
-        "app.services.chat_service.get_milvus_service"
-    ) as mock_get_milvus, patch(
-        "app.services.chat_service._enrich_chunks_with_metadata"
-    ) as mock_enrich, patch(
-        "app.services.chat_service.get_llm_service"
-    ) as mock_get_llm, patch(
-        "app.services.chat_service._save_to_conversation"
-    ) as mock_save, patch(
-        "app.services.chat_service.get_last_messages"
-    ) as mock_get_messages, patch(
-        "app.services.chat_service.format_context_with_metadata"
-    ) as mock_format_context, patch(
-        "app.services.chat_service.format_user_prompt"
-    ) as mock_format_prompt:
-        # Setup mocks
-        mock_get_conversation.return_value = mock_conversation
-
-        mock_embedding_service = AsyncMock()
-        mock_embedding_service.embed_query.return_value = [0.1] * 1024
-        mock_get_embedding.return_value = mock_embedding_service
-
-        mock_milvus_service = AsyncMock()
-        mock_milvus_service.search_similar.return_value = mock_chunks
-        mock_get_milvus.return_value = mock_milvus_service
-
-        enriched_chunks = [
-            {**chunk, "document_name": "test.pdf"} for chunk in mock_chunks
-        ]
-        mock_enrich.return_value = enriched_chunks
-
-        mock_get_messages.return_value = []
-        mock_format_context.return_value = ("Context...", [])
-        mock_format_prompt.return_value = "Prompt..."
-
-        # Mock LLM streaming response
-        async def mock_stream_gen(system_prompt, user_prompt, timeout=10):
-            yield "You "
-            yield "get "
-            yield "15 "
-            yield "vacation "
-            yield "days."
-
-        mock_llm_service = AsyncMock()
-        mock_llm_service.generate_response_stream = mock_stream_gen
-        mock_get_llm.return_value = mock_llm_service
-
-        # Execute streaming query
-        chunks_received = []
-        metadata = None
-        async for chunk in execute_rag_query_stream(
-            query="What is the vacation policy?",
-            user_id=mock_user_id,
-            db=session,
-            conversation_id=mock_conversation.conversation_id,
-        ):
-            # Last chunk is metadata dict
-            if isinstance(chunk, dict):
-                metadata = chunk
-            else:
-                chunks_received.append(chunk)
-
-        # Assertions
-        assert len(chunks_received) == 5
-        assert "".join(chunks_received) == "You get 15 vacation days."
-        assert metadata is not None
-        assert "conversation_id" in metadata
-        assert "sources" in metadata
-        mock_save.assert_called_once()
-
-
-# Test: execute_rag_query_stream - Empty query
-
-
-@pytest.mark.asyncio
-async def test_execute_rag_query_stream_empty_query(session: AsyncSession, mock_user_id):
-    """Test that streaming with empty query raises ValueError."""
-    with pytest.raises(ValueError, match="Query cannot be empty"):
-        async for _ in execute_rag_query_stream("", mock_user_id, session):
-            pass
-
-
-# Test: execute_rag_query_stream - No results
-
-
-@pytest.mark.asyncio
-async def test_execute_rag_query_stream_no_results(
-    session: AsyncSession, mock_user_id, mock_conversation
-):
-    """Test streaming query when no similar chunks found."""
-
-    with patch(
-        "app.services.chat_service.get_or_create_conversation"
-    ) as mock_get_conversation, patch(
-        "app.services.chat_service.get_embedding_service"
-    ) as mock_get_embedding, patch(
-        "app.services.chat_service.get_milvus_service"
-    ) as mock_get_milvus, patch(
-        "app.services.chat_service._enrich_chunks_with_metadata"
-    ) as mock_enrich, patch(
-        "app.services.chat_service._generate_no_results_response"
-    ) as mock_no_results, patch(
-        "app.services.chat_service._save_to_conversation"
-    ) as mock_save:
-        mock_get_conversation.return_value = mock_conversation
-
-        mock_embedding_service = AsyncMock()
-        mock_embedding_service.embed_query.return_value = [0.1] * 1024
-        mock_get_embedding.return_value = mock_embedding_service
-
-        mock_milvus_service = AsyncMock()
-        mock_milvus_service.search_similar.return_value = []
-        mock_get_milvus.return_value = mock_milvus_service
-
-        mock_enrich.return_value = []
-        mock_no_results.return_value = "I don't have information about that."
-
-        # Execute streaming query
-        chunks_received = []
-        async for chunk in execute_rag_query_stream(
-            query="What is the vacation policy?", user_id=mock_user_id, db=session
-        ):
-            chunks_received.append(chunk)
-
-        # Assertions
-        assert len(chunks_received) == 1
-        assert "don't have information" in chunks_received[0]
-        mock_save.assert_called_once()

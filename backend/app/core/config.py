@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     # RAG generation calls include retrieved document context, so give them more
     # room than a bare prompt needs before the request is aborted as timed out.
     GEMINI_RAG_TIMEOUT_SECONDS: int = 30
+    # Thinking effort for chat/agent calls: "minimal", "low", "medium" or "high" (which
+    # levels are valid depends on the model). Empty leaves the model default. If the
+    # model rejects the setting, the call is retried without it.
+    GEMINI_THINKING_LEVEL: str = "low"
     EMBEDDING_MODEL: str = "models/gemini-embedding-001"
     # Embedding dimension: 768 (standard), 1024 (better quality - CURRENT), 3072 (maximum)
     # Higher = better semantic understanding but slower search and more storage
@@ -73,6 +77,7 @@ class Settings(BaseSettings):
     CONVERSATION_HISTORY_LIMIT: int = (
         5  # Number of previous messages to include for context
     )
+    AGENT_MAX_TOOL_ROUNDS: int = 3  # Max search rounds the chat agent may run per question
 
     # Storage Quotas
     STORAGE_QUOTA_DEFAULT: int = 1073741824  # 1GB in bytes

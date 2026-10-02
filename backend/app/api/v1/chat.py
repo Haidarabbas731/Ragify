@@ -29,8 +29,9 @@ async def chat_query(
 
     This endpoint:
     1. Validates rate limits (configurable per minute)
-    2. Executes RAG flow (embed → search → format → LLM → save)
-    3. Returns AI response with source citations (JSON or SSE stream)
+    2. Runs the chat agent: the model decides whether to answer directly or to search
+       the user's documents with a tool, then answers (JSON or SSE stream)
+    3. Returns the answer with the source documents it used
 
     **Rate Limit:** Configurable requests per minute (default: 100/minute)
 
@@ -43,7 +44,9 @@ async def chat_query(
 
     **Response:**
     - If stream=false: JSON with answer, sources, conversation_id, timestamp
-    - If stream=true: SSE stream with text chunks (data: {...})
+    - If stream=true: SSE stream of JSON events (data: {...}): {chunk} answer text,
+      {tool_call} / {tool_result} when the agent searches documents, and a final
+      {done, conversation_id, sources}
 
     **Error Responses:**
     - 400: Invalid query format
@@ -73,11 +76,7 @@ async def chat_query(
             # Return streaming response (SSE)
             async def stream_generator():
                 try:
-                    # Variables to store metadata from stream
-                    conversation_id_result = None
-                    sources_result = []
-
-                    async for chunk in execute_rag_query_stream(
+                    async for event in execute_rag_query_stream(
                         query=request.query,
                         user_id=current_user.user_id,
                         db=db,
@@ -85,24 +84,32 @@ async def chat_query(
                         collection_id=request.collection_id,
                         top_k=request.top_k,
                     ):
-                        # Check if this is metadata (dict) or text chunk (str)
-                        if isinstance(chunk, dict):
-                            # Store metadata for final message
-                            if "conversation_id" in chunk:
-                                conversation_id_result = chunk["conversation_id"]
-                            if "sources" in chunk:
-                                sources_result = chunk["sources"]
-                        else:
-                            # Format text chunk as SSE (Server-Sent Events)
-                            yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+                        event_type = event["type"]
 
-                    # Send final message with metadata
-                    final_data = {
-                        "done": True,
-                        "conversation_id": conversation_id_result,
-                        "sources": sources_result,
-                    }
-                    yield f"data: {json.dumps(final_data)}\n\n"
+                        if event_type == "text":
+                            payload = {"chunk": event["text"]}
+                        elif event_type == "tool_start":
+                            payload = {
+                                "tool_call": {"name": event["name"], "query": event["query"]}
+                            }
+                        elif event_type == "tool_end":
+                            payload = {
+                                "tool_result": {
+                                    "name": event["name"],
+                                    "chunks": event["chunks"],
+                                    "documents": event["documents"],
+                                    "error": event["error"],
+                                }
+                            }
+                        else:  # done
+                            payload = {
+                                "done": True,
+                                "conversation_id": event["conversation_id"],
+                                "sources": event["sources"],
+                            }
+
+                        # Format as SSE (Server-Sent Events)
+                        yield f"data: {json.dumps(payload)}\n\n"
 
                 except Exception as e:
                     logger.error(f"Streaming error: {e}")
