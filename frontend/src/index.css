@@ -154,4 +154,36 @@ html, body {
   .faq-answer > div {
     overflow: hidden;
   }
+
+  /* Agent status step swap: short, ease-out, with a touch of blur to bridge the
+     old and new label so they read as one object changing state. */
+  .agent-step-in {
+    animation: agentStepIn 150ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  /* Plain fade for content that appears once, e.g. the source documents line. */
+  .fade-in-soft {
+    animation: fadeInSoft 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  @keyframes agentStepIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+      filter: blur(2px);
+    }
+  }
+
+  @keyframes fadeInSoft {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Reduced motion keeps the fade (it aids comprehension) and drops the movement. */
+  @media (prefers-reduced-motion: reduce) {
+    .agent-step-in {
+      animation-name: fadeInSoft;
+    }
+  }
 }
