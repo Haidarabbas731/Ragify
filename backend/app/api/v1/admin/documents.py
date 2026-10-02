@@ -141,7 +141,6 @@ async def delete_document(
     # Initialize services
     b2_service = await get_b2_service()
     milvus_service = await get_milvus_service()
-    await milvus_service.connect()
 
     # Delete from B2
     try:
@@ -218,7 +217,6 @@ async def cleanup_user_documents(
     # Initialize services
     b2_service = await get_b2_service()
     milvus_service = await get_milvus_service()
-    await milvus_service.connect()
 
     deleted_count = 0
     errors = []
@@ -294,7 +292,6 @@ async def cleanup_all_documents(
     # Initialize services
     b2_service = await get_b2_service()
     milvus_service = await get_milvus_service()
-    await milvus_service.connect()
 
     # 1. MILVUS: Drop and recreate collection (nuclear cleanup)
     try:

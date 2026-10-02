@@ -128,6 +128,16 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 await _mark_document_error(db, document, error_msg)
                 return {"status": "error", "error": error_msg}
 
+            # Fail fast if the vector index cannot take this document (e.g. it was built with
+            # another embedding model), before spending embedding calls on it
+            milvus_service = await get_milvus_service()
+            try:
+                milvus_service.ensure_index_usable()
+            except RuntimeError as e:
+                error_msg = str(e)
+                await _mark_document_error(db, document, error_msg)
+                return {"status": "error", "error": error_msg}
+
             # Step 5: Generate embeddings for all chunks (batch processing)
             embedding_service = await get_embedding_service()
             try:
@@ -148,10 +158,7 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 return {"status": "error", "error": error_msg}
 
             # Step 6: Insert chunks + embeddings into Milvus
-            milvus_service = await get_milvus_service()
             try:
-                await milvus_service.connect()
-
                 # Prepare data for Milvus insertion
                 chunk_ids = []
                 chunk_texts = []

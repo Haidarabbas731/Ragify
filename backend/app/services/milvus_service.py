@@ -16,6 +16,10 @@ class MilvusService:
         self.client: MilvusClient | None = None
         self.collection_name = settings.MILVUS_COLLECTION
         self.embedding_dim = settings.EMBEDDING_DIMENSION
+        # Set when the existing collection was built with a different embedding model.
+        # Search and insert refuse to run, but the service stays connected so a cleanup
+        # (drop_and_recreate_collection) can fix it.
+        self.index_mismatch: str | None = None
 
     async def connect(self) -> bool:
         """
@@ -44,6 +48,12 @@ class MilvusService:
         if self.client is None:
             raise RuntimeError("Milvus not connected. Call connect() first.")
 
+    def ensure_index_usable(self):
+        """Refuse to read or write vectors from an index built with another embedding model."""
+        self._ensure_connected()
+        if self.index_mismatch:
+            raise RuntimeError(self.index_mismatch)
+
     async def _init_collection(self):
         """
         Create collection with schema if it doesn't exist.
@@ -59,15 +69,19 @@ class MilvusService:
         """
         self._ensure_connected()
 
+        self.index_mismatch = None
+
         if self.client.has_collection(self.collection_name):  # type: ignore
             built_with = self.client.describe_collection(self.collection_name).get("description")  # type: ignore
             if built_with != settings.embedding_fingerprint:
-                raise RuntimeError(
+                self.index_mismatch = (
                     f"Collection '{self.collection_name}' was built with embeddings "
                     f"'{built_with or 'unknown'}' but the app is configured for "
                     f"'{settings.embedding_fingerprint}'. Vectors from different models are "
                     "not comparable: drop the collection and re-upload your documents."
                 )
+                logger.error(self.index_mismatch)
+                return
             self.client.load_collection(self.collection_name)  # type: ignore
             logger.info(f"Collection '{self.collection_name}' already exists, loaded")
             return
@@ -112,7 +126,7 @@ class MilvusService:
         collection_id: str | None = None,
     ) -> bool:
         """Insert document chunks with embeddings into Milvus."""
-        self._ensure_connected()
+        self.ensure_index_usable()
 
         if not all(
             len(chunk_ids) == len(lst)
@@ -154,7 +168,7 @@ class MilvusService:
         collection_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """Search for similar chunks using vector similarity."""
-        self._ensure_connected()
+        self.ensure_index_usable()
 
         try:
             filter_expr = f"user_id == '{user_id}'"

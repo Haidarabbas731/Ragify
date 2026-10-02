@@ -161,7 +161,7 @@ async def health_check():
         from app.services.milvus_service import get_milvus_service
         milvus = await get_milvus_service()
         milvus.client.has_collection(settings.MILVUS_COLLECTION)  # type: ignore
-        services["milvus"] = "up"
+        services["milvus"] = "reindex required" if milvus.index_mismatch else "up"
     except Exception:
         pass
 
