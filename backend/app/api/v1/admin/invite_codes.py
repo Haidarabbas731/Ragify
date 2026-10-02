@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.dependencies import get_current_admin, get_db
+from app.api.dependencies import get_current_admin
+from app.db.database import get_session
 from app.models.user import User
 from app.schemas.admin import InviteCodeCreate, InviteCodeListParams, InviteCodeResponse
 from app.schemas.common import MessageResponse
@@ -17,7 +18,7 @@ router = APIRouter(prefix="/invite-codes", tags=["invite"])
 @router.post("", response_model=InviteCodeResponse, status_code=status.HTTP_201_CREATED)
 async def create_invite_code(
     data: InviteCodeCreate,
-    session: AsyncSession = Depends(get_db),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
     current_admin: User = Depends(get_current_admin),  # noqa: B008
 ):
     """
@@ -41,7 +42,7 @@ async def create_invite_code(
 @router.get("", response_model=list[InviteCodeResponse])
 async def get_invite_codes(
     params: InviteCodeListParams = Depends(),
-    session: AsyncSession = Depends(get_db),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
     current_admin: User = Depends(get_current_admin),  # noqa: B008
 ):
     """
@@ -62,7 +63,7 @@ async def get_invite_codes(
 @router.delete("/{code}", status_code=status.HTTP_200_OK, response_model=MessageResponse)
 async def revoke_code(
     code: str,
-    session: AsyncSession = Depends(get_db),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
     current_admin: User = Depends(get_current_admin),  # noqa: B008
 ):
     """

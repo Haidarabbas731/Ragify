@@ -7,7 +7,8 @@ Handles viewing and filtering administrative action logs.
 from fastapi import APIRouter, Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.dependencies import get_current_admin, get_db
+from app.api.dependencies import get_current_admin
+from app.db.database import get_session
 from app.models.user import User
 from app.schemas.admin import AuditLogListParams, AuditLogsListResponse
 from app.services.admin_service import list_audit_logs
@@ -20,7 +21,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def get_audit_logs(
     params: AuditLogListParams = Depends(),
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     List audit logs with filters (admin only).

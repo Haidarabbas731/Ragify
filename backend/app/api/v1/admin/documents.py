@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.dependencies import get_current_admin, get_db
+from app.api.dependencies import get_current_admin
+from app.db.database import get_session
 from app.models.document import Document
 from app.models.user import User
 from app.schemas.admin import (
@@ -29,7 +30,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def list_all_documents(
     params: AdminDocumentListParams = Depends(),
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     List all documents across all users (admin only).
@@ -106,7 +107,7 @@ async def list_all_documents(
 async def delete_document(
     document_id: str,
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Delete a specific document (hard delete, admin only).
@@ -176,7 +177,7 @@ async def delete_document(
 async def cleanup_user_documents(
     user_id: str,
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Delete all documents for a specific user (hard delete).
@@ -262,7 +263,7 @@ async def cleanup_user_documents(
 @router.delete("/documents/cleanup-all", status_code=status.HTTP_200_OK, response_model=CleanupAllResponse)
 async def cleanup_all_documents(
     admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> dict:
     """
     Delete ALL documents across all users (hard delete) - NUCLEAR OPTION.

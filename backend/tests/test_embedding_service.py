@@ -172,9 +172,7 @@ async def test_unknown_errors_propagate_unchanged(service):
 @pytest.mark.asyncio
 async def test_get_embedding_service_is_a_configured_singleton():
     """get_embedding_service returns one shared instance built from settings."""
-    import app.services.embedding_service as module
-
-    module._embedding_service = None
+    get_embedding_service.reset()
     with patch("app.services.embedding_service.cohere.AsyncClientV2") as client_cls:
         first = await get_embedding_service()
         second = await get_embedding_service()
@@ -183,4 +181,4 @@ async def test_get_embedding_service_is_a_configured_singleton():
     assert first.model_name == settings.EMBEDDING_MODEL
     assert first.embedding_dim == settings.EMBEDDING_DIMENSION
     client_cls.assert_called_once_with(api_key=settings.COHERE_API_KEY)
-    module._embedding_service = None
+    get_embedding_service.reset()

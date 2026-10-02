@@ -354,6 +354,7 @@ async def test_disconnect_when_not_connected():
 @pytest.mark.asyncio
 async def test_get_milvus_service_singleton():
     """Test Milvus service singleton pattern."""
+    get_milvus_service.reset()
     with patch("app.services.milvus_service.MilvusService") as MockMilvusService:
         mock_instance = MockMilvusService.return_value
         mock_instance.connect = AsyncMock(return_value=True)
@@ -364,6 +365,7 @@ async def test_get_milvus_service_singleton():
         assert service1 is service2
         MockMilvusService.assert_called_once()
         mock_instance.connect.assert_called_once()
+    get_milvus_service.reset()
 
 
 @pytest.mark.asyncio

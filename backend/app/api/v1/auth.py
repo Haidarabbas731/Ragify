@@ -9,10 +9,10 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.api.dependencies import (
     AccessTokenBearer,
     RefreshTokenBearer,
-    get_db,
 )
 from app.core.config import settings
 from app.core.security import decode_token, hash_password, validate_password_strength
+from app.db.database import get_session
 from app.schemas.common import MessageResponse
 from app.schemas.user import (
     LogoutRequest,
@@ -48,7 +48,7 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     data: UserRegister,
-    session: AsyncSession = Depends(get_db),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ):
     """
     Register a new user.
@@ -74,7 +74,7 @@ async def register(
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(data: UserLogin, session: AsyncSession = Depends(get_db)):  # noqa: B008
+async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):  # noqa: B008
     """
     Authenticate user and return JWT tokens.
 
@@ -184,7 +184,7 @@ async def logout(
 @router.post("/password-reset/request", response_model=MessageResponse)
 async def request_password_reset(
     data: PasswordResetRequest,
-    session: AsyncSession = Depends(get_db),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ):
     """
     Request password reset email.
@@ -228,7 +228,7 @@ async def request_password_reset(
 @router.post("/password-reset/confirm", response_model=MessageResponse)
 async def confirm_password_reset(
     data: PasswordResetConfirm,
-    session: AsyncSession = Depends(get_db),  # noqa: B008
+    session: AsyncSession = Depends(get_session),  # noqa: B008
 ):
     """
     Confirm password reset with token and new password.
