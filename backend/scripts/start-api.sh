@@ -13,7 +13,7 @@ PYTHONPATH=/app python scripts/seed_admin.py
 
 echo "==> Starting API server on port ${PORT:-8000}..."
 if [[ "$ENVIRONMENT" == "development" ]]; then
-    exec uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}" --reload --reload-dir /app/app --reload-dir /app/main.py
+    exec uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}" --reload --reload-dir /app/app --reload-dir /app/main.py --timeout-graceful-shutdown 2
 else
     exec uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}"
 fi
