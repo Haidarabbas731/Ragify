@@ -24,6 +24,7 @@ def first_match(method: str, path: str):
         ("DELETE", "/api/v1/admin/documents/cleanup-all", "cleanup_all_documents"),
         ("DELETE", "/api/v1/admin/documents/some-document-id", "delete_document"),
         ("POST", "/api/v1/documents/delete-all-mine", "delete_all_my_documents"),
+        ("GET", "/api/v1/auth/config", "get_auth_config"),
     ],
 )
 def test_static_paths_reach_their_own_handler(method, path, handler):

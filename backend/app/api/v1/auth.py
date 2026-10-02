@@ -15,6 +15,7 @@ from app.core.security import decode_token, hash_password, validate_password_str
 from app.db.database import get_session
 from app.schemas.common import MessageResponse
 from app.schemas.user import (
+    AuthConfigResponse,
     LogoutRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
@@ -43,6 +44,17 @@ from app.services.user_service import get_user_by_email, update_user_password
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+@router.get("/config", response_model=AuthConfigResponse)
+async def get_auth_config() -> AuthConfigResponse:
+    """
+    Public sign-up settings (no authentication needed).
+
+    Lets the frontend show or hide the invite code field to match the server's INVITE_ONLY
+    setting, so one environment variable controls both sides.
+    """
+    return AuthConfigResponse(invite_only=settings.INVITE_ONLY)
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
