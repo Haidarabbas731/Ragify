@@ -103,6 +103,102 @@ async def list_all_documents(
     }
 
 
+# NOTE: static routes under /documents must be declared before /documents/{document_id}, or
+# FastAPI matches e.g. "cleanup-all" as a document id and returns 404.
+@router.delete("/documents/cleanup-all", status_code=status.HTTP_200_OK, response_model=CleanupAllResponse)
+async def cleanup_all_documents(
+    admin_user: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_session),
+) -> dict:
+    """
+    Delete ALL documents across all users (hard delete) - NUCLEAR OPTION.
+
+    Admin-only endpoint for testing. USE WITH EXTREME CAUTION!
+
+    This performs a complete system-wide cleanup:
+    - Drops and recreates Milvus collection (deletes ALL vectors)
+    - Deletes ALL files from B2 bucket
+    - Deletes ALL document records from PostgreSQL
+    - Resets all users' storage quotas to 0
+
+    This guarantees a completely clean state across all systems,
+    including orphaned data that may exist without database records.
+
+    Args:
+        admin_user: Authenticated admin user
+        db: Database session
+
+    Returns:
+        Cleanup result with counts and any errors
+    """
+    errors = []
+    milvus_cleaned = False
+    b2_deleted_count = 0
+    postgres_deleted_count = 0
+
+    # Initialize services
+    b2_service = await get_b2_service()
+    milvus_service = await get_milvus_service()
+
+    # 1. MILVUS: Drop and recreate collection (nuclear cleanup)
+    try:
+        await milvus_service.drop_and_recreate_collection()
+        milvus_cleaned = True
+    except Exception as e:
+        errors.append(f"Milvus cleanup failed: {str(e)}")
+
+    # 2. B2: Delete all files (nuclear cleanup)
+    try:
+        b2_deleted_count, b2_errors = await b2_service.delete_all_files()
+        if b2_errors:
+            errors.extend(b2_errors)
+    except Exception as e:
+        errors.append(f"B2 cleanup failed: {str(e)}")
+
+    # 3. PostgreSQL: Delete all document records
+    try:
+        result = await db.exec(select(Document))
+        documents = result.all()
+        postgres_deleted_count = len(documents)
+
+        for doc in documents:
+            await db.delete(doc)
+
+        # Reset all users' storage quotas
+        result = await db.exec(select(User))
+        users = result.all()
+        for user in users:
+            user.storage_used_bytes = 0
+            db.add(user)
+
+        await db.commit()
+    except Exception as e:
+        errors.append(f"PostgreSQL cleanup failed: {str(e)}")
+        await db.rollback()
+
+    # Build response
+    status_msg = "success" if not errors else "partial_success"
+    message_parts = []
+
+    if milvus_cleaned:
+        message_parts.append("Milvus collection reset")
+    if b2_deleted_count > 0:
+        message_parts.append(f"{b2_deleted_count} files from B2")
+    if postgres_deleted_count > 0:
+        message_parts.append(f"{postgres_deleted_count} documents from PostgreSQL")
+
+    message = "Deleted: " + ", ".join(message_parts) if message_parts else "No data to clean"
+
+    return {
+        "status": status_msg,
+        "message": message,
+        "deleted_count": postgres_deleted_count,
+        "milvus_cleaned": milvus_cleaned,
+        "b2_files_deleted": b2_deleted_count,
+        "errors": errors if errors else None,
+    }
+
+
 @router.delete("/documents/{document_id}", status_code=status.HTTP_200_OK, response_model=DeleteDocumentResponse)
 async def delete_document(
     document_id: str,
@@ -254,99 +350,5 @@ async def cleanup_user_documents(
         "message": f"Deleted {deleted_count} documents for user {user_id}",
         "deleted_count": deleted_count,
         "total_documents": len(documents),
-        "errors": errors if errors else None,
-    }
-
-
-@router.delete("/documents/cleanup-all", status_code=status.HTTP_200_OK, response_model=CleanupAllResponse)
-async def cleanup_all_documents(
-    admin_user: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_session),
-) -> dict:
-    """
-    Delete ALL documents across all users (hard delete) - NUCLEAR OPTION.
-
-    Admin-only endpoint for testing. USE WITH EXTREME CAUTION!
-
-    This performs a complete system-wide cleanup:
-    - Drops and recreates Milvus collection (deletes ALL vectors)
-    - Deletes ALL files from B2 bucket
-    - Deletes ALL document records from PostgreSQL
-    - Resets all users' storage quotas to 0
-
-    This guarantees a completely clean state across all systems,
-    including orphaned data that may exist without database records.
-
-    Args:
-        admin_user: Authenticated admin user
-        db: Database session
-
-    Returns:
-        Cleanup result with counts and any errors
-    """
-    errors = []
-    milvus_cleaned = False
-    b2_deleted_count = 0
-    postgres_deleted_count = 0
-
-    # Initialize services
-    b2_service = await get_b2_service()
-    milvus_service = await get_milvus_service()
-
-    # 1. MILVUS: Drop and recreate collection (nuclear cleanup)
-    try:
-        await milvus_service.drop_and_recreate_collection()
-        milvus_cleaned = True
-    except Exception as e:
-        errors.append(f"Milvus cleanup failed: {str(e)}")
-
-    # 2. B2: Delete all files (nuclear cleanup)
-    try:
-        b2_deleted_count, b2_errors = await b2_service.delete_all_files()
-        if b2_errors:
-            errors.extend(b2_errors)
-    except Exception as e:
-        errors.append(f"B2 cleanup failed: {str(e)}")
-
-    # 3. PostgreSQL: Delete all document records
-    try:
-        result = await db.exec(select(Document))
-        documents = result.all()
-        postgres_deleted_count = len(documents)
-
-        for doc in documents:
-            await db.delete(doc)
-
-        # Reset all users' storage quotas
-        result = await db.exec(select(User))
-        users = result.all()
-        for user in users:
-            user.storage_used_bytes = 0
-            db.add(user)
-
-        await db.commit()
-    except Exception as e:
-        errors.append(f"PostgreSQL cleanup failed: {str(e)}")
-        await db.rollback()
-
-    # Build response
-    status_msg = "success" if not errors else "partial_success"
-    message_parts = []
-
-    if milvus_cleaned:
-        message_parts.append("Milvus collection reset")
-    if b2_deleted_count > 0:
-        message_parts.append(f"{b2_deleted_count} files from B2")
-    if postgres_deleted_count > 0:
-        message_parts.append(f"{postgres_deleted_count} documents from PostgreSQL")
-
-    message = "Deleted: " + ", ".join(message_parts) if message_parts else "No data to clean"
-
-    return {
-        "status": status_msg,
-        "message": message,
-        "deleted_count": postgres_deleted_count,
-        "milvus_cleaned": milvus_cleaned,
-        "b2_files_deleted": b2_deleted_count,
         "errors": errors if errors else None,
     }
