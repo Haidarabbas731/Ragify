@@ -2,8 +2,9 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.services.providers.registry import Provider
 
-# Provider model ids look like "vendor/name:variant"
-MODEL_PATTERN = r"^[A-Za-z0-9._:/\-]+$"
+# Provider model ids look like "vendor/name:variant"; OpenRouter's "latest" aliases start
+# with a tilde, e.g. "~anthropic/claude-haiku-latest"
+MODEL_PATTERN = r"^~?[A-Za-z0-9._:/\-]+$"
 
 
 class AISettingsUpdate(BaseModel):

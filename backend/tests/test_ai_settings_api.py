@@ -129,6 +129,27 @@ def test_request_validation(bad):
         AISettingsUpdate(**values)
 
 
+@pytest.mark.parametrize(
+    "model",
+    [
+        "openai/gpt-4o-mini",
+        "google/gemini-2.5-flash:free",
+        "~anthropic/claude-haiku-latest",  # OpenRouter alias ids start with a tilde
+        "gemini-2.5-flash",
+    ],
+)
+def test_real_model_ids_are_accepted(model):
+    """Every shape of model id providers use passes validation."""
+    assert update(model=model).model == model
+
+
+@pytest.mark.parametrize("model", ["~", "a~b", "~~x", "vendor/~x"])
+def test_a_tilde_is_only_allowed_as_the_first_character_of_an_alias(model):
+    """The tilde is OpenRouter's alias marker, nothing else."""
+    with pytest.raises(ValidationError):
+        update(model=model)
+
+
 def test_pasted_keys_are_stripped():
     """Surrounding whitespace from copy and paste is removed."""
     assert update(api_key=f"  {KEY}\n").api_key == KEY
