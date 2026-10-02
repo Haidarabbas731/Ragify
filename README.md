@@ -29,6 +29,13 @@ uv sync
 uv run uvicorn main:app --reload
 ```
 
+Or run everything in Docker with Milvus Lite (skips the ~3GB standalone Milvus image):
+
+```bash
+cd backend
+docker compose -f docker-compose.yml -f docker-compose.lite.yml up --build
+```
+
 API docs at `http://localhost:8000/docs`. See [backend/README.md](backend/README.md) for full setup, testing, and API reference.
 
 ### Frontend
