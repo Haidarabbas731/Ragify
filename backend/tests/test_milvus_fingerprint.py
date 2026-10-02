@@ -42,15 +42,48 @@ async def test_existing_collection_with_matching_fingerprint_is_loaded(milvus):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("built_with", ["models/gemini-embedding-001:1024", "", None])
-async def test_existing_collection_with_other_fingerprint_is_refused(milvus, built_with):
-    """A collection from another model (or an unlabeled one) is refused with clear guidance."""
+async def test_existing_collection_with_other_fingerprint_is_flagged_not_fatal(milvus, built_with):
+    """A collection from another model (or an unlabeled one) connects but is marked unusable."""
     milvus.client.has_collection.return_value = True
     milvus.client.describe_collection.return_value = {"description": built_with}
 
-    with pytest.raises(RuntimeError, match="drop the collection and re-upload"):
-        await milvus._init_collection()
+    await milvus._init_collection()  # must not raise: cleanup has to be able to run
 
+    assert "drop the collection and re-upload" in milvus.index_mismatch
+    assert settings.embedding_fingerprint in milvus.index_mismatch
     milvus.client.load_collection.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_a_mismatched_index_refuses_search_and_insert_with_the_reason(milvus):
+    """Reads and writes fail with the explanation instead of mixing incompatible vectors."""
+    milvus.index_mismatch = "built with other embeddings"
+
+    with pytest.raises(RuntimeError, match="built with other embeddings"):
+        await milvus.search_similar("user-1", [0.1] * settings.EMBEDDING_DIMENSION)
+    with pytest.raises(RuntimeError, match="built with other embeddings"):
+        await milvus.insert_chunks(["c1"], "user-1", "doc-1", [[0.1]], ["t"], [0])
+    with pytest.raises(RuntimeError, match="built with other embeddings"):
+        milvus.ensure_index_usable()
+
+    milvus.client.search.assert_not_called()
+    milvus.client.insert.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_drop_and_recreate_clears_the_mismatch(milvus):
+    """The cleanup path rebuilds the collection with the current fingerprint and unblocks the index."""
+    milvus.index_mismatch = "built with other embeddings"
+    milvus.client.has_collection.side_effect = [True, False]  # exists, then gone after drop
+
+    await milvus.drop_and_recreate_collection()
+
+    milvus.client.drop_collection.assert_called_once_with(milvus.collection_name)
+    assert milvus.index_mismatch is None
+    assert milvus.client.create_collection.call_args.kwargs["schema"].description == (
+        settings.embedding_fingerprint
+    )
+    milvus.ensure_index_usable()  # no longer raises
 
 
 @pytest.mark.asyncio
