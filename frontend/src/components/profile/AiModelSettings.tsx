@@ -120,9 +120,9 @@ export function AiModelSettings() {
 
   const active = settings.has_key
     ? `Using your own ${PROVIDERS[settings.provider as AiProvider].label} key ending ${settings.key_last4} · ${settings.model}`
-    : settings.fallback_enabled
+    : settings.default_available
       ? `Using the default model: ${PROVIDERS[settings.default_provider].label} · ${settings.default_model}`
-      : "Add your own API key to use chat.";
+      : "No API key is set. Add one below to use chat.";
 
   return (
     <div className="space-y-5">
@@ -131,174 +131,163 @@ export function AiModelSettings() {
         <p className="text-sm text-muted-foreground font-sans">{active}</p>
       </div>
 
-      {!settings.key_storage_enabled ? (
-        <p className="rounded-lg bg-muted px-4 py-3 text-sm text-muted-foreground font-sans">
-          Personal API keys aren't enabled on this server, so chat uses the
-          default model.
-        </p>
-      ) : (
-        <>
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-foreground font-sans">
-              Provider
-            </legend>
-            <div className="inline-flex rounded-lg border border-border bg-muted p-1">
-              {settings.providers.map((name) => (
-                <label
-                  key={name}
-                  className="cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 ease-out has-[:checked]:bg-card has-[:checked]:text-foreground has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring font-sans"
-                >
-                  <input
-                    type="radio"
-                    name="ai-provider"
-                    value={name}
-                    checked={provider === name}
-                    onChange={() => {
-                      setProvider(name);
-                      // A model id from one provider is meaningless for the other
-                      setModel(
-                        name === settings.provider
-                          ? (settings.model ?? "")
-                          : "",
-                      );
-                    }}
-                    className="sr-only"
-                  />
-                  {PROVIDERS[name].label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className="space-y-2">
-            <Label htmlFor="ai-model" className="font-sans">
-              Model
-            </Label>
-            {provider === "openrouter" ? (
-              <ModelPicker
-                value={model}
-                onChange={setModel}
-                models={models}
-                isLoading={modelsLoading}
-                isError={modelsError}
-                placeholder={PROVIDERS[provider].modelPlaceholder}
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-foreground font-sans">
+          Provider
+        </legend>
+        <div className="inline-flex rounded-lg border border-border bg-muted p-1">
+          {settings.providers.map((name) => (
+            <label
+              key={name}
+              className="cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 ease-out has-[:checked]:bg-card has-[:checked]:text-foreground has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring font-sans"
+            >
+              <input
+                type="radio"
+                name="ai-provider"
+                value={name}
+                checked={provider === name}
+                onChange={() => {
+                  setProvider(name);
+                  // A model id from one provider is meaningless for the other
+                  setModel(
+                    name === settings.provider ? (settings.model ?? "") : "",
+                  );
+                }}
+                className="sr-only"
               />
+              {PROVIDERS[name].label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      <div className="space-y-2">
+        <Label htmlFor="ai-model" className="font-sans">
+          Model
+        </Label>
+        {provider === "openrouter" ? (
+          <ModelPicker
+            value={model}
+            onChange={setModel}
+            models={models}
+            isLoading={modelsLoading}
+            isError={modelsError}
+            placeholder={PROVIDERS[provider].modelPlaceholder}
+          />
+        ) : (
+          <Input
+            id="ai-model"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder={PROVIDERS[provider].modelPlaceholder}
+            autoComplete="off"
+            spellCheck={false}
+            className="font-mono text-sm"
+          />
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="ai-key" className="font-sans">
+          API key
+        </Label>
+        <div className="relative">
+          <Input
+            id="ai-key"
+            type={showKey ? "text" : "password"}
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder={
+              hasKeyForProvider
+                ? `Saved key ending ${settings.key_last4}. Leave empty to keep it.`
+                : "Paste your API key"
+            }
+            autoComplete="off"
+            spellCheck={false}
+            className="pr-10 font-mono text-sm"
+          />
+          <button
+            type="button"
+            onClick={() => setShowKey((v) => !v)}
+            aria-label={showKey ? "Hide API key" : "Show API key"}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {showKey ? (
+              <EyeOff className="h-4 w-4" />
             ) : (
-              <Input
-                id="ai-model"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder={PROVIDERS[provider].modelPlaceholder}
-                autoComplete="off"
-                spellCheck={false}
-                className="font-mono text-sm"
-              />
+              <Eye className="h-4 w-4" />
             )}
-          </div>
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground font-sans">
+          Get a key from{" "}
+          <a
+            href={PROVIDERS[provider].keyUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            {PROVIDERS[provider].label}
+          </a>
+          . It's stored encrypted and never shown again. Your questions and the
+          document excerpts they use are sent to this provider.
+        </p>
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="ai-key" className="font-sans">
-              API key
-            </Label>
-            <div className="relative">
-              <Input
-                id="ai-key"
-                type={showKey ? "text" : "password"}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder={
-                  hasKeyForProvider
-                    ? `Saved key ending ${settings.key_last4}. Leave empty to keep it.`
-                    : "Paste your API key"
-                }
-                autoComplete="off"
-                spellCheck={false}
-                className="pr-10 font-mono text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey((v) => !v)}
-                aria-label={showKey ? "Hide API key" : "Show API key"}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {showKey ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground font-sans">
-              Get a key from{" "}
-              <a
-                href={PROVIDERS[provider].keyUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary underline-offset-2 hover:underline"
-              >
-                {PROVIDERS[provider].label}
-              </a>
-              . It's stored encrypted and never shown again. Your questions and
-              the document excerpts they use are sent to this provider.
-            </p>
-          </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!modelOk || !keyOk || test.isPending}
+          onClick={() => test.mutate(body)}
+        >
+          {test.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : null}
+          Test connection
+        </Button>
+        <Button
+          type="button"
+          disabled={!modelOk || !keyOk || !changed || save.isPending}
+          onClick={handleSave}
+        >
+          {save.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : null}
+          Save
+        </Button>
+        {settings.has_key && (
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={reset.isPending}
+            className="text-sm text-muted-foreground underline-offset-2 hover:text-destructive hover:underline font-sans"
+          >
+            {confirmRemove ? "Click again to remove" : "Remove my key"}
+          </button>
+        )}
+      </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!modelOk || !keyOk || test.isPending}
-              onClick={() => test.mutate(body)}
-            >
-              {test.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Test connection
-            </Button>
-            <Button
-              type="button"
-              disabled={!modelOk || !keyOk || !changed || save.isPending}
-              onClick={handleSave}
-            >
-              {save.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Save
-            </Button>
-            {settings.has_key && (
-              <button
-                type="button"
-                onClick={handleRemove}
-                disabled={reset.isPending}
-                className="text-sm text-muted-foreground underline-offset-2 hover:text-destructive hover:underline font-sans"
-              >
-                {confirmRemove ? "Click again to remove" : "Remove my key"}
-              </button>
+      <output aria-live="polite" className="block min-h-5">
+        {(test.data || test.isError) && (
+          <span
+            key={test.data?.message ?? "error"}
+            className={`step-in inline-flex items-start gap-2 text-sm font-sans ${
+              test.data?.ok
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-destructive"
+            }`}
+          >
+            {test.data?.ok ? (
+              <Check className="mt-0.5 h-4 w-4 shrink-0" />
+            ) : (
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             )}
-          </div>
-
-          <output aria-live="polite" className="block min-h-5">
-            {(test.data || test.isError) && (
-              <span
-                key={test.data?.message ?? "error"}
-                className={`step-in inline-flex items-start gap-2 text-sm font-sans ${
-                  test.data?.ok
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-destructive"
-                }`}
-              >
-                {test.data?.ok ? (
-                  <Check className="mt-0.5 h-4 w-4 shrink-0" />
-                ) : (
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                )}
-                {test.data?.message ??
-                  getApiErrorMessage(test.error, "Couldn't run the test.")}
-              </span>
-            )}
-          </output>
-        </>
-      )}
+            {test.data?.message ??
+              getApiErrorMessage(test.error, "Couldn't run the test.")}
+          </span>
+        )}
+      </output>
     </div>
   );
 }
