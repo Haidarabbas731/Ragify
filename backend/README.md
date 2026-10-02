@@ -36,6 +36,13 @@ uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 uv run arq app.tasks.worker.WorkerSettings
 ```
 
+### Alternative: All-in-Docker with Milvus Lite
+Avoids the ~3GB standalone Milvus image. Postgres and Redis run as containers; the Milvus Lite server, ARQ worker and API all run inside the single `api` container (Lite allows one process per DB file).
+```bash
+docker compose -f docker-compose.yml -f docker-compose.lite.yml up --build
+```
+Requires Docker Compose v2.24+. Data persists on the `document_storage` volume; `down -v` wipes it.
+
 ### 4. Access API
 - **API Docs**: http://localhost:8000/docs
 - **Health Check**: http://localhost:8000/api/v1/health

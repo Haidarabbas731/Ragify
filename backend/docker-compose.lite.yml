@@ -1,0 +1,36 @@
+# Override for docker-compose.yml: run with Milvus Lite instead of the ~3GB standalone Milvus image.
+#
+# Milvus Lite only allows one process per DB file and its server binds to 127.0.0.1, so the
+# Lite server, ARQ worker and API all run inside the single `api` container.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.lite.yml up --build
+#   docker compose -f docker-compose.yml -f docker-compose.lite.yml down      # keep data
+#   docker compose -f docker-compose.yml -f docker-compose.lite.yml down -v   # wipe data
+#
+# Requires Docker Compose v2.24+ (for `!override`).
+
+services:
+
+  milvus:
+    profiles: ["full"]   # never started unless explicitly requested
+
+  worker:
+    profiles: ["full"]   # worker runs inside the api container in Lite mode
+
+  api:
+    command:
+      - bash
+      - -c
+      - |
+        rm -f /tmp/milvus_lite_uri
+        python scripts/start_milvus_lite.py /app/storage/milvus_data/ragify.db /tmp/milvus_lite_uri &
+        until [ -s /tmp/milvus_lite_uri ]; do sleep 1; done
+        export VECTOR_DB_URI="$$(cat /tmp/milvus_lite_uri)"
+        arq app.tasks.worker.WorkerSettings &
+        exec ./scripts/start-api.sh
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
