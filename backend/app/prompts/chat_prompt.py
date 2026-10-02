@@ -69,37 +69,3 @@ def format_search_results(chunks: list[dict], hint: str | None = None) -> dict:
     if not results:
         response["note"] = hint or "No relevant excerpts found in the user's documents."
     return response
-
-
-def extract_sources(chunks: list[dict]) -> list[dict]:
-    """
-    Build the unique source-document list shown under an answer.
-
-    Args:
-        chunks: Enriched chunks with document metadata
-
-    Returns:
-        list[dict]: One entry per document, in retrieval order
-    """
-    sources: list[dict] = []
-    seen_docs: set[str] = set()
-
-    for chunk in chunks:
-        document_id = chunk.get("document_id")
-        if not document_id or document_id in seen_docs:
-            continue
-        seen_docs.add(document_id)
-
-        document_name = chunk.get("document_name", "Unknown Document")
-        sources.append(
-            {
-                "document_id": document_id,
-                "document_name": document_name,
-                "filename": chunk.get("filename", document_name),
-                "chunk_index": chunk.get("chunk_index", 0),
-                "chunk_text": chunk.get("chunk_text", "")[:200],
-                "relevance_score": chunk.get("score", 0.0),
-            }
-        )
-
-    return sources

@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.chat import SourceCitation
+
 
 class Message(BaseModel):
     """Schema for a single message in a conversation."""
@@ -9,7 +11,7 @@ class Message(BaseModel):
     role: str = Field(pattern=r"^(user|assistant)$")
     content: str
     timestamp: datetime
-    sources: list[dict] = Field(default_factory=list)
+    sources: list[SourceCitation] = Field(default_factory=list)
 
 
 class ConversationResponse(BaseModel):

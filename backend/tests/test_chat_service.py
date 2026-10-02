@@ -18,10 +18,11 @@ from app.core.config import settings
 from app.models.conversation import Conversation
 from app.models.document import Document, DocumentStatus
 from app.prompts.chat_prompt import SEARCH_TOOL_NAME
-from app.schemas.chat import ChatResponse
+from app.schemas.chat import ChatResponse, SourceCitation
 from app.services.chat_service import (
     EMPTY_RESPONSE_MESSAGE,
     _enrich_chunks_with_metadata,
+    _extract_sources,
     _no_results_hint,
     _save_to_conversation,
     execute_rag_query,
@@ -185,8 +186,27 @@ async def test_document_question_uses_search_tool(agent_env, mock_user_id):
     done = events[-1]
     assert done["conversation_id"] == agent_env.conversation.conversation_id
     assert len(done["sources"]) == 1
-    assert done["sources"][0]["filename"] == "test_document.pdf"
-    assert done["sources"][0]["document_name"] == "test_document.pdf"
+    assert isinstance(done["sources"][0], SourceCitation)
+    assert done["sources"][0].filename == "test_document.pdf"
+    assert done["sources"][0].document_name == "test_document.pdf"
+
+
+def test_extract_sources_lists_each_document_once_in_retrieval_order():
+    """Several chunks of one document produce one source; unknown ids and missing ids are skipped."""
+    chunks = [
+        {"document_id": "d1", "document_name": "a.pdf", "chunk_text": "x" * 500, "score": 0.9},
+        {"document_id": "d2", "document_name": "b.pdf", "chunk_index": 3},
+        {"document_id": "d1", "document_name": "a.pdf"},
+        {"document_name": "no-id.pdf"},
+    ]
+
+    sources = _extract_sources(chunks)
+
+    assert [s.document_id for s in sources] == ["d1", "d2"]
+    assert sources[0].chunk_text == "x" * 200
+    assert sources[0].relevance_score == 0.9
+    assert sources[1].chunk_index == 3
+    assert sources[1].filename == "b.pdf"
 
 
 @pytest.mark.asyncio
@@ -472,7 +492,16 @@ async def test_save_to_conversation_success(mock_conversation):
             mock_conversation.conversation_id,
             "What is the policy?",
             "The policy is...",
-            [{"document_id": "doc1", "score": 0.95}],
+            [
+                SourceCitation(
+                    document_id="doc1",
+                    document_name="a.pdf",
+                    filename="a.pdf",
+                    chunk_index=0,
+                    chunk_text="text",
+                    relevance_score=0.95,
+                )
+            ],
         )
 
         assert mock_add_message.call_count == 2
@@ -486,3 +515,5 @@ async def test_save_to_conversation_success(mock_conversation):
         assert assistant_call[0][1] == mock_conversation.conversation_id
         assert assistant_call[0][2] == "assistant"
         assert assistant_call[0][3] == "The policy is..."
+        # stored as plain JSON-able dicts
+        assert assistant_call[0][4][0]["filename"] == "a.pdf"

@@ -12,7 +12,6 @@ from app.prompts.chat_prompt import (
     SEARCH_TOOL_DESCRIPTION,
     SEARCH_TOOL_NAME,
     SEARCH_TOOL_PARAMETERS,
-    extract_sources,
     format_search_results,
 )
 from app.schemas.chat import ChatResponse, SourceCitation
@@ -35,6 +34,40 @@ SEARCH_TOOL = ToolSpec(
 )
 
 EMPTY_RESPONSE_MESSAGE = "I wasn't able to put together an answer. Please try asking again."
+
+
+def _extract_sources(chunks: list[dict]) -> list[SourceCitation]:
+    """
+    Build the unique source-document list shown under an answer.
+
+    Args:
+        chunks: Enriched chunks with document metadata
+
+    Returns:
+        list[SourceCitation]: One entry per document, in retrieval order
+    """
+    sources: list[SourceCitation] = []
+    seen_docs: set[str] = set()
+
+    for chunk in chunks:
+        document_id = chunk.get("document_id")
+        if not document_id or document_id in seen_docs:
+            continue
+        seen_docs.add(document_id)
+
+        document_name = chunk.get("document_name", "Unknown Document")
+        sources.append(
+            SourceCitation(
+                document_id=document_id,
+                document_name=document_name,
+                filename=chunk.get("filename", document_name),
+                chunk_index=chunk.get("chunk_index", 0),
+                chunk_text=chunk.get("chunk_text", "")[:200],
+                relevance_score=chunk.get("score", 0.0),
+            )
+        )
+
+    return sources
 
 
 def _build_messages(history: list[dict], query: str) -> list[Message]:
@@ -171,7 +204,7 @@ async def _save_to_conversation(
     conversation_id: str,
     user_query: str,
     assistant_response: str,
-    sources: list[dict],
+    sources: list[SourceCitation],
 ) -> None:
     """
     Save user query and assistant response to conversation.
@@ -184,7 +217,9 @@ async def _save_to_conversation(
         sources: Source documents used for the answer
     """
     await add_message(db, conversation_id, "user", user_query)
-    await add_message(db, conversation_id, "assistant", assistant_response, sources)
+    await add_message(
+        db, conversation_id, "assistant", assistant_response, [s.model_dump() for s in sources]
+    )
 
     logger.info(f"Saved messages to conversation {conversation_id}")
 
@@ -208,7 +243,7 @@ async def execute_rag_query_stream(
         {"type": "text", "text": str}                      answer text as it is generated
         {"type": "tool_start", "name": str, "query": str}  the agent started a search
         {"type": "tool_end", "name": str, "chunks": int, "documents": int, "error": bool}
-        {"type": "done", "conversation_id": str, "sources": list[dict]}   always last
+        {"type": "done", "conversation_id": str, "sources": list[SourceCitation]}   always last
 
     Args:
         query: User's question
@@ -249,7 +284,7 @@ async def execute_rag_query_stream(
                 messages,
                 AGENT_SYSTEM_PROMPT,
                 tools=tools,
-                timeout=settings.GEMINI_RAG_TIMEOUT_SECONDS,
+                timeout=settings.LLM_TIMEOUT_SECONDS,
             ):
                 if event.kind == "text":
                     answer_parts.append(event.text)
@@ -290,7 +325,7 @@ async def execute_rag_query_stream(
                     "type": "tool_end",
                     "name": name,
                     "chunks": len(chunks),
-                    "documents": len(extract_sources(chunks)),
+                    "documents": len(_extract_sources(chunks)),
                     "error": failed,
                 }
                 results.append(ToolResult(call, result))
@@ -303,7 +338,7 @@ async def execute_rag_query_stream(
             answer = EMPTY_RESPONSE_MESSAGE
             yield {"type": "text", "text": answer}
 
-        sources = extract_sources(all_chunks)
+        sources = _extract_sources(all_chunks)
         await _save_to_conversation(db, conversation.conversation_id, query, answer, sources)
 
         yield {
@@ -349,7 +384,7 @@ async def execute_rag_query(
         Exception: If any step fails
     """
     answer_parts: list[str] = []
-    sources: list[dict] = []
+    sources: list[SourceCitation] = []
     result_conversation_id = ""
 
     async for event in execute_rag_query_stream(
@@ -369,7 +404,7 @@ async def execute_rag_query(
 
     return ChatResponse(
         answer="".join(answer_parts).strip(),
-        sources=[SourceCitation(**src) for src in sources],
+        sources=sources,
         conversation_id=result_conversation_id,
         timestamp=datetime.now(UTC),
     )
