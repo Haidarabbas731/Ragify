@@ -13,6 +13,15 @@ _CACHE_SECONDS = 3600
 _cache: tuple[float, list[AIModel]] | None = None
 
 
+def _is_free(model: dict) -> bool:
+    """A model is free if OpenRouter prices both prompt and completion tokens at zero."""
+    pricing = model.get("pricing") or {}
+    try:
+        return float(pricing["prompt"]) == 0 and float(pricing["completion"]) == 0
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
 async def list_openrouter_models() -> list[AIModel]:
     """
     List OpenRouter models usable by the chat agent.
@@ -48,7 +57,7 @@ async def list_openrouter_models() -> list[AIModel]:
                 id=m["id"],
                 name=m.get("name") or m["id"],
                 context_length=m.get("context_length"),
-                free=m["id"].endswith(":free"),
+                free=_is_free(m),
             )
             for m in raw
             if "tools" in (m.get("supported_parameters") or [])
