@@ -9,6 +9,9 @@ from app.core.config import settings
 from app.models.document import Document
 from app.prompts.chat_prompt import (
     AGENT_SYSTEM_PROMPT,
+    LIST_TOOL_DESCRIPTION,
+    LIST_TOOL_NAME,
+    LIST_TOOL_PARAMETERS,
     SEARCH_TOOL_DESCRIPTION,
     SEARCH_TOOL_NAME,
     SEARCH_TOOL_PARAMETERS,
@@ -32,6 +35,15 @@ SEARCH_TOOL = ToolSpec(
     description=SEARCH_TOOL_DESCRIPTION,
     parameters=SEARCH_TOOL_PARAMETERS,
 )
+
+LIST_TOOL = ToolSpec(
+    name=LIST_TOOL_NAME,
+    description=LIST_TOOL_DESCRIPTION,
+    parameters=LIST_TOOL_PARAMETERS,
+)
+
+# Most documents listed to the model in one call (the total is reported alongside)
+MAX_LISTED_DOCUMENTS = 50
 
 EMPTY_RESPONSE_MESSAGE = "I wasn't able to put together an answer. Please try asking again."
 
@@ -199,6 +211,49 @@ async def _search_documents(
     return format_search_results(enriched_chunks, hint), enriched_chunks
 
 
+async def _list_documents(
+    user_id: str, db: AsyncSession, collection_id: str | None
+) -> tuple[dict, int]:
+    """
+    Run the ``list_documents`` tool: the user's uploaded documents, newest first.
+
+    Args:
+        user_id: Authenticated user ID (data isolation)
+        db: Database session
+        collection_id: Optional collection filter from the request
+
+    Returns:
+        tuple[dict, int]: (tool response for the model, total number of matching documents)
+    """
+    conditions = [Document.user_id == user_id, Document.deleted_at.is_(None)]  # type: ignore
+    if collection_id:
+        conditions.append(Document.collection_id == collection_id)
+
+    total = (await db.exec(select(func.count(Document.document_id)).where(*conditions))).one()  # type: ignore
+    rows = await db.exec(
+        select(Document)
+        .where(*conditions)
+        .order_by(Document.uploaded_at.desc())  # type: ignore
+        .limit(MAX_LISTED_DOCUMENTS)
+    )
+    documents = [
+        {
+            "name": doc.filename,
+            "type": doc.file_type,
+            "status": doc.status,
+            "uploaded": doc.uploaded_at.date().isoformat(),
+        }
+        for doc in rows.all()
+    ]
+
+    result: dict = {"documents": documents, "total": total}
+    if total > len(documents):
+        result["note"] = f"Showing the {len(documents)} most recent of {total} documents."
+    if total == 0:
+        result["note"] = "The user has not uploaded any documents yet."
+    return result, total
+
+
 async def _save_to_conversation(
     db: AsyncSession,
     conversation_id: str,
@@ -277,7 +332,7 @@ async def execute_rag_query_stream(
 
         # Final round runs without tools so the model must answer with what it has.
         for round_index in range(max_rounds + 1):
-            tools = [SEARCH_TOOL] if round_index < max_rounds else None
+            tools = [SEARCH_TOOL, LIST_TOOL] if round_index < max_rounds else None
             assistant_turn: Message | None = None
 
             async for event in provider.stream_turn(
@@ -300,32 +355,41 @@ async def execute_rag_query_stream(
 
             for call in assistant_turn.tool_calls:
                 name = call.name
-                if name != SEARCH_TOOL_NAME:
+                if name not in (SEARCH_TOOL_NAME, LIST_TOOL_NAME):
                     logger.warning(f"Model requested unknown tool '{name}'")
                     results.append(ToolResult(call, {"error": f"Unknown tool: {name}"}))
                     continue
 
-                search_query = str(call.args.get("query") or "").strip() or query
-                yield {"type": "tool_start", "name": name, "query": search_query}
+                # The search text is shown to the user; listing has no argument
+                detail = (
+                    str(call.args.get("query") or "").strip() or query
+                    if name == SEARCH_TOOL_NAME
+                    else ""
+                )
+                yield {"type": "tool_start", "name": name, "query": detail}
 
+                chunks: list[dict] = []
+                documents = 0
+                failed = False
                 try:
-                    result, chunks = await _search_documents(
-                        search_query, user_id, db, collection_id, top_k
-                    )
+                    if name == SEARCH_TOOL_NAME:
+                        result, chunks = await _search_documents(
+                            detail, user_id, db, collection_id, top_k
+                        )
+                        documents = len(_extract_sources(chunks))
+                    else:
+                        result, documents = await _list_documents(user_id, db, collection_id)
                 except Exception as e:
-                    logger.error(f"Document search failed: {e}")
-                    result = {"error": "Document search is temporarily unavailable."}
-                    chunks = []
+                    logger.error(f"Tool '{name}' failed: {e}")
+                    result = {"error": "This tool is temporarily unavailable."}
                     failed = True
-                else:
-                    failed = False
 
                 all_chunks.extend(chunks)
                 yield {
                     "type": "tool_end",
                     "name": name,
                     "chunks": len(chunks),
-                    "documents": len(_extract_sources(chunks)),
+                    "documents": documents,
                     "error": failed,
                 }
                 results.append(ToolResult(call, result))

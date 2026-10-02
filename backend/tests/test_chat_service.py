@@ -17,12 +17,13 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.config import settings
 from app.models.conversation import Conversation
 from app.models.document import Document, DocumentStatus
-from app.prompts.chat_prompt import SEARCH_TOOL_NAME
+from app.prompts.chat_prompt import AGENT_SYSTEM_PROMPT, LIST_TOOL_NAME, SEARCH_TOOL_NAME
 from app.schemas.chat import ChatResponse, SourceCitation
 from app.services.chat_service import (
     EMPTY_RESPONSE_MESSAGE,
     _enrich_chunks_with_metadata,
     _extract_sources,
+    _list_documents,
     _no_results_hint,
     _save_to_conversation,
     execute_rag_query,
@@ -517,3 +518,154 @@ async def test_save_to_conversation_success(mock_conversation):
         assert assistant_call[0][3] == "The policy is..."
         # stored as plain JSON-able dicts
         assert assistant_call[0][4][0]["filename"] == "a.pdf"
+
+
+# Test: list_documents tool
+
+
+def make_document(user_id: str, filename: str, **overrides) -> Document:
+    """A processed document owned by the given user."""
+    values = {
+        "document_id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "filename": filename,
+        "file_type": "pdf",
+        "size_bytes": 10,
+        "storage_key": f"key/{uuid.uuid4()}",
+        "status": DocumentStatus.ACTIVE.value,
+    }
+    return Document(**(values | overrides))
+
+
+@pytest.mark.asyncio
+async def test_list_documents_returns_only_the_users_live_documents_newest_first(
+    session: AsyncSession, sample_user, sample_admin
+):
+    """Other users' documents and soft-deleted ones never appear; newest comes first."""
+    from datetime import UTC, datetime, timedelta
+
+    now = datetime.now(UTC)
+    session.add_all(
+        [
+            make_document(sample_user.user_id, "old.pdf", uploaded_at=now - timedelta(days=2)),
+            make_document(sample_user.user_id, "new.pdf", uploaded_at=now),
+            make_document(sample_user.user_id, "gone.pdf", deleted_at=now),
+            make_document(sample_admin.user_id, "someone-elses.pdf"),
+        ]
+    )
+    await session.commit()
+
+    result, total = await _list_documents(sample_user.user_id, session, None)
+
+    assert [d["name"] for d in result["documents"]] == ["new.pdf", "old.pdf"]
+    assert total == 2
+    assert result["documents"][0] == {
+        "name": "new.pdf",
+        "type": "pdf",
+        "status": "active",
+        "uploaded": now.date().isoformat(),
+    }
+    assert "note" not in result
+
+
+@pytest.mark.asyncio
+async def test_list_documents_respects_the_collection_filter(session: AsyncSession, sample_user):
+    """When chat is limited to a collection, only that collection's documents are listed."""
+    from app.models.collection import Collection
+
+    collection = Collection(user_id=sample_user.user_id, name="HR")
+    session.add(collection)
+    await session.flush()
+    session.add_all(
+        [
+            make_document(sample_user.user_id, "in.pdf", collection_id=collection.collection_id),
+            make_document(sample_user.user_id, "out.pdf"),
+        ]
+    )
+    await session.commit()
+
+    result, total = await _list_documents(sample_user.user_id, session, collection.collection_id)
+
+    assert [d["name"] for d in result["documents"]] == ["in.pdf"]
+    assert total == 1
+
+
+@pytest.mark.asyncio
+async def test_list_documents_caps_the_list_and_says_so(session: AsyncSession, sample_user):
+    """A long list is truncated, with the real total reported so the model can say so."""
+    session.add_all([make_document(sample_user.user_id, f"{i}.pdf") for i in range(3)])
+    await session.commit()
+
+    with patch("app.services.chat_service.MAX_LISTED_DOCUMENTS", 2):
+        result, total = await _list_documents(sample_user.user_id, session, None)
+
+    assert len(result["documents"]) == 2
+    assert total == 3
+    assert "2 most recent of 3" in result["note"]
+
+
+@pytest.mark.asyncio
+async def test_list_documents_for_a_user_with_none_explains_why(session: AsyncSession, sample_user):
+    """An empty library comes with a note, so the model tells the user to upload something."""
+    result, total = await _list_documents(sample_user.user_id, session, None)
+
+    assert result["documents"] == []
+    assert total == 0
+    assert "not uploaded any documents" in result["note"]
+
+
+@pytest.mark.asyncio
+async def test_agent_can_list_documents_without_searching(agent_env, mock_user_id):
+    """A list_documents call runs the listing, reports the count, and adds no sources."""
+    listing = {"documents": [{"name": "a.pdf"}, {"name": "b.pdf"}], "total": 2}
+    llm = FakeProvider([call_turn(name=LIST_TOOL_NAME), text_turn("You have two documents.")])
+
+    with patch("app.services.chat_service._list_documents", new=AsyncMock(return_value=(listing, 2))):
+        events = await collect(
+            execute_rag_query_stream("what documents do I have?", mock_user_id, MagicMock(), llm)
+        )
+
+    assert [e["type"] for e in events] == ["tool_start", "tool_end", "text", "done"]
+    assert events[0] == {"type": "tool_start", "name": LIST_TOOL_NAME, "query": ""}
+    assert events[1]["documents"] == 2
+    assert events[1]["chunks"] == 0
+    agent_env.embedding_service.embed_query.assert_not_called()
+    assert llm.requests[1]["messages"][-1].tool_results[0].result == listing
+    assert events[-1]["sources"] == []
+
+
+@pytest.mark.asyncio
+async def test_a_failing_list_is_reported_and_the_agent_still_answers(agent_env, mock_user_id):
+    """If listing breaks, the UI event is flagged and the model gets an error result."""
+    llm = FakeProvider([call_turn(name=LIST_TOOL_NAME), text_turn("Sorry, I can't list them.")])
+
+    with patch(
+        "app.services.chat_service._list_documents", new=AsyncMock(side_effect=RuntimeError("db"))
+    ):
+        events = await collect(
+            execute_rag_query_stream("list my docs", mock_user_id, MagicMock(), llm)
+        )
+
+    assert next(e for e in events if e["type"] == "tool_end")["error"] is True
+    assert "error" in llm.requests[1]["messages"][-1].tool_results[0].result
+    assert events[-1]["type"] == "done"
+
+
+@pytest.mark.asyncio
+async def test_both_tools_are_offered_until_the_last_round(agent_env, mock_user_id):
+    """The model can use either tool; the forced final round offers none."""
+    llm = FakeProvider([call_turn(query="a"), text_turn("Final.")])
+
+    with patch.object(settings, "AGENT_MAX_TOOL_ROUNDS", 1):
+        await collect(execute_rag_query_stream("q", mock_user_id, MagicMock(), llm))
+
+    assert {t.name for t in llm.requests[0]["tools"]} == {SEARCH_TOOL_NAME, LIST_TOOL_NAME}
+    assert llm.requests[1]["tools"] is None
+
+
+def test_the_prompt_covers_both_tools_and_broad_questions():
+    """Guards the behaviors that were missing: broad questions search, listing uses its tool."""
+    assert SEARCH_TOOL_NAME in AGENT_SYSTEM_PROMPT
+    assert LIST_TOOL_NAME in AGENT_SYSTEM_PROMPT
+    assert "what does the document say" in AGENT_SYSTEM_PROMPT
+    assert "Never ask the user to clarify before searching" in AGENT_SYSTEM_PROMPT
