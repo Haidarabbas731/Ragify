@@ -3,6 +3,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
+from google.genai import errors as genai_errors
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -16,6 +17,32 @@ from app.services.redis_service import check_rate_limit
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["chat"])
+
+RATE_LIMITED_MESSAGE = "The AI service has reached its usage limit. Please try again in a minute."
+BUSY_MESSAGE = "The AI service is busy right now. Please try again in a moment."
+GENERIC_STREAM_ERROR = "Something went wrong while generating the answer. Please try again."
+
+
+def _friendly_stream_error(error: Exception) -> str:
+    """
+    Turn an exception raised mid-stream into a short message that is safe to show users.
+
+    Provider error payloads (quota details, request IDs, URLs) stay in the server logs.
+
+    Args:
+        error: Exception raised while streaming the chat response
+
+    Returns:
+        str: User-facing message
+    """
+    if isinstance(error, (TimeoutError, ValueError)):
+        return str(error)
+    if isinstance(error, genai_errors.APIError):
+        if error.code == 429:
+            return RATE_LIMITED_MESSAGE
+        if error.code in (500, 502, 503, 504):
+            return BUSY_MESSAGE
+    return GENERIC_STREAM_ERROR
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -113,7 +140,7 @@ async def chat_query(
 
                 except Exception as e:
                     logger.error(f"Streaming error: {e}")
-                    error_data = json.dumps({"error": str(e)})
+                    error_data = json.dumps({"error": _friendly_stream_error(e)})
                     yield f"data: {error_data}\n\n"
 
             logger.info(f"Starting streaming chat for user {current_user.user_id}")
