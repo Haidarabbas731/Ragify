@@ -33,8 +33,10 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 COPY --chown=appuser:appgroup . .
 
-# Create a writable directory for local document storage (mounted as a volume in docker-compose.yml)
-RUN mkdir -p /app/storage && chown -R appuser:appgroup /app/storage
+# Create writable directories for local document storage and for the Milvus Lite database
+# (both mounted as volumes; the Milvus data is kept apart from documents so that "delete all
+# files" cleanups cannot remove the live vector database)
+RUN mkdir -p /app/storage /app/milvus_data && chown -R appuser:appgroup /app/storage /app/milvus_data
 
 RUN chmod +x scripts/start-api.sh scripts/start-worker.sh
 
