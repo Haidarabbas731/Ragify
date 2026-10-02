@@ -17,6 +17,7 @@ from app.models.document import Document, DocumentStatus
 from app.services.b2_service import get_b2_service
 from app.services.embedding_service import get_embedding_service
 from app.services.milvus_service import get_milvus_service
+from app.services.providers.base import ProviderRateLimitError, ProviderUnavailableError
 from app.services.redis_service import get_redis
 from app.utils.chunking import create_chunks_with_metadata
 from app.utils.text_extraction import extract_text
@@ -139,8 +140,8 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                     return {"status": "error", "error": error_msg}
 
             except Exception as e:
-                # Embedding API errors might be transient (rate limits)
-                if "quota" in str(e).lower() or "rate limit" in str(e).lower():
+                # Rate limits and provider outages are transient: retry later
+                if isinstance(e, ProviderRateLimitError | ProviderUnavailableError):
                     raise Retry(defer=60) from e  # Retry after 60 seconds
                 error_msg = f"Embedding generation failed: {str(e)}"
                 await _mark_document_error(db, document, error_msg)

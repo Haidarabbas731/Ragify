@@ -59,11 +59,23 @@ class MilvusService:
         self._ensure_connected()
 
         if self.client.has_collection(self.collection_name):  # type: ignore
+            built_with = self.client.describe_collection(self.collection_name).get("description")  # type: ignore
+            if built_with != settings.embedding_fingerprint:
+                raise RuntimeError(
+                    f"Collection '{self.collection_name}' was built with embeddings "
+                    f"'{built_with or 'unknown'}' but the app is configured for "
+                    f"'{settings.embedding_fingerprint}'. Vectors from different models are "
+                    "not comparable: drop the collection and re-upload your documents."
+                )
             self.client.load_collection(self.collection_name)  # type: ignore
             logger.info(f"Collection '{self.collection_name}' already exists, loaded")
             return
 
-        schema = MilvusClient.create_schema(auto_id=False, enable_dynamic_field=False)
+        schema = MilvusClient.create_schema(
+            auto_id=False,
+            enable_dynamic_field=False,
+            description=settings.embedding_fingerprint,
+        )
         schema.add_field("chunk_id", DataType.VARCHAR, is_primary=True, max_length=36)
         schema.add_field("user_id", DataType.VARCHAR, max_length=36)
         schema.add_field("document_id", DataType.VARCHAR, max_length=36)

@@ -1,185 +1,147 @@
 import asyncio
 import logging
 
-from google import genai
-from google.genai import types
+import cohere
+import httpx
 
 from app.core.config import settings
+from app.services.providers.base import (
+    ProviderAuthError,
+    ProviderRateLimitError,
+    ProviderTimeoutError,
+    ProviderUnavailableError,
+)
 
 logger = logging.getLogger(__name__)
 
-# Max concurrent embedding requests when embedding a batch of texts
-_BATCH_CONCURRENCY = 5
+# Cohere accepts at most 96 texts per embed request
+_BATCH_SIZE = 96
+# Concurrent embed requests when a document needs more than one batch
+_CONCURRENCY = 3
+# The SDK retries 408/429/5xx with backoff on its own; this is its retry budget per request
+_MAX_RETRIES = 3
+
+
+def _map_error(error: Exception) -> Exception:
+    """Translate Cohere/network errors into `ProviderError`s; pass others through."""
+    if isinstance(error, cohere.TooManyRequestsError):
+        return ProviderRateLimitError(str(error))
+    if isinstance(error, (cohere.UnauthorizedError, cohere.ForbiddenError)):
+        return ProviderAuthError(str(error))
+    if isinstance(
+        error,
+        (cohere.GatewayTimeoutError, cohere.ClientClosedRequestError, httpx.TimeoutException),
+    ):
+        return ProviderTimeoutError(str(error))
+    if isinstance(
+        error, (cohere.ServiceUnavailableError, cohere.InternalServerError, httpx.ConnectError)
+    ):
+        return ProviderUnavailableError(str(error))
+    return error
 
 
 class EmbeddingService:
-    """Google Gemini embedding service for text vectorization."""
+    """Cohere embedding service for text vectorization."""
 
-    def __init__(self):
-        """Initialize Gemini API client."""
-        self.model_name = settings.EMBEDDING_MODEL
-        self.embedding_dim = settings.EMBEDDING_DIMENSION
-        self._client: genai.Client | None = None
-
-    @property
-    def _configured(self) -> bool:
-        """Whether the Gemini client has been created."""
-        return self._client is not None
-
-    async def configure(self) -> bool:
+    def __init__(self, api_key: str, model: str, dimension: int):
         """
-        Create the Gemini API client with credentials.
-
-        Returns:
-            bool: True if configuration successful
-
-        Raises:
-            Exception: If Gemini API key is invalid
+        Args:
+            api_key: Cohere API key
+            model: Embedding model, e.g. ``embed-v4.0``
+            dimension: Output dimension (embed-v4.0: 256, 512, 1024 or 1536)
         """
-        try:
-            self._client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-            logger.info(f"Gemini API configured successfully. Model: {self.model_name}")
-            return True
+        self.model_name = model
+        self.embedding_dim = dimension
+        self._client = cohere.AsyncClientV2(api_key=api_key)
 
-        except Exception as e:
-            logger.error(f"Gemini API configuration failed: {e}")
-            self._client = None
-            raise
-
-    def _ensure_configured(self):
-        """Ensure Gemini API is configured before operations."""
-        if self._client is None:
-            raise RuntimeError("Gemini API not configured. Call configure() first.")
-
-    async def _embed(self, text: str, task_type: str) -> list[float]:
+    async def _embed(self, texts: list[str], input_type: str) -> list[list[float]]:
         """
-        Embed one text with the given task type and validate its dimension.
+        Embed texts in batches of up to 96 and validate each vector's dimension.
 
         Args:
-            text: Text to embed
-            task_type: Gemini task type (e.g. "retrieval_document", "retrieval_query")
+            texts: Non-empty texts to embed
+            input_type: ``search_document`` for indexing, ``search_query`` for questions
 
         Returns:
-            list[float]: Embedding vector
+            list[list[float]]: One vector per text, in input order
 
         Raises:
+            ProviderError: On rate limits, bad keys, timeouts or outages
             ValueError: If the returned dimension does not match the configured one
         """
-        assert self._client is not None  # guaranteed by _ensure_configured()
-        result = await self._client.aio.models.embed_content(
-            model=self.model_name,
-            contents=text,
-            config=types.EmbedContentConfig(
-                task_type=task_type,
-                output_dimensionality=self.embedding_dim,
-            ),
-        )
-        embedding = list(result.embeddings[0].values)  # type: ignore[index]
+        semaphore = asyncio.Semaphore(_CONCURRENCY)
 
-        if len(embedding) != self.embedding_dim:
-            raise ValueError(f"Expected {self.embedding_dim}-dim embedding, got {len(embedding)}")
+        async def embed_batch(batch: list[str]) -> list[list[float]]:
+            async with semaphore:
+                try:
+                    response = await self._client.embed(
+                        texts=batch,
+                        model=self.model_name,
+                        input_type=input_type,
+                        embedding_types=["float"],
+                        output_dimension=self.embedding_dim,
+                        request_options={"max_retries": _MAX_RETRIES},
+                    )
+                except Exception as e:
+                    mapped = _map_error(e)
+                    if mapped is e:
+                        raise
+                    raise mapped from e
+                return [list(vector) for vector in response.embeddings.float_ or []]
 
-        return embedding
+        batches = [texts[i : i + _BATCH_SIZE] for i in range(0, len(texts), _BATCH_SIZE)]
+        embeddings = [v for batch in await asyncio.gather(*map(embed_batch, batches)) for v in batch]
 
-    async def embed_text(self, text: str) -> list[float]:
-        """
-        Generate embedding for a single text.
-
-        Args:
-            text: Text to embed
-
-        Returns:
-            list[float]: Embedding vector (dimension from config)
-
-        Raises:
-            ValueError: If text is empty
-            Exception: If embedding generation fails
-        """
-        self._ensure_configured()
-
-        if not text or not text.strip():
-            raise ValueError("Text cannot be empty")
-
-        try:
-            embedding = await self._embed(text, "retrieval_document")
-
-            logger.debug(f"Generated embedding for text ({len(text)} chars)")
-            return embedding
-
-        except Exception as e:
-            logger.error(f"Embedding generation failed: {e}")
-            raise
+        if len(embeddings) != len(texts):
+            raise ValueError(f"Expected {len(texts)} embeddings, got {len(embeddings)}")
+        for vector in embeddings:
+            if len(vector) != self.embedding_dim:
+                raise ValueError(
+                    f"Expected {self.embedding_dim}-dim embedding, got {len(vector)}"
+                )
+        return embeddings
 
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """
-        Generate embeddings for multiple texts in batch.
+        Embed document chunks for indexing. Blank texts are skipped.
 
         Args:
-            texts: List of texts to embed
+            texts: Texts to embed
 
         Returns:
-            list[list[float]]: List of embedding vectors (dimension from config)
+            list[list[float]]: Embedding vectors for the non-blank texts, in order
 
         Raises:
-            ValueError: If texts list is empty
-            Exception: If batch embedding fails
+            ValueError: If the list is empty or every text is blank
         """
-        self._ensure_configured()
-
         if not texts:
             raise ValueError("Texts list cannot be empty")
 
-        try:
-            # Filter out empty texts and keep track of indices
-            valid_texts = [(i, text) for i, text in enumerate(texts) if text.strip()]
+        valid_texts = [text for text in texts if text.strip()]
+        if not valid_texts:
+            raise ValueError("All texts are empty")
 
-            if not valid_texts:
-                raise ValueError("All texts are empty")
-
-            # Embed valid texts concurrently (bounded), preserving input order
-            semaphore = asyncio.Semaphore(_BATCH_CONCURRENCY)
-
-            async def embed_one(text: str) -> list[float]:
-                async with semaphore:
-                    return await self._embed(text, "retrieval_document")
-
-            embeddings = await asyncio.gather(*(embed_one(text) for _i, text in valid_texts))
-
-            logger.info(f"Generated {len(embeddings)} embeddings in batch")
-            return embeddings
-
-        except Exception as e:
-            logger.error(f"Batch embedding generation failed: {e}")
-            raise
+        embeddings = await self._embed(valid_texts, "search_document")
+        logger.info(f"Generated {len(embeddings)} embeddings in batch")
+        return embeddings
 
     async def embed_query(self, query: str) -> list[float]:
         """
-        Generate embedding for search query.
+        Embed a search query.
 
         Args:
             query: Search query text
 
         Returns:
-            list[float]: Embedding vector (dimension from config)
+            list[float]: Embedding vector
 
         Raises:
-            ValueError: If query is empty
-            Exception: If embedding generation fails
+            ValueError: If the query is empty
         """
-        self._ensure_configured()
-
         if not query or not query.strip():
             raise ValueError("Query cannot be empty")
 
-        try:
-            embedding = await self._embed(query, "retrieval_query")
-
-            logger.debug(f"Generated query embedding ({len(query)} chars)")
-            return embedding
-
-        except Exception as e:
-            logger.error(f"Query embedding generation failed: {e}")
-            raise
+        return (await self._embed([query], "search_query"))[0]
 
 
 # Singleton instance
@@ -188,15 +150,16 @@ _embedding_service: EmbeddingService | None = None
 
 async def get_embedding_service() -> EmbeddingService:
     """
-    Get or create embedding service singleton.
+    Get or create the embedding service singleton.
 
     Returns:
-        EmbeddingService: Initialized embedding service instance
+        EmbeddingService: Embedding service configured from settings
     """
     global _embedding_service
 
     if _embedding_service is None:
-        _embedding_service = EmbeddingService()
-        await _embedding_service.configure()
+        _embedding_service = EmbeddingService(
+            settings.COHERE_API_KEY, settings.EMBEDDING_MODEL, settings.EMBEDDING_DIMENSION
+        )
 
     return _embedding_service
