@@ -22,17 +22,23 @@ interface ChatStreamOptions {
   onError?: (error: string) => void;
 }
 
+/** Name of the agent tool that lists the user's documents (matches the backend). */
+const LIST_TOOL = "list_documents";
+
 /**
  * What the chat agent is doing while an answer is being prepared.
  * thinking: deciding what to do; searching: running a document search;
- * reading: has results and is writing the answer; empty / failed: search ended badly.
+ * reading: has results and is writing the answer; empty / failed: search ended badly;
+ * listing / listed: looking up which documents the user has, and the result.
  */
 export type AgentPhase =
   | "thinking"
   | "searching"
   | "reading"
   | "empty"
-  | "failed";
+  | "failed"
+  | "listing"
+  | "listed";
 
 export interface AgentActivity {
   phase: AgentPhase;
@@ -172,29 +178,33 @@ export function useChatStream() {
             }
 
             if (data.tool_call) {
+              const { name, query } = data.tool_call;
               setState((prev) => ({
                 ...prev,
-                activity: { phase: "searching", query: data.tool_call?.query },
+                activity:
+                  name === LIST_TOOL
+                    ? { phase: "listing" }
+                    : { phase: "searching", query },
               }));
             }
 
             if (data.tool_result) {
               const {
+                name,
                 chunks,
                 documents,
-                error: searchFailed,
+                error: toolFailed,
               } = data.tool_result;
+              const phase: AgentPhase = toolFailed
+                ? "failed"
+                : name === LIST_TOOL
+                  ? "listed"
+                  : chunks > 0
+                    ? "reading"
+                    : "empty";
               setState((prev) => ({
                 ...prev,
-                activity: {
-                  phase: searchFailed
-                    ? "failed"
-                    : chunks > 0
-                      ? "reading"
-                      : "empty",
-                  chunks,
-                  documents,
-                },
+                activity: { phase, chunks, documents },
               }));
             }
 
