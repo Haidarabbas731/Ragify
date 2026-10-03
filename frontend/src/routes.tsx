@@ -10,6 +10,9 @@ import { useAuthStore } from "@/store/authStore";
 const LandingPage = lazy(() =>
   import("@/pages/LandingPage").then((m) => ({ default: m.LandingPage })),
 );
+const NotFoundPage = lazy(() =>
+  import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })),
+);
 const LoginPage = lazy(() =>
   import("@/pages/auth/LoginPage").then((m) => ({ default: m.LoginPage })),
 );
@@ -175,7 +178,7 @@ export function AppRoutes() {
       {import.meta.env.DEV && (
         <Route path="/test-error" element={<TestErrorPage />} />
       )}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
