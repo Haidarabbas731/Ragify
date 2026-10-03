@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Logo } from "@/components/shared/Logo";
+import { Wordmark } from "@/components/shared/Wordmark";
 import { useAuthStore } from "@/store/authStore";
 
 const LINK_CLASS =
@@ -13,14 +13,7 @@ export function LandingFooter() {
     <footer className="border-t border-border">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-12 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex max-w-xs flex-col gap-3">
-          <Link
-            to="/"
-            className="flex items-center gap-2.5"
-            aria-label="Ragify"
-          >
-            <Logo size={32} />
-            <span className="text-title text-foreground">Ragify</span>
-          </Link>
+          <Wordmark />
           <p className="text-body text-muted-foreground">
             Ask your documents and see where every answer came from.
           </p>

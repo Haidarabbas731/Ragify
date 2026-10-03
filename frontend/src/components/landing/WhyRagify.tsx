@@ -35,25 +35,27 @@ export function WhyRagify() {
           </h2>
         </Reveal>
 
-        <dl className="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-2">
+        <ul className="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-2">
           {POINTS.map((point, index) => (
-            <Reveal key={point.title} delay={(index % 2) * 70}>
-              <div className="flex gap-4">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
-                  <point.icon className="size-5" aria-hidden="true" />
+            <li key={point.title}>
+              <Reveal delay={(index % 2) * 70}>
+                <div className="flex gap-4">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground">
+                    <point.icon className="size-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="text-section text-foreground">
+                      {point.title}
+                    </h3>
+                    <p className="mt-1.5 text-body text-muted-foreground">
+                      {point.text}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <dt className="text-section text-foreground">
-                    {point.title}
-                  </dt>
-                  <dd className="mt-1.5 text-body text-muted-foreground">
-                    {point.text}
-                  </dd>
-                </div>
-              </div>
-            </Reveal>
+              </Reveal>
+            </li>
           ))}
-        </dl>
+        </ul>
       </div>
     </section>
   );

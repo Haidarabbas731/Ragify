@@ -31,10 +31,10 @@ export function LandingPage() {
       <LandingNav />
 
       <main>
-        <section className="pt-28 pb-20 sm:pt-32 sm:pb-24">
+        <section className="pt-32 pb-20 sm:pt-36 sm:pb-24">
           <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
             <div className="fade-in-soft flex flex-col items-start gap-6">
-              <h1 className="text-[clamp(2.5rem,6vw,4.25rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground">
+              <h1 className="text-[clamp(2.25rem,4.4vw,3.5rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground">
                 Ask your documents. See exactly where the answer came from.
               </h1>
               <p className="max-w-xl text-lg text-muted-foreground">
