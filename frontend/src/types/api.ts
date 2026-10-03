@@ -62,18 +62,15 @@ export interface ChangePasswordRequest {
 export interface UserStats {
   total_documents: number;
   total_chunks: number;
-  total_collections: number;
-  total_conversations: number;
-  storage_used_bytes: number;
-  storage_limit_bytes: number;
   storage_used_mb: number;
   storage_limit_mb: number;
   storage_percentage: number;
-  documents_by_status: {
-    active: number;
-    processing: number;
-    error: number;
-  };
+  collections_count: number;
+  conversations_count: number;
+  /** Counts by status; a status with no documents may be missing. */
+  documents_by_status: Partial<
+    Record<"active" | "processing" | "error", number>
+  >;
 }
 
 /**

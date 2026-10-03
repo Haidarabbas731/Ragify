@@ -5,6 +5,7 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
+import type { MouseEvent } from "react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -27,6 +28,8 @@ interface DocumentRowProps {
   document: Document;
   /** Show the selection checkbox column. */
   selectable?: boolean;
+  /** Fewer columns for narrow spaces: name (with size and age underneath), status and actions. */
+  compact?: boolean;
   selected?: boolean;
   collections?: { collection_id: string; name: string }[];
   onSelectChange?: (checked: boolean) => void;
@@ -41,6 +44,7 @@ interface DocumentRowProps {
 export function DocumentRow({
   document: doc,
   selectable = false,
+  compact = false,
   selected = false,
   collections = [],
   onSelectChange,
@@ -52,10 +56,22 @@ export function DocumentRow({
   const canRetry = doc.status === "error" && onRetry;
   const hasMenu = Boolean(canRetry || onMove || onDelete);
 
+  // Clicking anywhere on the row opens the document. Controls inside it keep their own
+  // behavior, and so does selecting text (e.g. to copy a filename).
+  const handleRowClick = (e: MouseEvent<HTMLTableRowElement>) => {
+    if (!e.currentTarget.contains(e.target as Node)) return; // e.g. clicks inside the portaled menu
+    if ((e.target as HTMLElement).closest("button, a, input, [role=checkbox]"))
+      return;
+    if (window.getSelection()?.toString()) return;
+    onOpen();
+  };
+
   return (
+    // The filename button below is the keyboard and screen-reader path; this is a mouse shortcut.
     <tr
+      onClick={handleRowClick}
       className={cn(
-        "border-t border-border transition-colors duration-150 ease-snap hover:bg-accent/50",
+        "cursor-pointer border-t border-border transition-colors duration-150 ease-snap hover:bg-accent/50",
         selected && "bg-secondary/40 hover:bg-secondary/50",
       )}
     >
@@ -89,7 +105,12 @@ export function DocumentRow({
                 {doc.error_message}
               </p>
             ) : (
-              <p className="truncate text-meta tabular-nums text-muted-foreground lg:hidden">
+              <p
+                className={cn(
+                  "truncate text-meta tabular-nums text-muted-foreground",
+                  !compact && "lg:hidden",
+                )}
+              >
                 {formatBytes(doc.size_bytes)} ·{" "}
                 {formatRelative(doc.uploaded_at)}
               </p>
@@ -98,27 +119,33 @@ export function DocumentRow({
         </div>
       </td>
 
-      <td className="hidden max-w-40 truncate px-3 py-3 text-body text-muted-foreground md:table-cell">
-        {doc.collection_name ?? "—"}
-      </td>
+      {!compact && (
+        <td className="hidden max-w-40 truncate px-3 py-3 text-body text-muted-foreground md:table-cell">
+          {doc.collection_name ?? "—"}
+        </td>
+      )}
 
       <td className="px-3 py-3">
         <StatusBadge status={doc.status} />
       </td>
 
-      <td className="hidden whitespace-nowrap px-3 py-3 text-body tabular-nums text-muted-foreground lg:table-cell">
-        {formatBytes(doc.size_bytes)}
-        {doc.status === "active" && doc.chunks_count > 0 && (
-          <span className="block text-meta">{doc.chunks_count} chunks</span>
-        )}
-      </td>
+      {!compact && (
+        <>
+          <td className="hidden whitespace-nowrap px-3 py-3 text-body tabular-nums text-muted-foreground lg:table-cell">
+            {formatBytes(doc.size_bytes)}
+            {doc.status === "active" && doc.chunks_count > 0 && (
+              <span className="block text-meta">{doc.chunks_count} chunks</span>
+            )}
+          </td>
 
-      <td
-        className="hidden whitespace-nowrap px-3 py-3 text-body text-muted-foreground lg:table-cell"
-        title={formatDate(doc.uploaded_at, { withTime: true })}
-      >
-        {formatRelative(doc.uploaded_at)}
-      </td>
+          <td
+            className="hidden whitespace-nowrap px-3 py-3 text-body text-muted-foreground lg:table-cell"
+            title={formatDate(doc.uploaded_at, { withTime: true })}
+          >
+            {formatRelative(doc.uploaded_at)}
+          </td>
+        </>
+      )}
 
       <td className="w-12 py-3 pr-3 text-right">
         {hasMenu && (

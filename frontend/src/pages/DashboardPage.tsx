@@ -1,225 +1,78 @@
-import { FileText, FolderOpen, HardDrive, Loader2 } from "lucide-react";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { DocumentTable } from "../components/documents/DocumentTable";
-import { ConfirmDialog } from "../components/shared/ConfirmDialog";
-import { Button } from "../components/ui/button";
-import {
-  useDeleteDocument,
-  useDocuments,
-  useRetryDocument,
-} from "../hooks/useDocuments";
-import { useUserStats } from "../hooks/useUserStats";
-import type { Document } from "../types/api";
+import { FilePlus2 } from "lucide-react";
+import { useOutletContext } from "react-router-dom";
+import { AskBar } from "@/components/dashboard/AskBar";
+import { CollectionsSummary } from "@/components/dashboard/CollectionsSummary";
+import { IndexingStrip } from "@/components/dashboard/IndexingStrip";
+import { RecentDocuments } from "@/components/dashboard/RecentDocuments";
+import { StatTiles } from "@/components/dashboard/StatTiles";
+import type { AppOutletContext } from "@/components/layout/AppLayout";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useUserStats } from "@/hooks/useUserStats";
 
+function DashboardSkeleton() {
+  return (
+    <div className="flex flex-col gap-4" aria-busy="true">
+      <Skeleton className="h-12 w-full rounded-2xl" />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Skeleton className="h-24 rounded-2xl" />
+        <Skeleton className="h-24 rounded-2xl" />
+        <Skeleton className="h-24 rounded-2xl" />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Skeleton className="h-64 rounded-2xl lg:col-span-2" />
+        <Skeleton className="h-64 rounded-2xl" />
+      </div>
+    </div>
+  );
+}
+
+/** Overview: ask a question, see what is indexing, and jump back into documents and collections. */
 export function DashboardPage() {
-  const navigate = useNavigate();
-  const { data: statsData, isLoading, error } = useUserStats();
-  const { data: recentDocumentsData, refetch: refetchDocuments } = useDocuments(
-    {
-      page: 1,
-      limit: 5,
-      sort_by: "uploaded_at",
-      order: "desc",
-    },
-  );
+  const { openNewSource } = useOutletContext<AppOutletContext>();
+  const { data: stats, isLoading, error, refetch } = useUserStats();
 
-  const deleteDocumentMutation = useDeleteDocument();
-  const retryDocumentMutation = useRetryDocument();
-  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(
-    null,
-  );
+  const processing = stats?.documents_by_status.processing ?? 0;
 
-  const handleDeleteDocument = async (documentId: string) => {
-    try {
-      await deleteDocumentMutation.mutateAsync(documentId);
-      refetchDocuments();
-    } catch {
-      // handled by mutation hook
-    }
-  };
-
+  let content: React.ReactNode;
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <div className="text-center">
-          <Loader2 className="w-7 h-7 animate-spin text-[#7733ea] mx-auto mb-3" />
-          <p className="text-[13px] text-[#717187]">Loading dashboard…</p>
+    content = <DashboardSkeleton />;
+  } else if (error || !stats) {
+    content = (
+      <ErrorState
+        message="Couldn't load your dashboard."
+        onRetry={() => refetch()}
+      />
+    );
+  } else if (stats.total_documents === 0 && !processing) {
+    content = (
+      <EmptyState
+        icon={FilePlus2}
+        title="Add your first document"
+        description="Upload a PDF, Word, text or Markdown file. Once it is indexed you can ask questions and get answers with sources."
+        action={<Button onClick={openNewSource}>Upload a document</Button>}
+        className="mt-6 py-16"
+      />
+    );
+  } else {
+    content = (
+      <>
+        <AskBar />
+        <IndexingStrip count={processing} />
+        <StatTiles stats={stats} />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <RecentDocuments />
+          <CollectionsSummary />
         </div>
-      </div>
+      </>
     );
   }
-
-  if (error || !statsData) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <div className="text-center">
-          <p className="text-[13px] text-destructive mb-4">
-            Failed to load dashboard
-          </p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </div>
-      </div>
-    );
-  }
-
-  const storagePercentage = statsData.storage_percentage;
-
-  const kpis = [
-    {
-      label: "Documents",
-      value: statsData.total_documents.toLocaleString(),
-      icon: FileText,
-      accent: "#7733ea",
-    },
-    {
-      label: "Vector Chunks",
-      value: statsData.total_chunks.toLocaleString(),
-      icon: FolderOpen,
-      accent: "#153bf5",
-    },
-    {
-      label: "Storage Used",
-      value: `${statsData.storage_used_mb} MB`,
-      icon: HardDrive,
-      accent: "#7733ea",
-    },
-    {
-      label: "Storage Left",
-      value: `${(statsData.storage_limit_mb - statsData.storage_used_mb).toFixed(0)} MB`,
-      icon: HardDrive,
-      accent: "#153bf5",
-    },
-  ];
 
   return (
-    <div className="p-6 space-y-6">
-      {/* KPI cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {kpis.map((kpi) => (
-          <div
-            key={kpi.label}
-            className="rounded-2xl bg-card border border-border p-5 hover:bg-[rgba(0,51,255,0.02)] transition-colors"
-            style={{
-              boxShadow:
-                "0 1px 2px rgba(34,38,96,0.04), 0 8px 24px -12px rgba(34,38,96,0.08)",
-            }}
-          >
-            <div className="text-[12px] font-semibold text-[#717187] mb-2">
-              {kpi.label}
-            </div>
-            <div className="flex items-end justify-between gap-2">
-              <div
-                className="text-[28px] font-bold tracking-tight tabular-nums"
-                style={{ color: kpi.accent }}
-              >
-                {kpi.value}
-              </div>
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mb-0.5"
-                style={{ background: `${kpi.accent}14` }}
-              >
-                <kpi.icon className="w-4 h-4" style={{ color: kpi.accent }} />
-              </div>
-            </div>
-          </div>
-        ))}
-      </section>
-
-      {/* Storage bar */}
-      {storagePercentage > 0 && (
-        <div
-          className="rounded-2xl bg-card border border-border p-5"
-          style={{
-            boxShadow:
-              "0 1px 2px rgba(34,38,96,0.04), 0 8px 24px -12px rgba(34,38,96,0.08)",
-          }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-[14px] font-semibold text-[#222660]">
-                Storage
-              </h3>
-              <p className="text-[12px] text-[#717187] mt-0.5">
-                {statsData.storage_used_mb} MB used of{" "}
-                {statsData.storage_limit_mb} MB
-              </p>
-            </div>
-            <span
-              className={`text-[12px] font-semibold px-2.5 py-1 rounded-lg ${
-                storagePercentage >= 90
-                  ? "bg-[rgba(204,79,14,0.10)] text-[#cc4f0e]"
-                  : "bg-[rgba(0,51,255,0.06)] text-[#153bf5]"
-              }`}
-            >
-              {storagePercentage.toFixed(1)}% used
-              {storagePercentage >= 90 && " · Nearly full"}
-            </span>
-          </div>
-          <div className="h-2 rounded-full bg-[rgba(34,38,96,0.06)] overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${Math.min(storagePercentage, 100)}%`,
-                background:
-                  storagePercentage >= 90
-                    ? "#cc4f0e"
-                    : "linear-gradient(90deg, #7733ea, #153bf5)",
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Recent Documents */}
-      <div
-        className="rounded-2xl bg-card border border-border overflow-hidden"
-        style={{
-          boxShadow:
-            "0 1px 2px rgba(34,38,96,0.04), 0 8px 24px -12px rgba(34,38,96,0.08)",
-        }}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <div>
-            <h3 className="text-[14px] font-semibold text-[#222660]">
-              Recent Documents
-            </h3>
-            <p className="text-[12px] text-[#717187] mt-0.5">
-              Last 5 uploaded files
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate("/documents")}
-            className="text-[12px] font-semibold text-[#7733ea] hover:underline"
-          >
-            View all →
-          </button>
-        </div>
-
-        <div className="px-5 py-2">
-          <DocumentTable
-            documents={recentDocumentsData?.documents || []}
-            onOpen={(doc) => navigate(`/documents/${doc.document_id}`)}
-            onRetry={(doc) => retryDocumentMutation.mutate(doc.document_id)}
-            onDelete={setDocumentToDelete}
-          />
-        </div>
-      </div>
-      <ConfirmDialog
-        open={documentToDelete !== null}
-        onOpenChange={(open) => !open && setDocumentToDelete(null)}
-        tone="destructive"
-        title={`Delete “${documentToDelete?.filename ?? ""}”?`}
-        description="This permanently removes the file and its embeddings."
-        confirmLabel="Delete"
-        pending={deleteDocumentMutation.isPending}
-        onConfirm={async () => {
-          if (!documentToDelete) return;
-          await handleDeleteDocument(documentToDelete.document_id);
-          setDocumentToDelete(null);
-        }}
-      />
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4 sm:p-6">
+      {content}
     </div>
   );
 }

@@ -15,6 +15,12 @@ import { getRouteMeta } from "@/routeMeta";
 import { AppSidebar } from "./AppSidebar";
 import { Topbar } from "./Topbar";
 
+/** What the shell shares with the page it renders, read with `useOutletContext`. */
+export interface AppOutletContext {
+  /** Opens the New source dialog. */
+  openNewSource: () => void;
+}
+
 /** The signed-in app shell: sidebar, top bar and the routed page. */
 export function AppLayout() {
   const queryClient = useQueryClient();
@@ -64,7 +70,13 @@ export function AppLayout() {
             isChat ? "overflow-locked flex flex-col" : "overflow-y-auto",
           )}
         >
-          <Outlet />
+          <Outlet
+            context={
+              {
+                openNewSource: () => setNewSourceOpen(true),
+              } satisfies AppOutletContext
+            }
+          />
         </main>
       </div>
 

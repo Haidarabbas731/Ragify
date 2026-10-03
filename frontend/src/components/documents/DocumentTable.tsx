@@ -1,10 +1,13 @@
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import type { Document } from "@/types/api";
 import { DocumentRow } from "./DocumentRow";
 
 interface DocumentTableProps {
   documents: Document[];
   selectable?: boolean;
+  /** Narrow variant for dashboards: no outer border, fewer columns. */
+  compact?: boolean;
   selectedIds?: Set<string>;
   /** Header checkbox state: all, some (indeterminate) or none of the visible rows. */
   headerState?: boolean | "indeterminate";
@@ -21,6 +24,7 @@ interface DocumentTableProps {
 export function DocumentTable({
   documents,
   selectable = false,
+  compact = false,
   selectedIds,
   headerState = false,
   collections,
@@ -32,7 +36,12 @@ export function DocumentTable({
   onDelete,
 }: DocumentTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
+    <div
+      className={cn(
+        "overflow-hidden",
+        !compact && "rounded-2xl border border-border bg-card",
+      )}
+    >
       <table className="w-full table-fixed text-left">
         <thead>
           <tr className="text-meta text-muted-foreground">
@@ -48,27 +57,33 @@ export function DocumentTable({
             <th scope="col" className="py-2.5 pl-4 pr-3 font-medium">
               Name
             </th>
-            <th
-              scope="col"
-              className="hidden w-40 px-3 py-2.5 font-medium md:table-cell"
-            >
-              Collection
-            </th>
+            {!compact && (
+              <th
+                scope="col"
+                className="hidden w-40 px-3 py-2.5 font-medium md:table-cell"
+              >
+                Collection
+              </th>
+            )}
             <th scope="col" className="w-32 px-3 py-2.5 font-medium">
               Status
             </th>
-            <th
-              scope="col"
-              className="hidden w-28 px-3 py-2.5 font-medium lg:table-cell"
-            >
-              Size
-            </th>
-            <th
-              scope="col"
-              className="hidden w-44 px-3 py-2.5 font-medium lg:table-cell"
-            >
-              Uploaded
-            </th>
+            {!compact && (
+              <>
+                <th
+                  scope="col"
+                  className="hidden w-28 px-3 py-2.5 font-medium lg:table-cell"
+                >
+                  Size
+                </th>
+                <th
+                  scope="col"
+                  className="hidden w-44 px-3 py-2.5 font-medium lg:table-cell"
+                >
+                  Uploaded
+                </th>
+              </>
+            )}
             <th scope="col" className="w-12 py-2.5 pr-3">
               <span className="sr-only">Actions</span>
             </th>
@@ -80,6 +95,7 @@ export function DocumentTable({
               key={doc.document_id}
               document={doc}
               selectable={selectable}
+              compact={compact}
               selected={selectedIds?.has(doc.document_id)}
               collections={collections}
               onSelectChange={(checked) => onToggle?.(doc.document_id, checked)}
