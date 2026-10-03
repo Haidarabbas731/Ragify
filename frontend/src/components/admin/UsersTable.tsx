@@ -89,7 +89,7 @@ export function UsersTable({
               </TableCell>
               <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">
                 {formatBytes(user.storage_used_bytes)}
-                <span className="text-muted-foreground/70">
+                <span className="text-muted-foreground">
                   {" "}
                   / {formatBytes(user.storage_limit_bytes)}
                 </span>

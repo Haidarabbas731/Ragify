@@ -47,7 +47,7 @@ export function CollectionCard({
         <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
           <FolderOpen className="size-4" aria-hidden="true" />
         </div>
-        <h3 className="min-w-0 flex-1 pt-1.5 text-section">
+        <h2 className="min-w-0 flex-1 pt-1.5 text-section">
           <Link
             to={`/documents?collection=${collection_id}`}
             className="block truncate rounded-sm outline-none after:absolute after:inset-0 after:rounded-2xl focus-visible:after:ring-2 focus-visible:after:ring-ring"
@@ -55,7 +55,7 @@ export function CollectionCard({
           >
             {name}
           </Link>
-        </h3>
+        </h2>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -86,7 +86,8 @@ export function CollectionCard({
       <p
         className={cn(
           "line-clamp-2 min-h-[2lh] text-body",
-          description ? "text-muted-foreground" : "text-muted-foreground/60",
+          "text-muted-foreground",
+          !description && "italic",
         )}
       >
         {description || "No description"}

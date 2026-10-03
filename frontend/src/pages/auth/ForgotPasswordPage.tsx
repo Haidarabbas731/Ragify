@@ -68,7 +68,7 @@ export function ForgotPasswordPage() {
             <button
               type="button"
               onClick={() => setSentTo(null)}
-              className="font-medium text-primary underline-offset-4 hover:underline"
+              className="font-medium text-primary underline underline-offset-4"
             >
               Try again
             </button>

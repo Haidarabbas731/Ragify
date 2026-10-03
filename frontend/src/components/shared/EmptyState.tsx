@@ -33,7 +33,7 @@ export function EmptyState({
         </div>
       )}
       <div className="flex flex-col gap-1">
-        <h3 className="text-section text-foreground">{title}</h3>
+        <h2 className="text-section text-foreground">{title}</h2>
         {description && (
           <p className="max-w-sm text-body text-muted-foreground">
             {description}
