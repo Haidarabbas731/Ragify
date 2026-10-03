@@ -17,19 +17,14 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
       <Link
         to="/dashboard"
         onClick={onNavigate}
-        className="flex h-16 shrink-0 items-center gap-2.5 border-b border-border px-5"
+        className="flex h-16 shrink-0 items-center gap-3 border-b border-border px-5"
       >
-        <Logo size={32} />
-        <div className="leading-none">
-          <div className="text-section text-foreground">Ragify</div>
-          <div className="mt-1 text-overline font-normal text-muted-foreground">
-            Knowledge OS
-          </div>
-        </div>
+        <Logo size={36} />
+        <span className="text-brand text-foreground">Ragify</span>
       </Link>
 
       <div className="px-3 pt-3">
-        <Button asChild className="w-full justify-start">
+        <Button asChild size="sm" className="w-full justify-start">
           <Link to="/chat" onClick={onNavigate}>
             <Plus /> New chat
           </Link>

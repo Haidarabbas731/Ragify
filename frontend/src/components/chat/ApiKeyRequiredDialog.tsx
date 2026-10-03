@@ -43,7 +43,7 @@ export function ApiKeyRequiredDialog({
           <Button variant="outline" onClick={onClose}>
             Not now
           </Button>
-          <Button onClick={() => navigate("/profile?tab=preferences")}>
+          <Button onClick={() => navigate("/profile?tab=model")}>
             Add API key
           </Button>
         </DialogFooter>

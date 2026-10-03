@@ -1,4 +1,4 @@
-import { FileText, FolderOpen, HardDrive, Shield } from "lucide-react";
+import { FileText, FolderOpen, HardDrive, Shield, User } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -7,6 +7,7 @@ const LINKS = [
   { label: "Dashboard", to: "/dashboard", icon: HardDrive },
   { label: "Documents", to: "/documents", icon: FileText },
   { label: "Collections", to: "/collections", icon: FolderOpen },
+  { label: "Profile", to: "/profile", icon: User },
 ];
 
 interface SidebarNavProps {
@@ -30,7 +31,7 @@ export function SidebarNav({ onNavigate }: SidebarNavProps) {
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-body font-medium transition-colors duration-150 ease-snap [&_svg]:size-4 [&_svg]:shrink-0",
+              "flex items-center gap-3 rounded-lg px-2.5 py-1.5 text-body font-medium transition-colors duration-150 ease-snap [&_svg]:size-4 [&_svg]:shrink-0",
               isActive
                 ? "bg-secondary text-secondary-foreground"
                 : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",

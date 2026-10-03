@@ -115,7 +115,7 @@ export function ModelPicker({
               }`}
             >
               <span className="min-w-0">
-                <span className="block truncate text-foreground font-sans">
+                <span className="block truncate text-foreground">
                   {model.name}
                 </span>
                 <span className="block truncate font-mono text-xs text-muted-foreground">
@@ -123,7 +123,7 @@ export function ModelPicker({
                 </span>
               </span>
               {model.free && (
-                <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                <span className="shrink-0 rounded-full bg-success/10 px-2 py-0.5 text-meta font-medium text-success">
                   Free
                 </span>
               )}
@@ -133,7 +133,7 @@ export function ModelPicker({
       )}
 
       <p
-        className={`mt-1.5 text-xs font-sans ${
+        className={`mt-1.5 text-xs ${
           statusIsError ? "text-destructive" : "text-muted-foreground"
         }`}
       >

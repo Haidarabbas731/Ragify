@@ -72,7 +72,7 @@ export function AiModelSettings() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground font-sans">
+      <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading AI settings…
       </div>
     );
@@ -80,7 +80,7 @@ export function AiModelSettings() {
 
   if (error || !settings) {
     return (
-      <p className="py-3 text-sm text-destructive font-sans">
+      <p className="py-3 text-sm text-destructive">
         {getApiErrorMessage(error, "Couldn't load your AI settings.")}
       </p>
     );
@@ -141,19 +141,19 @@ export function AiModelSettings() {
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="font-semibold text-foreground font-sans">AI model</h3>
-        <p className="text-sm text-muted-foreground font-sans">{active}</p>
+        <h3 className="font-semibold text-foreground">AI model</h3>
+        <p className="text-sm text-muted-foreground">{active}</p>
       </div>
 
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-foreground font-sans">
+        <legend className="text-sm font-medium text-foreground">
           Provider
         </legend>
         <div className="inline-flex rounded-lg border border-border bg-muted p-1">
           {settings.providers.map((name) => (
             <label
               key={name}
-              className="cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 ease-out has-[:checked]:bg-card has-[:checked]:text-foreground has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring font-sans"
+              className="cursor-pointer rounded-md px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-150 ease-out has-[:checked]:bg-card has-[:checked]:text-foreground has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
             >
               <input
                 type="radio"
@@ -176,9 +176,7 @@ export function AiModelSettings() {
       </fieldset>
 
       <div className="space-y-2">
-        <Label htmlFor="ai-model" className="font-sans">
-          Model
-        </Label>
+        <Label htmlFor="ai-model">Model</Label>
         <ModelPicker
           id="ai-model"
           value={model}
@@ -191,9 +189,7 @@ export function AiModelSettings() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="ai-key" className="font-sans">
-          API key
-        </Label>
+        <Label htmlFor="ai-key">API key</Label>
         <div className="relative">
           <Input
             id="ai-key"
@@ -222,7 +218,7 @@ export function AiModelSettings() {
             )}
           </button>
         </div>
-        <p className="text-xs text-muted-foreground font-sans">
+        <p className="text-xs text-muted-foreground">
           Get a key from{" "}
           <a
             href={PROVIDERS[provider].keyUrl}
@@ -264,7 +260,7 @@ export function AiModelSettings() {
             type="button"
             onClick={handleRemove}
             disabled={reset.isPending}
-            className="text-sm text-muted-foreground underline-offset-2 hover:text-destructive hover:underline font-sans"
+            className="text-sm text-muted-foreground underline-offset-2 hover:text-destructive hover:underline"
           >
             {confirmRemove ? "Click again to remove" : "Remove my key"}
           </button>
@@ -275,10 +271,8 @@ export function AiModelSettings() {
         {(test.data || test.isError) && (
           <span
             key={test.data?.message ?? "error"}
-            className={`step-in inline-flex items-start gap-2 text-sm font-sans ${
-              test.data?.ok
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-destructive"
+            className={`step-in inline-flex items-start gap-2 text-sm ${
+              test.data?.ok ? "text-success" : "text-destructive"
             }`}
           >
             {test.data?.ok ? (
