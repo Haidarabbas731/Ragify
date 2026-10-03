@@ -7,8 +7,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   activateUser,
+  cleanupAllDocuments,
+  cleanupUserDocuments,
   createInviteCode,
-  deactivateInviteCode,
+  deleteAdminDocument,
   deleteAdminUser,
   getAdminAuditLogs,
   getAdminDocuments,
@@ -16,9 +18,11 @@ import {
   getAdminStats,
   getAdminUserDetails,
   getAdminUsers,
+  revokeInviteCode,
   suspendUser,
 } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/errors";
+import type { CreateInviteCodeRequest } from "@/types/api";
 
 // ============================================================================
 // System Stats
@@ -159,11 +163,8 @@ export const useCreateInviteCode = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (codeData: {
-      max_uses?: number;
-      expires_at?: string;
-      description?: string;
-    }) => createInviteCode(codeData),
+    mutationFn: (codeData: CreateInviteCodeRequest) =>
+      createInviteCode(codeData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "invite-codes"] });
       toast.success("Invite code created successfully");
@@ -176,33 +177,23 @@ export const useCreateInviteCode = () => {
 };
 
 /**
- * Hook to deactivate an invite code
- * @returns Mutation function and state for deactivating invite codes
+ * Hook to revoke an invite code
+ * @returns Mutation taking the code string (e.g. KB-XXXX-XXXX-XXXX)
  */
-export const useDeactivateInviteCode = () => {
+export const useRevokeInviteCode = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (codeId: string) => deactivateInviteCode(codeId),
+    mutationFn: (code: string) => revokeInviteCode(code),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "invite-codes"] });
-      toast.success("Invite code deactivated successfully");
+      toast.success("Invite code revoked");
     },
     onError: (error: unknown) => {
-      const message = getApiErrorMessage(
-        error,
-        "Failed to deactivate invite code",
-      );
-      toast.error(message);
+      toast.error(getApiErrorMessage(error, "Failed to revoke invite code"));
     },
   });
 };
-
-/**
- * Alias for useDeactivateInviteCode (revoke = deactivate)
- * @returns Mutation function and state for revoking invite codes
- */
-export const useRevokeInviteCode = useDeactivateInviteCode;
 
 // ============================================================================
 // Audit Logs
@@ -244,5 +235,68 @@ export const useAdminDocuments = (params?: {
     queryKey: ["admin", "documents", params],
     queryFn: () => getAdminDocuments(params),
     staleTime: 1000 * 30, // 30 seconds
+  });
+};
+
+/** Refresh everything a document delete can change. */
+function invalidateAfterDocumentDelete(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  queryClient.invalidateQueries({ queryKey: ["admin", "documents"] });
+  queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+  queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+  queryClient.invalidateQueries({ queryKey: ["documents"] });
+  queryClient.invalidateQueries({ queryKey: ["userStats"] });
+}
+
+/** Hook to permanently delete one document (any user). */
+export const useAdminDeleteDocument = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (documentId: string) => deleteAdminDocument(documentId),
+    onSuccess: () => {
+      invalidateAfterDocumentDelete(queryClient);
+      toast.success("Document deleted");
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete document"));
+    },
+  });
+};
+
+/** Hook to permanently delete every document of one user. */
+export const useCleanupUserDocuments = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => cleanupUserDocuments(userId),
+    onSuccess: (result) => {
+      invalidateAfterDocumentDelete(queryClient);
+      toast.success(
+        `Deleted ${result.deleted_count} ${result.deleted_count === 1 ? "document" : "documents"}`,
+      );
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete documents"));
+    },
+  });
+};
+
+/** Hook to permanently delete every document of every user. */
+export const useCleanupAllDocuments = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => cleanupAllDocuments(),
+    onSuccess: (result) => {
+      invalidateAfterDocumentDelete(queryClient);
+      toast.success(
+        `Deleted ${result.deleted_count} ${result.deleted_count === 1 ? "document" : "documents"} from every account`,
+      );
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to delete all documents"));
+    },
   });
 };

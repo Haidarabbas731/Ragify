@@ -1,31 +1,9 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { StatTile } from "@/components/shared/StatTile";
 import type { UserStats } from "@/types/api";
 import { StorageTile } from "./StorageTile";
 
 interface StatTilesProps {
   stats: UserStats;
-}
-
-function CountTile({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: number;
-  detail: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-5">
-        <p className="text-meta text-muted-foreground">{label}</p>
-        <p className="mt-1 text-stat tabular-nums text-foreground">
-          {value.toLocaleString()}
-        </p>
-        <p className="mt-3 text-meta text-muted-foreground">{detail}</p>
-      </CardContent>
-    </Card>
-  );
 }
 
 /** Documents, indexed passages and storage at a glance. */
@@ -40,14 +18,14 @@ export function StatTiles({ stats }: StatTilesProps) {
 
   return (
     <div className="grid gap-4 sm:grid-cols-3">
-      <CountTile
+      <StatTile
         label="Documents"
-        value={documents}
+        value={documents.toLocaleString()}
         detail={statusParts.join(" · ")}
       />
-      <CountTile
+      <StatTile
         label="Indexed passages"
-        value={stats.total_chunks}
+        value={stats.total_chunks.toLocaleString()}
         detail={`Across ${documents} document${documents === 1 ? "" : "s"}`}
       />
       <StorageTile

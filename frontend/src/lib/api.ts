@@ -5,12 +5,20 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { toast } from "sonner";
 import type {
+  AdminDocumentsResponse,
+  AdminStats,
+  AdminUserDetails,
+  AdminUsersResponse,
   AiModel,
   AiProvider,
   AiSettings,
   AiSettingsUpdate,
   AiTestResult,
+  AuditLogsResponse,
   AuthConfig,
+  CleanupResult,
+  CreateInviteCodeRequest,
+  InviteCode,
   MessageResponse,
 } from "../types/api";
 import type { TokenResponse } from "../types/auth";
@@ -600,20 +608,13 @@ export const deleteCollection = async (collectionId: string) => {
 // Admin API Methods
 // ============================================================================
 
-/**
- * Get system-wide statistics (admin only)
- * @returns System statistics
- */
-export const getAdminStats = async () => {
+/** System-wide statistics (admin only). */
+export const getAdminStats = async (): Promise<AdminStats> => {
   const { data } = await api.get("/admin/stats");
   return data;
 };
 
-/**
- * List all users with pagination and filters (admin only)
- * @param params - Query parameters for filtering and pagination
- * @returns Paginated user list
- */
+/** Paginated user list with filters (admin only). */
 export const getAdminUsers = async (params?: {
   page?: number;
   limit?: number;
@@ -621,110 +622,94 @@ export const getAdminUsers = async (params?: {
   role?: string;
   sort_by?: string;
   order?: "asc" | "desc";
-}) => {
+}): Promise<AdminUsersResponse> => {
   const { data } = await api.get("/admin/users", { params });
   return data;
 };
 
-/**
- * Get detailed user information (admin only)
- * @param userId - User ID
- * @returns User details with statistics
- */
-export const getAdminUserDetails = async (userId: string) => {
+/** One user with document, conversation and collection counts (admin only). */
+export const getAdminUserDetails = async (
+  userId: string,
+): Promise<AdminUserDetails> => {
   const { data } = await api.get(`/admin/users/${userId}`);
   return data;
 };
 
-/**
- * Suspend a user account (admin only)
- * @param userId - User ID to suspend
- * @param reason - Reason for suspension
- * @returns Success message
- */
+/** Suspend a user account with a reason (admin only). */
 export const suspendUser = async (userId: string, reason: string) => {
   const { data } = await api.post(`/admin/users/${userId}/suspend`, { reason });
   return data;
 };
 
-/**
- * Activate a suspended user account (admin only)
- * @param userId - User ID to activate
- * @returns Success message
- */
+/** Activate a suspended user account (admin only). */
 export const activateUser = async (userId: string) => {
   const { data } = await api.post(`/admin/users/${userId}/activate`);
   return data;
 };
 
-/**
- * Delete a user account (admin only)
- * @param userId - User ID to delete
- * @returns Success message
- */
+/** Delete a user account (admin only). */
 export const deleteAdminUser = async (userId: string) => {
   const { data } = await api.delete(`/admin/users/${userId}`);
   return data;
 };
 
-/**
- * List all invite codes (admin only)
- * @returns List of invite codes
- */
-export const getAdminInviteCodes = async () => {
+/** All invite codes (admin only). */
+export const getAdminInviteCodes = async (): Promise<InviteCode[]> => {
   const { data } = await api.get("/admin/invite-codes");
   return data;
 };
 
-/**
- * Create a new invite code (admin only)
- * @param codeData - Invite code creation data
- * @returns Created invite code
- */
-export const createInviteCode = async (codeData: {
-  max_uses?: number;
-  expires_at?: string;
-  description?: string;
-}) => {
+/** Create a new invite code (admin only). */
+export const createInviteCode = async (
+  codeData: CreateInviteCodeRequest,
+): Promise<InviteCode> => {
   const { data } = await api.post("/admin/invite-codes", codeData);
   return data;
 };
 
-/**
- * Deactivate an invite code (admin only)
- * @param codeId - Invite code ID
- * @returns Success message
- */
-export const deactivateInviteCode = async (codeId: string) => {
-  const { data } = await api.post(`/admin/invite-codes/${codeId}/deactivate`);
+/** Revoke an invite code by its code string, e.g. `KB-XXXX-XXXX-XXXX` (admin only). */
+export const revokeInviteCode = async (code: string) => {
+  const { data } = await api.delete(`/admin/invite-codes/${code}`);
   return data;
 };
 
-/**
- * List audit logs (admin only)
- * @param params - Query parameters for pagination
- * @returns Paginated audit log list
- */
+/** Paginated audit trail (admin only). */
 export const getAdminAuditLogs = async (params?: {
   page?: number;
   limit?: number;
-}) => {
+}): Promise<AuditLogsResponse> => {
   const { data } = await api.get("/admin/audit-logs", { params });
   return data;
 };
 
-/**
- * List all documents across all users (admin only)
- * @param params - Query parameters for filtering and pagination
- * @returns Paginated document list
- */
+/** Paginated documents across all users (admin only). */
 export const getAdminDocuments = async (params?: {
   page?: number;
   limit?: number;
   status?: string;
   sort_by?: string;
   order?: "asc" | "desc";
-}) => {
+}): Promise<AdminDocumentsResponse> => {
   const { data } = await api.get("/admin/documents", { params });
+  return data;
+};
+
+/** Permanently delete one document from the database, storage and vector index (admin only). */
+export const deleteAdminDocument = async (documentId: string) => {
+  const { data } = await api.delete(`/admin/documents/${documentId}`);
+  return data;
+};
+
+/** Permanently delete every document of one user (admin only). */
+export const cleanupUserDocuments = async (
+  userId: string,
+): Promise<CleanupResult> => {
+  const { data } = await api.delete(`/admin/users/${userId}/documents`);
+  return data;
+};
+
+/** Permanently delete every document of every user and reset the vector index (admin only). */
+export const cleanupAllDocuments = async (): Promise<CleanupResult> => {
+  const { data } = await api.delete("/admin/documents/cleanup-all");
   return data;
 };
