@@ -16,3 +16,15 @@ export const ROUTE_META: Record<string, { title: string; subtitle: string }> = {
 };
 
 export const DEFAULT_ROUTE_META = { title: "Ragify", subtitle: "" };
+
+/** Title and subtitle for any pathname, including dynamic chat and document routes. */
+export function getRouteMeta(pathname: string): {
+  title: string;
+  subtitle: string;
+} {
+  if (pathname.startsWith("/chat")) return { title: "New chat", subtitle: "" };
+  if (pathname.startsWith("/documents/")) {
+    return { title: "Document", subtitle: "Details and indexed chunks" };
+  }
+  return ROUTE_META[pathname] ?? DEFAULT_ROUTE_META;
+}

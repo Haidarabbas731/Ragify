@@ -224,6 +224,8 @@ export interface ConversationListItem {
   created_at: string;
   updated_at: string;
   last_message?: string | null;
+  /** Client-only: set on a conversation inserted into the sidebar before the server confirms it. */
+  client_added?: boolean;
 }
 
 /**

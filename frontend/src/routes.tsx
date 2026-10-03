@@ -1,5 +1,5 @@
 import { lazy, type ReactNode } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { AdminRoute } from "@/components/auth/AdminRoute";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -85,6 +85,17 @@ const AdminAuditLogs = lazy(() =>
   })),
 );
 
+/** Opens old `/chat?conversation=ID` links at `/chat/ID`; otherwise shows the chat page. */
+function ChatEntry() {
+  const [searchParams] = useSearchParams();
+  const legacyId = searchParams.get("conversation");
+  return legacyId ? (
+    <Navigate to={`/chat/${legacyId}`} replace />
+  ) : (
+    <ChatPage />
+  );
+}
+
 /** Sends signed-in users to the dashboard instead of showing a guest-only page. */
 function GuestOnly({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -128,17 +139,6 @@ export function AppRoutes() {
           </GuestOnly>
         }
       />
-      {/* Chat — full-screen dedicated layout, no AppLayout sidebar */}
-      <Route
-        path="/chat"
-        element={
-          <ProtectedRoute>
-            <DocumentStatusProvider>
-              <ChatPage />
-            </DocumentStatusProvider>
-          </ProtectedRoute>
-        }
-      />
       {/* All other authenticated pages share AppLayout (sidebar + top bar) */}
       <Route
         element={
@@ -149,6 +149,7 @@ export function AppRoutes() {
           </ProtectedRoute>
         }
       >
+        <Route path="/chat/:conversationId?" element={<ChatEntry />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/collections" element={<CollectionsPage />} />
