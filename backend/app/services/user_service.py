@@ -328,7 +328,7 @@ async def get_user_stats(session: AsyncSession, user_id: str) -> dict:
     # Count documents (exclude DELETED)
     doc_count_result = await session.exec(
         select(func.count()).where(
-            Document.user_id == user_id, Document.status != "DELETED"
+            Document.user_id == user_id, Document.status != "deleted"
         )
     )
     total_documents = doc_count_result.one()
@@ -336,7 +336,7 @@ async def get_user_stats(session: AsyncSession, user_id: str) -> dict:
     # Sum total chunks
     chunks_result = await session.exec(
         select(func.sum(Document.chunks_count)).where(
-            Document.user_id == user_id, Document.status != "DELETED"
+            Document.user_id == user_id, Document.status != "deleted"
         )
     )
     total_chunks = chunks_result.one() or 0
@@ -365,7 +365,7 @@ async def get_user_stats(session: AsyncSession, user_id: str) -> dict:
     # Group documents by status
     status_result = await session.exec(
         select(Document.status, func.count())
-        .where(Document.user_id == user_id, Document.status != "DELETED")
+        .where(Document.user_id == user_id, Document.status != "deleted")
         .group_by(Document.status)
     )
     documents_by_status = dict(status_result.all())
