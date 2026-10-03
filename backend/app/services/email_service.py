@@ -13,39 +13,25 @@ async def send_password_reset_email(to_email: str, reset_token: str) -> bool:
     """
     Send password reset email with secure token link.
 
-    Always logs the token to console for development/testing purposes.
-    Can be removed once frontend is integrated.
+    The token and link are secrets and are never logged.
 
     Args:
         to_email: Recipient email address
         reset_token: Cryptographically secure reset token
 
     Returns:
-        bool: True if email sent successfully or token logged
+        bool: True if the email was sent, or if email sending is not configured
     """
     reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
-
-    # Always log token to console for development/testing (no frontend yet)
-    logger.warning("=" * 80)
-    logger.warning("PASSWORD RESET TOKEN (Development Mode)")
-    logger.warning("=" * 80)
-    logger.warning(f"Email: {to_email}")
-    logger.warning(f"Token: {reset_token}")
-    logger.warning(f"Reset URL: {reset_url}")
-    logger.warning("")
-    logger.warning("Use this token to reset password via API:")
-    logger.warning("POST /api/v1/auth/password-reset/confirm")
-    logger.warning(
-        f'{{"token": "{reset_token}", "new_password": "YourNewPassword123!"}}'
-    )
-    logger.warning("=" * 80)
 
     # If Resend is not configured, return success (development mode)
     if (
         not settings.RESEND_API_KEY
         or settings.RESEND_API_KEY == "your-resend-api-key-here"
     ):
-        logger.info("Resend API key not configured - skipping email send")
+        logger.warning(
+            "Resend API key not configured - password reset email was not sent"
+        )
         return True
 
     params = {
@@ -219,7 +205,9 @@ async def send_welcome_email(to_email: str, user_email: str) -> bool:
         not settings.RESEND_API_KEY
         or settings.RESEND_API_KEY == "your-resend-api-key-here"
     ):
-        logger.info("Resend API key not configured - skipping email send")
+        logger.warning(
+            "Resend API key not configured - password reset email was not sent"
+        )
         return True
 
     params = {
