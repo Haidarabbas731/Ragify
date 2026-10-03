@@ -8,6 +8,7 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { FieldError } from "@/components/auth/FieldError";
 import { FormError } from "@/components/auth/FormError";
 import { PasswordInput } from "@/components/auth/PasswordInput";
+import { ResumePanel } from "@/components/auth/panels/ResumePanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,6 +51,7 @@ export function LoginPage() {
 
   return (
     <AuthShell
+      panel={<ResumePanel />}
       title="Sign in"
       description="Access your Ragify workspace."
       footer={

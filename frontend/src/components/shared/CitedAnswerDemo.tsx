@@ -1,40 +1,23 @@
-import { FileText, RotateCcw } from "lucide-react";
+import { FileText } from "lucide-react";
 import { useReducedMotion } from "motion/react";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { CitedText } from "./CitedText";
+import { ReplayButton } from "./ReplayButton";
 
 const QUESTION = "What does the policy say about refunds?";
 const BEFORE = "Refunds are issued ";
 const CITED = "within 14 days of the request";
 const AFTER = ", to the original payment method.";
 
-/** The cited passage: highlighted yellow once the answer points at it. */
-function Cited({ active, children }: { active: boolean; children: ReactNode }) {
-  return (
-    <mark
-      className={cn(
-        "rounded-sm bg-transparent bg-no-repeat px-0.5 text-inherit",
-        active && "text-highlight-foreground",
-      )}
-      style={{
-        backgroundImage: "linear-gradient(var(--highlight), var(--highlight))",
-        backgroundSize: active ? "100% 100%" : "0% 100%",
-        // The text turns dark only once the yellow has mostly covered it
-        transition:
-          "background-size 500ms var(--ease-out), color 200ms ease 300ms",
-      }}
-    >
-      {children}
-    </mark>
-  );
-}
-
 /**
+ * Used on the landing page and beside the sign in and sign up forms.
+ *
  * A small, honest picture of what Ragify does: a question is asked, the answer appears, and
  * the passage it came from lights up in the source document. Plays once; Replay runs it again.
  * Reduced motion shows the finished state.
  */
-export function HeroDemo() {
+export function CitedAnswerDemo() {
   const reduceMotion = useReducedMotion();
   const [run, setRun] = useState(0);
   const [typed, setTyped] = useState(QUESTION.length);
@@ -101,7 +84,7 @@ export function HeroDemo() {
           >
             <p className="text-body text-foreground">
               {BEFORE}
-              <Cited active={cited}>{CITED}</Cited>
+              <CitedText active={cited}>{CITED}</CitedText>
               {AFTER}
             </p>
             <p
@@ -132,7 +115,7 @@ export function HeroDemo() {
             <p>Orders can be cancelled at any time before they ship.</p>
             <p>
               {BEFORE}
-              <Cited active={cited}>{CITED}</Cited>
+              <CitedText active={cited}>{CITED}</CitedText>
               {AFTER}
             </p>
             <p>Shipping fees are not refundable once an order has left.</p>
@@ -140,19 +123,9 @@ export function HeroDemo() {
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setRun((n) => n + 1)}
-        disabled={!finished && !reduceMotion}
-        className={cn(
-          "ml-auto flex items-center gap-1.5 rounded-md px-2 py-1 text-meta text-muted-foreground transition-[color,opacity] duration-150 ease-snap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [@media(hover:hover)and(pointer:fine)]:hover:text-foreground",
-          !finished && !reduceMotion && "pointer-events-none opacity-0",
-          reduceMotion && "hidden",
-        )}
-      >
-        <RotateCcw className="size-3.5" aria-hidden="true" />
-        Replay
-      </button>
+      {!reduceMotion && (
+        <ReplayButton onClick={() => setRun((n) => n + 1)} visible={finished} />
+      )}
     </figure>
   );
 }

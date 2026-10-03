@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import { z } from "zod";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { FieldError } from "@/components/auth/FieldError";
+import { RecoveryPanel } from "@/components/auth/panels/RecoveryPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,7 @@ export function ForgotPasswordPage() {
   if (sentTo) {
     return (
       <AuthShell
+        panel={<RecoveryPanel />}
         title="Check your email"
         description={
           <>
@@ -80,6 +82,7 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthShell
+      panel={<RecoveryPanel />}
       title="Reset your password"
       description="Enter your email and we'll send you a reset link."
       footer={
