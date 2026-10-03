@@ -10,6 +10,16 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  optimizeDeps: {
+    // The highlighter is only imported dynamically, so pre-bundle its entry points at startup
+    // instead of letting the dev server find them mid-session and reload the page.
+    include: [
+      "shiki/core",
+      "shiki/engine/javascript",
+      "@shikijs/themes/github-light",
+      "@shikijs/themes/github-dark",
+    ],
+  },
   // Ensure font files are properly handled
   assetsInclude: ["**/*.woff", "**/*.woff2", "**/*.ttf", "**/*.otf"],
   build: {
@@ -29,5 +39,3 @@ export default defineConfig({
     },
   },
 });
-
-

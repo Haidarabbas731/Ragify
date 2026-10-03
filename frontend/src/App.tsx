@@ -1,5 +1,6 @@
 import { Suspense, useEffect } from "react";
 import { BrowserRouter } from "react-router-dom";
+import { AppToaster } from "@/components/shared/AppToaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
 import { AppRoutes } from "./routes";
@@ -25,6 +26,7 @@ function App() {
 
   return (
     <DarkModeProvider>
+      <AppToaster />
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <TooltipProvider delayDuration={300} skipDelayDuration={400}>

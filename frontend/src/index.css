@@ -304,6 +304,29 @@ html, body {
     transform: translateY(calc(var(--motion-shift) * 2));
   }
 
+  /* Code blocks: plain text first, shiki colours when ready. Both themes ship as variables. */
+  .code-block pre {
+    margin: 0;
+    background: transparent !important;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    tab-size: 2;
+    color: var(--card-foreground);
+  }
+  .code-block code {
+    font-family: inherit;
+    font-weight: normal;
+  }
+  .code-block .shiki,
+  .code-block .shiki span {
+    color: var(--shiki-light);
+  }
+  .dark .code-block .shiki,
+  .dark .code-block .shiki span {
+    color: var(--shiki-dark);
+  }
+
   /* Storage meter fills left to right once, on the first visit of a session. */
   .meter-in {
     animation: meter-in 500ms var(--ease-out) 150ms both;
