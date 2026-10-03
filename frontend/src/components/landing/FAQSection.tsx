@@ -1,65 +1,60 @@
 import { Minus, Plus } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
+import { cn } from "@/lib/utils";
+import { Reveal } from "./Reveal";
 
-const faqs = [
+const FAQS = [
   {
-    question: "What file formats does Ragify support?",
-    answer:
-      "Ragify supports PDF, Word documents (DOCX), plain text (TXT), and Markdown (MD) files. Each file can be up to 50MB.",
+    question: "What file types can I upload?",
+    answer: "PDF, Word documents (DOCX), plain text (TXT) and Markdown (MD).",
   },
   {
-    question: "How does the AI know which documents to search?",
+    question: "How does it find the right passages?",
     answer:
-      "When you upload a document, Ragify chunks it into segments and generates vector embeddings for each chunk. When you ask a question, the system retrieves the most semantically relevant chunks across all your documents and sends them to the AI as context — this is Retrieval-Augmented Generation (RAG).",
+      "When you upload a file, Ragify splits it into passages and indexes them by meaning. When you ask a question, it retrieves the most relevant passages from your documents and gives them to the AI as context. This is called retrieval-augmented generation (RAG). The answer lists the documents it used.",
   },
   {
-    question: "Is my data private and secure?",
+    question: "Is my data private?",
     answer:
-      "Yes. Your documents are stored privately and are only accessible to your account. We do not share or use your documents to train AI models. All data is isolated per user.",
+      "Your files are stored privately and only your account can open them. To write an answer, Ragify sends your question and the relevant excerpts to the AI provider you use (the default model, or your own Gemini or OpenRouter key), so avoid uploading anything you would not be comfortable sending to that provider.",
   },
   {
-    question: "Can I organize documents into categories?",
+    question: "Can I use my own API key?",
     answer:
-      "Yes. You can create Collections to group documents by project, topic, or any structure that makes sense for you. Collections make it easy to scope your AI chat to specific sets of documents.",
+      "Yes. In your profile you can choose Gemini or OpenRouter, pick a model and save your own key. It is stored encrypted and only the last four characters are shown afterwards.",
   },
   {
-    question: "What happens when I reach my storage limit?",
+    question: "Can I search just some of my documents?",
     answer:
-      "Each account has a 1GB storage limit. When you're approaching the limit, you'll see a warning in your dashboard. You can free up space by deleting documents you no longer need.",
-  },
-  {
-    question: "Do I need a credit card to get started?",
-    answer:
-      "No. Ragify is free to start — just create an account and begin uploading. No credit card required.",
+      "Yes. Group documents into collections, then choose a collection when you ask a question. Choose all collections to search everything.",
   },
 ];
 
-function FAQItem({ question, answer }: { question: string; answer: string }) {
+function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
+  const panelId = useId();
 
   return (
-    <div className="border-b border-[rgba(1,50,252,0.10)] dark:border-[rgba(119,52,231,0.15)] last:border-0">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-5 text-left gap-4 group"
-      >
-        <span className="text-[15px] font-semibold text-foreground group-hover:text-[#7734e7] dark:group-hover:text-[#cd79f5] transition-colors duration-150">
+    <div className="border-b border-border last:border-0">
+      <h3>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((value) => !value)}
+          className="flex w-full items-center justify-between gap-4 rounded-md py-4 text-left text-section text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
           {question}
-        </span>
-        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[rgba(119,52,231,0.10)] dark:bg-[rgba(119,52,231,0.15)] flex items-center justify-center">
           {open ? (
-            <Minus className="w-3.5 h-3.5 text-[#7734e7] dark:text-[#cd79f5]" />
+            <Minus className="size-4 shrink-0 text-muted-foreground" />
           ) : (
-            <Plus className="w-3.5 h-3.5 text-[#7734e7] dark:text-[#cd79f5]" />
+            <Plus className="size-4 shrink-0 text-muted-foreground" />
           )}
-        </span>
-      </button>
-      <div className={`faq-answer ${open ? "open" : ""}`}>
+        </button>
+      </h3>
+      <div id={panelId} className={cn("faq-answer", open && "open")}>
         <div>
-          <p className="text-sm text-muted-foreground leading-relaxed pb-5">
-            {answer}
-          </p>
+          <p className="pb-4 text-body text-muted-foreground">{answer}</p>
         </div>
       </div>
     </div>
@@ -68,29 +63,25 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 
 export function FAQSection() {
   return (
-    <section id="faq" className="py-24 px-6 bg-background">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-12">
-          <span className="text-[11px] font-bold uppercase tracking-[2px] text-[#7734e7] dark:text-[#cd79f5]">
-            FAQ
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2">
-            Common Questions
+    <section
+      id="faq"
+      className="scroll-mt-20 border-t border-border bg-muted/40 py-20 sm:py-24"
+    >
+      <div className="mx-auto w-full max-w-3xl px-6">
+        <Reveal>
+          <p className="text-meta font-medium text-primary">FAQ</p>
+          <h2 className="mt-2 text-display text-foreground">
+            Questions people ask
           </h2>
-        </div>
-
-        <div className="rounded-2xl border border-[rgba(1,50,252,0.10)] dark:border-[rgba(119,52,231,0.15)] bg-[#fffeff] dark:bg-[#160f2a] px-6 md:px-8">
-          {faqs.map((faq) => (
-            <FAQItem
-              key={faq.question}
-              question={faq.question}
-              answer={faq.answer}
-            />
-          ))}
-        </div>
+        </Reveal>
+        <Reveal delay={70} className="mt-10">
+          <div className="rounded-2xl border border-border bg-card px-6 shadow-[var(--ragify-shadow)]">
+            {FAQS.map((faq) => (
+              <FaqItem key={faq.question} {...faq} />
+            ))}
+          </div>
+        </Reveal>
       </div>
     </section>
   );
 }
-
-export default FAQSection;
