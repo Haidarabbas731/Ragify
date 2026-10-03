@@ -34,7 +34,10 @@ export function CollectionsSummary() {
         ) : top.length === 0 ? (
           <p className="px-2 pb-2 text-body text-muted-foreground">
             No collections yet.{" "}
-            <Link to="/collections" className="text-primary hover:underline">
+            <Link
+              to="/collections"
+              className="text-primary underline underline-offset-4"
+            >
               Create one
             </Link>{" "}
             to group related documents.

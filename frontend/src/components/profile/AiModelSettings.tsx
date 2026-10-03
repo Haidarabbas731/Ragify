@@ -141,7 +141,7 @@ export function AiModelSettings() {
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="font-semibold text-foreground">AI model</h3>
+        <h2 className="font-semibold text-foreground">AI model</h2>
         <p className="text-sm text-muted-foreground">{active}</p>
       </div>
 
@@ -224,7 +224,7 @@ export function AiModelSettings() {
             href={PROVIDERS[provider].keyUrl}
             target="_blank"
             rel="noreferrer"
-            className="text-primary underline-offset-2 hover:underline"
+            className="text-primary underline underline-offset-2"
           >
             {PROVIDERS[provider].label}
           </a>
