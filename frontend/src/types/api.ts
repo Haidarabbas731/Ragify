@@ -294,8 +294,6 @@ export interface AiSettings {
   key_last4: string | null;
   default_provider: AiProvider;
   default_model: string;
-  /** Whether the server has a key for its default provider. If not, users must add their own. */
-  default_available: boolean;
   providers: AiProvider[];
 }
 

@@ -32,28 +32,14 @@ def update(provider="openrouter", model="vendor/model", api_key=KEY) -> AISettin
 
 @pytest.mark.asyncio
 async def test_get_settings_for_a_user_without_saved_settings(session: AsyncSession, sample_user):
-    """Shows the server defaults and what the server allows."""
+    """Shows no saved settings plus the provider and model to suggest."""
     result = await api.get_settings(sample_user, session)
 
     assert result.has_key is False
     assert result.provider is None
     assert result.default_provider == settings.LLM_PROVIDER
     assert result.providers == ["gemini", "openrouter"]
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(("server_key", "expected"), [("server-key", True), (None, False)])
-async def test_default_available_reflects_whether_the_server_has_a_key(
-    session: AsyncSession, sample_user, server_key, expected
-):
-    """The UI uses this to tell users without a key of their own that they must add one."""
-    with (
-        patch.object(settings, "LLM_PROVIDER", "gemini"),
-        patch.object(settings, "GOOGLE_API_KEY", server_key),
-    ):
-        result = await api.get_settings(sample_user, session)
-
-    assert result.default_available is expected
+    assert not hasattr(result, "default_available")  # the server has no chat key to offer
 
 
 @pytest.mark.asyncio
@@ -245,10 +231,9 @@ async def test_gemini_models_use_the_typed_key_first(session: AsyncSession, samp
     await api.update_settings(update(provider="gemini", model="gemini-x", api_key="stored-gemini-key"), sample_user, session)
     models = [AIModel(id="gemini-2.5-flash", name="Gemini 2.5 Flash")]
 
-    with (
-        patch.object(settings, "GOOGLE_API_KEY", "server-key"),
-        patch("app.api.v1.ai_settings.list_gemini_models", new=AsyncMock(return_value=models)) as lister,
-    ):
+    with patch(
+        "app.api.v1.ai_settings.list_gemini_models", new=AsyncMock(return_value=models)
+    ) as lister:
         result = await api.list_models(models_request(api_key="typed-gemini-key"), sample_user, session)
 
     lister.assert_awaited_once_with("typed-gemini-key")
@@ -256,17 +241,12 @@ async def test_gemini_models_use_the_typed_key_first(session: AsyncSession, samp
 
 
 @pytest.mark.asyncio
-async def test_gemini_models_fall_back_to_the_saved_key_then_the_server_key(
-    session: AsyncSession, sample_user
-):
-    """With nothing typed, the user's saved Gemini key is used; without one, the server's."""
+async def test_gemini_models_fall_back_to_the_saved_key(session: AsyncSession, sample_user):
+    """With nothing typed, the user's saved Gemini key is used; with none, nothing is asked."""
     lister = AsyncMock(return_value=[])
-    with (
-        patch.object(settings, "GOOGLE_API_KEY", "server-key"),
-        patch("app.api.v1.ai_settings.list_gemini_models", new=lister),
-    ):
-        await api.list_models(models_request(), sample_user, session)
-        lister.assert_awaited_with("server-key")
+    with patch("app.api.v1.ai_settings.list_gemini_models", new=lister):
+        assert await api.list_models(models_request(), sample_user, session) == []
+        lister.assert_not_called()  # no typed key, no saved key, and the server has none
 
         await api.update_settings(update(provider="gemini", model="gemini-x", api_key="stored-gemini-key"), sample_user, session)
         await api.list_models(models_request(), sample_user, session)
@@ -279,10 +259,7 @@ async def test_an_openrouter_key_is_never_sent_to_google(session: AsyncSession, 
     await api.update_settings(update(provider="openrouter", model="vendor/model"), sample_user, session)
     lister = AsyncMock(return_value=[])
 
-    with (
-        patch.object(settings, "GOOGLE_API_KEY", None),
-        patch("app.api.v1.ai_settings.list_gemini_models", new=lister),
-    ):
+    with patch("app.api.v1.ai_settings.list_gemini_models", new=lister):
         result = await api.list_models(models_request(), sample_user, session)
 
     lister.assert_not_called()
@@ -290,14 +267,11 @@ async def test_an_openrouter_key_is_never_sent_to_google(session: AsyncSession, 
 
 
 @pytest.mark.asyncio
-async def test_gemini_models_are_empty_when_no_key_exists_anywhere(
+async def test_gemini_models_are_empty_when_the_user_has_no_key(
     session: AsyncSession, sample_user
 ):
     """With no key to ask Google with, the list is empty and the user types a model name."""
-    with (
-        patch.object(settings, "GOOGLE_API_KEY", None),
-        patch("app.api.v1.ai_settings.list_gemini_models", new=AsyncMock()) as lister,
-    ):
+    with patch("app.api.v1.ai_settings.list_gemini_models", new=AsyncMock()) as lister:
         result = await api.list_models(models_request(), sample_user, session)
 
     assert result == []

@@ -20,7 +20,6 @@ from app.services.providers.base import (
     ProviderKeyMissingError,
     ProviderRateLimitError,
 )
-from app.services.providers.registry import _build
 from tests.fakes import FakeProvider, text_turn
 
 
@@ -87,7 +86,7 @@ async def test_update_with_a_key_replaces_it(session: AsyncSession, sample_user)
 
 @pytest.mark.asyncio
 async def test_delete_removes_the_settings(session: AsyncSession, sample_user):
-    """Deleting returns True once, and the user is back on the server defaults."""
+    """Deleting returns True once, and the user has no saved settings afterwards."""
     await save_ai_settings(session, sample_user.user_id, "gemini", "m", "key-111111")
 
     assert await delete_ai_settings(session, sample_user.user_id) is True
@@ -118,29 +117,18 @@ async def test_resolve_uses_the_users_own_provider_model_and_decrypted_key(
 
 
 @pytest.mark.asyncio
-async def test_resolve_without_settings_uses_the_server_defaults(session: AsyncSession, sample_user):
-    """A user with no saved settings runs on the server's configured provider and key."""
-    with patch("app.services.ai_settings_service.get_chat_provider") as build:
-        provider = await resolve_chat_provider(session, sample_user.user_id)
-
-    build.assert_called_once_with()
-    assert provider is build.return_value
-
-
-@pytest.mark.asyncio
-async def test_resolve_without_user_or_server_key_asks_the_user_to_add_one(
+async def test_resolve_without_settings_asks_the_user_to_add_a_key(
     session: AsyncSession, sample_user
 ):
-    """If the server has no key either, chat tells the user to add their own."""
-    _build.cache_clear()  # a provider cached by another test would hide the missing key
+    """The server has no chat key, so a user with no saved key is told to add their own."""
     with (
-        patch.object(settings, "LLM_PROVIDER", "gemini"),
-        patch.object(settings, "GOOGLE_API_KEY", None),
+        patch("app.services.ai_settings_service.get_chat_provider") as build,
         pytest.raises(ProviderKeyMissingError) as exc,
     ):
         await resolve_chat_provider(session, sample_user.user_id)
 
-    assert "Profile > Preferences" in exc.value.user_message
+    build.assert_not_called()
+    assert "Profile > AI model" in exc.value.user_message
 
 
 @pytest.mark.asyncio

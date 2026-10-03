@@ -16,12 +16,12 @@ const FAQS = [
   {
     question: "Is my data private?",
     answer:
-      "Your files are stored privately and only your account can open them. To write an answer, Ragify sends your question and the relevant excerpts to the AI provider you use (the default model, or your own Gemini or OpenRouter key), so avoid uploading anything you would not be comfortable sending to that provider.",
+      "Your files are stored privately and only your account can open them. To write an answer, Ragify sends your question and the relevant excerpts to the AI provider you use (Gemini or OpenRouter, with your own key), so avoid uploading anything you would not be comfortable sending to that provider.",
   },
   {
-    question: "Can I use my own API key?",
+    question: "Do I need my own API key?",
     answer:
-      "Yes. In your profile you can choose Gemini or OpenRouter, pick a model and save your own key. It is stored encrypted and only the last four characters are shown afterwards.",
+      "Yes. Chat runs on your own key. In your profile choose Gemini or OpenRouter, pick a model and save your key. It is stored encrypted and only the last four characters are shown afterwards.",
   },
   {
     question: "Can I search just some of my documents?",
