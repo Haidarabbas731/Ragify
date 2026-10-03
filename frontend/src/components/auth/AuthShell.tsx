@@ -1,7 +1,7 @@
 import { ArrowLeft, Check, Moon, Sun } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Logo } from "@/components/shared/Logo";
+import { Wordmark } from "@/components/shared/Wordmark";
 import { Button } from "@/components/ui/button";
 import { useDarkMode } from "@/contexts/DarkModeContext";
 
@@ -17,15 +17,6 @@ interface AuthShellProps {
   children: ReactNode;
   /** Links under the form, e.g. "Don't have an account?". */
   footer?: ReactNode;
-}
-
-function Wordmark() {
-  return (
-    <Link to="/" className="flex w-fit items-center gap-3">
-      <Logo size={52} />
-      <span className="text-display text-foreground">Ragify</span>
-    </Link>
-  );
 }
 
 /** Split layout for sign in, sign up and password reset: brand panel beside a centered form. */
