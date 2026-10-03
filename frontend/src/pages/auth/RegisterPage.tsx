@@ -10,6 +10,7 @@ import { FieldError } from "@/components/auth/FieldError";
 import { FormError } from "@/components/auth/FormError";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
+import { OnboardPanel } from "@/components/auth/panels/OnboardPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -123,6 +124,7 @@ export function RegisterPage() {
 
   return (
     <AuthShell
+      panel={<OnboardPanel />}
       title="Create your account"
       description="Start asking questions about your documents."
       footer={

@@ -9,6 +9,7 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { FieldError } from "@/components/auth/FieldError";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
+import { RecoveryPanel } from "@/components/auth/panels/RecoveryPanel";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
@@ -76,6 +77,7 @@ export function ResetPasswordPage() {
 
   return (
     <AuthShell
+      panel={<RecoveryPanel />}
       title="Choose a new password"
       description="Use a password you don't use anywhere else."
     >
