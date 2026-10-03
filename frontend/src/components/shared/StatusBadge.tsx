@@ -1,5 +1,6 @@
 import {
   AlertCircle,
+  Ban,
   CheckCircle2,
   Clock,
   Loader2,
@@ -13,7 +14,10 @@ type Status =
   | "error"
   | "deleted"
   | "expired"
-  | "used";
+  | "used"
+  | "fully_used"
+  | "revoked"
+  | "suspended";
 
 const STATUS_CONFIG = {
   processing: {
@@ -26,6 +30,9 @@ const STATUS_CONFIG = {
   deleted: { label: "Deleted", variant: "muted", icon: <Trash2 /> },
   expired: { label: "Expired", variant: "muted", icon: <Clock /> },
   used: { label: "Used", variant: "info", icon: <CheckCircle2 /> },
+  fully_used: { label: "Used up", variant: "info", icon: <CheckCircle2 /> },
+  revoked: { label: "Revoked", variant: "destructive", icon: <Ban /> },
+  suspended: { label: "Suspended", variant: "warning", icon: <Ban /> },
 } as const;
 
 interface StatusBadgeProps {
