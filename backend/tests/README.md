@@ -390,6 +390,4 @@ async def test_update_collection_name(session, sample_user):
 
 For questions about testing or to report test failures, please check:
 
-- Task tracker: `tasks/08-TESTING-QA.md`
-- PRD: `docs/PRD.md`
 - Project README: `../README.md`

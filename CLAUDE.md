@@ -2,21 +2,9 @@
 
 Ragify - RAG app with FastAPI + React.
 
-**PRD:** `docs/PRD.md` | **Tasks:** `tasks/*.md`
-
 ---
 
 ## 🚨 MANDATORY WORKFLOW
-
-**⚠️ CRITICAL TASK FILE UPDATE RULE:**
-
-- ✅ **ALWAYS** update the relevant task file (`tasks/*.md`) when making ANY code changes
-- ✅ **ALWAYS** document new features, improvements, or security updates in the task file
-- ✅ **ALWAYS** add notes about implementation details that differ from original plan
-- ✅ **ALWAYS** mark updates with `**UPDATE:**` or `**IMPROVEMENT:**` or `**SECURITY UPDATE:**` prefixes
-- ❌ **NEVER** make code changes without documenting them in the task file
-- ✅ If you add something new that's not mentioned in tasks, ADD IT to the task file immediately
-- ✅ This ensures future AI sessions and developers know about all changes made
 
 ### Git Rules
 - ✅ Work on `dev` branch only
@@ -34,18 +22,12 @@ Ragify - RAG app with FastAPI + React.
 - ❌ NO "Co-Authored-By: Claude"
 
 ### Task Completion Workflow
-1. Update checkboxes in `tasks/*.md` (only completed tasks)
-2. Run linting + tests
-3. **For Frontend:** Verify with Chrome DevTools MCP (console, network, performance)
-4. Test endpoints/components manually
-5. Commit code changes
-6. **STOP - Wait for user approval before next phase**
-7. Update TodoWrite tool
-
-**CRITICAL:**
-- ✅ Update task files when making ANY code changes
-- ✅ Mark updates with `**UPDATE:**`, `**IMPROVEMENT:**`, `**SECURITY UPDATE:**`
-- ✅ Commit task files with code changes
+1. Run linting + tests
+2. **For Frontend:** Verify with Chrome DevTools MCP (console, network, performance)
+3. Test endpoints/components manually
+4. Commit code changes
+5. **STOP - Wait for user approval before next phase**
+6. Update TodoWrite tool
 
 ---
 
@@ -176,13 +158,6 @@ src/
 └── types/               # TS types
 ```
 
-### Implementation Guide
-**⚠️ IMPORTANT:** For detailed frontend implementation plan:
-- **22-day plan:** `docs/FRONTEND_IMPLEMENTATION_PLAN.md`
-- **Task checklist:** `tasks/12-FRONTEND.md`
-- Follow the plan day-by-day for structured development
-- Plan includes: MVP (Days 1-9) → UX (Days 10-15) → Polish (Days 16-22)
-
 ---
 
 ## Pre-Commit Hook
@@ -195,6 +170,4 @@ Bypass: `git commit --no-verify` (NOT recommended)
 
 ## Reference
 
-- **PRD:** `docs/PRD.md`
-- **Tasks:** `tasks/*.md`
 - **Env:** `backend/.env.example`, `frontend/.env.example`
