@@ -2,6 +2,7 @@ import asyncio
 import os
 import sys
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import text
@@ -145,9 +146,7 @@ async def cleanup_test_data(test_engine: AsyncEngine):
             {"emails": test_emails},
         )
         for email in test_emails:
-            await conn.execute(
-                text("DELETE FROM users WHERE email = :email"), {"email": email}
-            )
+            await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
         await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
 
     yield
@@ -173,9 +172,7 @@ async def cleanup_test_data(test_engine: AsyncEngine):
             {"emails": test_emails},
         )
         for email in test_emails:
-            await conn.execute(
-                text("DELETE FROM users WHERE email = :email"), {"email": email}
-            )
+            await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
         await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
 
 
@@ -252,16 +249,11 @@ async def client(test_engine: AsyncEngine) -> AsyncGenerator[AsyncClient, None]:
     """HTTP client for testing API endpoints."""
 
     async def override_get_session() -> AsyncGenerator[AsyncSession, None]:
-        connection = await test_engine.connect()
-        transaction = await connection.begin()
-        session = AsyncSession(bind=connection, expire_on_commit=False)
-
-        try:
+        # A normal session per request that really commits, so flows spanning several
+        # requests (register then login) see each other's data. The autouse
+        # cleanup_test_data fixture empties the tables between tests.
+        async with AsyncSession(test_engine, expire_on_commit=False) as session:
             yield session
-        finally:
-            await session.close()
-            await transaction.rollback()
-            await connection.close()
 
     app.dependency_overrides[get_session] = override_get_session
 
@@ -313,8 +305,8 @@ async def auth_headers(test_engine: AsyncEngine) -> dict:
     async with test_engine.begin() as conn:
         await conn.execute(
             text("""
-                INSERT INTO users (user_id, email, password_hash, role, storage_used_bytes, storage_limit_bytes, status, is_active)
-                VALUES (:user_id, :email, :password_hash, :role, :storage_used, :storage_limit, :status, :is_active)
+                INSERT INTO users (user_id, email, password_hash, role, storage_used_bytes, storage_limit_bytes, status, is_active, created_at, updated_at)
+                VALUES (:user_id, :email, :password_hash, :role, :storage_used, :storage_limit, :status, :is_active, :now, :now)
                 ON CONFLICT (email) DO UPDATE SET
                     password_hash = EXCLUDED.password_hash,
                     user_id = EXCLUDED.user_id,
@@ -330,7 +322,8 @@ async def auth_headers(test_engine: AsyncEngine) -> dict:
                 "storage_limit": 1073741824,  # 1GB default
                 "status": "active",
                 "is_active": True,
-            }
+                "now": datetime.now(UTC),
+            },
         )
 
     token = create_access_token({"sub": user_id})
