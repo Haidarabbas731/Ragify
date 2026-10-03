@@ -2,6 +2,11 @@
 
 import pytest
 from httpx import AsyncClient
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.models.collection import Collection
+from app.models.conversation import Conversation
+from app.models.document import Document
 
 
 @pytest.mark.asyncio
@@ -41,9 +46,7 @@ async def test_update_user_email_success(client: AsyncClient, auth_headers: dict
 
 
 @pytest.mark.asyncio
-async def test_update_user_email_same_as_current(
-    client: AsyncClient, auth_headers: dict
-):
+async def test_update_user_email_same_as_current(client: AsyncClient, auth_headers: dict):
     """Test PATCH /api/v1/users/me - update to same email fails."""
     response = await client.patch(
         "/api/v1/users/me", json={"email": "test@example.com"}, headers=auth_headers
@@ -95,9 +98,7 @@ async def test_update_user_email_already_exists(
 
 
 @pytest.mark.asyncio
-async def test_update_user_email_invalid_format(
-    client: AsyncClient, auth_headers: dict
-):
+async def test_update_user_email_invalid_format(client: AsyncClient, auth_headers: dict):
     """Test PATCH /api/v1/users/me - invalid email format."""
     response = await client.patch(
         "/api/v1/users/me", json={"email": "invalid-email"}, headers=auth_headers
@@ -124,9 +125,7 @@ async def test_change_password_success(client: AsyncClient, auth_headers: dict):
 
 
 @pytest.mark.asyncio
-async def test_change_password_incorrect_current(
-    client: AsyncClient, auth_headers: dict
-):
+async def test_change_password_incorrect_current(client: AsyncClient, auth_headers: dict):
     """Test POST /api/v1/users/me/change-password - incorrect current password."""
     response = await client.post(
         "/api/v1/users/me/change-password",
@@ -158,13 +157,12 @@ async def test_change_password_same_as_current(client: AsyncClient, auth_headers
 
 
 @pytest.mark.asyncio
-async def test_change_password_weak_new_password(
-    client: AsyncClient, auth_headers: dict
-):
+async def test_change_password_weak_new_password(client: AsyncClient, auth_headers: dict):
     """Test POST /api/v1/users/me/change-password - weak new password."""
+    # Long enough for the schema but missing an uppercase letter, a number and a symbol
     response = await client.post(
         "/api/v1/users/me/change-password",
-        json={"current_password": "TestPassword123!", "new_password": "weak"},
+        json={"current_password": "TestPassword123!", "new_password": "weakpassword"},
         headers=auth_headers,
     )
 
@@ -173,10 +171,20 @@ async def test_change_password_weak_new_password(
 
 
 @pytest.mark.asyncio
+async def test_change_password_too_short(client: AsyncClient, auth_headers: dict):
+    """Test POST /api/v1/users/me/change-password - rejected by the request schema."""
+    response = await client.post(
+        "/api/v1/users/me/change-password",
+        json={"current_password": "TestPassword123!", "new_password": "weak"},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_get_user_stats(client: AsyncClient, auth_headers: dict, test_engine):
     """Test GET /api/v1/users/me/stats - get user statistics."""
-    from sqlalchemy import text
-
     # Get user_id from auth_headers token
     from app.core.security import decode_token
 
@@ -184,58 +192,54 @@ async def test_get_user_stats(client: AsyncClient, auth_headers: dict, test_engi
     payload = decode_token(token)
     user_id = payload["sub"]
 
-    # Create test data directly in database
-    async with test_engine.begin() as conn:
-        # Create collection
-        result = await conn.execute(
-            text(
-                """
-                INSERT INTO collections (user_id, name, description)
-                VALUES (:user_id, :name, :description)
-                RETURNING collection_id
-            """
-            ),
-            {
-                "user_id": user_id,
-                "name": "Test Collection",
-                "description": "Test",
-            },
-        )
-        collection_id = result.scalar_one()
+    # Create test data through the models so column defaults are applied
+    async with AsyncSession(test_engine) as db:
+        collection = Collection(user_id=user_id, name="Test Collection", description="Test")
+        db.add(collection)
+        await db.commit()
+        await db.refresh(collection)
 
-        # Create documents
-        import uuid as uuid_module
-
-        await conn.execute(
-            text(
-                """
-                INSERT INTO documents (document_id, user_id, collection_id, filename, file_type, size_bytes, storage_key, status, chunks_count)
-                VALUES
-                    (:doc_id1, :user_id, :collection_id, 'test1.pdf', 'pdf', 1024, 'test/key1', 'ACTIVE', 10),
-                    (:doc_id2, :user_id, NULL, 'test2.pdf', 'pdf', 2048, 'test/key2', 'PROCESSING', 5)
-            """
-            ),
-            {
-                "doc_id1": str(uuid_module.uuid4()),
-                "doc_id2": str(uuid_module.uuid4()),
-                "user_id": user_id,
-                "collection_id": collection_id,
-            },
+        db.add_all(
+            [
+                Document(
+                    user_id=user_id,
+                    collection_id=collection.collection_id,
+                    filename="test1.pdf",
+                    file_type="pdf",
+                    size_bytes=1024,
+                    storage_key="test/key1",
+                    status="active",
+                    chunks_count=10,
+                ),
+                Document(
+                    user_id=user_id,
+                    filename="test2.pdf",
+                    file_type="pdf",
+                    size_bytes=2048,
+                    storage_key="test/key2",
+                    status="processing",
+                    chunks_count=5,
+                ),
+                # Deleted documents must not be counted
+                Document(
+                    user_id=user_id,
+                    filename="gone.pdf",
+                    file_type="pdf",
+                    size_bytes=512,
+                    storage_key="test/key3",
+                    status="deleted",
+                    chunks_count=7,
+                ),
+            ]
         )
-
-        # Create conversation
-        await conn.execute(
-            text(
-                """
-                INSERT INTO conversations (user_id, messages, message_count)
-                VALUES (:user_id, :messages::jsonb, 1)
-            """
-            ),
-            {
-                "user_id": user_id,
-                "messages": '[{"role": "user", "content": "test"}]',
-            },
+        db.add(
+            Conversation(
+                user_id=user_id,
+                messages=[{"role": "user", "content": "test"}],
+                message_count=1,
+            )
         )
+        await db.commit()
 
     # Get stats
     response = await client.get("/api/v1/users/me/stats", headers=auth_headers)
@@ -250,8 +254,7 @@ async def test_get_user_stats(client: AsyncClient, auth_headers: dict, test_engi
     assert "storage_limit_mb" in data
     assert "storage_percentage" in data
     assert "documents_by_status" in data
-    assert data["documents_by_status"]["ACTIVE"] == 1
-    assert data["documents_by_status"]["PROCESSING"] == 1
+    assert data["documents_by_status"] == {"active": 1, "processing": 1}
 
 
 @pytest.mark.asyncio
