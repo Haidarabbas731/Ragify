@@ -1,6 +1,9 @@
 /**
- * Dark Mode Context - Shared dark mode state across all components
- * Prevents multiple hook instances from conflicting
+ * Dark Mode Context - Shared dark mode state across all components.
+ *
+ * Follows the system setting (`prefers-color-scheme`) until the user presses the toggle;
+ * from then on their choice is remembered. A tiny script in `index.html` applies the same
+ * rule before the first paint so the page never flashes the wrong theme.
  */
 
 import {
@@ -17,32 +20,54 @@ interface DarkModeContextType {
   toggleDarkMode: () => void;
 }
 
+const STORAGE_KEY = "darkMode";
+const SYSTEM_DARK_QUERY = "(prefers-color-scheme: dark)";
+
 const DarkModeContext = createContext<DarkModeContextType | undefined>(
   undefined,
 );
 
+/** The user's saved choice, or `null` when they have not picked one. */
+function readSavedChoice(): boolean | null {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved === null ? null : Boolean(JSON.parse(saved));
+  } catch {
+    return null;
+  }
+}
+
 export function DarkModeProvider({ children }: { children: ReactNode }) {
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem("darkMode");
-    if (saved !== null) {
-      return JSON.parse(saved);
-    }
-    // Default to light mode
-    return false;
-  });
+  const [savedChoice, setSavedChoice] = useState<boolean | null>(
+    readSavedChoice,
+  );
+  const [systemDark, setSystemDark] = useState(
+    () => window.matchMedia(SYSTEM_DARK_QUERY).matches,
+  );
+
+  // Keep up with the system setting while the user has not chosen
+  useEffect(() => {
+    const media = window.matchMedia(SYSTEM_DARK_QUERY);
+    const onChange = () => setSystemDark(media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  const darkMode = savedChoice ?? systemDark;
 
   useEffect(() => {
-    localStorage.setItem("darkMode", JSON.stringify(darkMode));
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
   const toggleDarkMode = useCallback(() => {
-    setDarkMode((prev: boolean) => !prev);
-  }, []);
+    const next = !darkMode;
+    setSavedChoice(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // Private mode: the choice still applies for this visit
+    }
+  }, [darkMode]);
 
   return (
     <DarkModeContext.Provider value={{ darkMode, toggleDarkMode }}>

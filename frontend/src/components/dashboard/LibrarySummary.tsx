@@ -7,7 +7,16 @@ const BYTES_PER_MB = 1024 * 1024;
 const WARN_AT = 90;
 
 /** What is in the library and how much space is left, on one calm line. */
-export function LibrarySummary({ stats }: { stats: UserStats }) {
+interface LibrarySummaryProps {
+  stats: UserStats;
+  /** Fill the storage meter in, for the first visit of a session. */
+  animate?: boolean;
+}
+
+export function LibrarySummary({
+  stats,
+  animate = false,
+}: LibrarySummaryProps) {
   const percentage = Math.min(Math.max(stats.storage_percentage, 0), 100);
   const nearLimit = percentage >= WARN_AT;
   const documents = stats.total_documents;
@@ -39,6 +48,7 @@ export function LibrarySummary({ stats }: { stats: UserStats }) {
               className={cn(
                 "h-full rounded-full",
                 nearLimit ? "bg-warning" : "bg-primary",
+                animate && "meter-in",
               )}
               style={{
                 width: `${percentage > 0 ? Math.max(percentage, 2) : 0}%`,

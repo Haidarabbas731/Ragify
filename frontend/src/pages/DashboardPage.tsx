@@ -1,4 +1,5 @@
 import { FilePlus2 } from "lucide-react";
+import type { CSSProperties, ReactNode } from "react";
 import { useOutletContext } from "react-router-dom";
 import { AskBar } from "@/components/dashboard/AskBar";
 import { AttentionStrip } from "@/components/dashboard/AttentionStrip";
@@ -11,7 +12,30 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFirstVisitThisSession } from "@/hooks/useFirstVisitThisSession";
 import { useUserStats } from "@/hooks/useUserStats";
+
+/** Rises in on the first visit of a session; plain on every later visit. */
+function Enter({
+  index,
+  animate,
+  children,
+}: {
+  index: number;
+  animate: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={animate ? "stagger-in" : undefined}
+      style={
+        animate ? ({ "--stagger-index": index } as CSSProperties) : undefined
+      }
+    >
+      {children}
+    </div>
+  );
+}
 
 function DashboardSkeleton() {
   return (
@@ -30,6 +54,7 @@ function DashboardSkeleton() {
 export function DashboardPage() {
   const { openNewSource } = useOutletContext<AppOutletContext>();
   const { data: stats, isLoading, error, refetch } = useUserStats();
+  const firstVisit = useFirstVisitThisSession("dashboard:entered");
 
   const processing = stats?.documents_by_status.processing ?? 0;
   const failed = stats?.documents_by_status.error ?? 0;
@@ -57,14 +82,20 @@ export function DashboardPage() {
   } else {
     content = (
       <>
-        <AskBar />
+        <Enter index={0} animate={firstVisit}>
+          <AskBar />
+        </Enter>
         <MobileRecentChats />
         <AttentionStrip processing={processing} failed={failed} />
-        <LibrarySummary stats={stats} />
-        <div className="grid gap-4 lg:grid-cols-3">
-          <RecentDocuments />
-          <CollectionsSummary />
-        </div>
+        <Enter index={1} animate={firstVisit}>
+          <LibrarySummary stats={stats} animate={firstVisit} />
+        </Enter>
+        <Enter index={2} animate={firstVisit}>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <RecentDocuments />
+            <CollectionsSummary />
+          </div>
+        </Enter>
       </>
     );
   }
