@@ -81,6 +81,7 @@ html, body {
    Light Mode — Ragify brand palette
    ======================================== */
 :root {
+  color-scheme: light;
   --font-sans: "Karla", system-ui, sans-serif;
   --font-mono: "Geist Mono", "Courier New", monospace;
 
@@ -147,6 +148,7 @@ html, body {
    Dark Mode
    ======================================== */
 .dark {
+  color-scheme: dark;
   --primary: oklch(0.72 0.14 288);
   --primary-foreground: oklch(0.16 0.02 288);
   --secondary: oklch(0.3 0.06 288);
@@ -286,6 +288,19 @@ html, body {
     from {
       opacity: 0;
       transform: translateY(var(--motion-shift));
+    }
+  }
+
+  /* Storage meter fills left to right once, on the first visit of a session. */
+  .meter-in {
+    animation: meter-in 500ms var(--ease-out) 150ms both;
+  }
+  @keyframes meter-in {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
     }
   }
 
@@ -455,6 +470,9 @@ html, body {
     }
     .step-in {
       animation-name: fadeInSoft;
+    }
+    .meter-in {
+      animation: none;
     }
     .motion-popover[data-state="open"],
     .motion-popover[data-state="delayed-open"] {

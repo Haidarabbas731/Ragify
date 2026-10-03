@@ -10,6 +10,16 @@
   <meta name="apple-mobile-web-app-title" content="Ragify" />
   <link rel="manifest" href="/site.webmanifest" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    // Apply the saved or system theme before first paint to avoid a flash
+    (function () {
+      try {
+        var saved = localStorage.getItem("darkMode");
+        var dark = saved !== null ? JSON.parse(saved) : window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (dark) document.documentElement.classList.add("dark");
+      } catch (e) {}
+    })();
+  </script>
   <title>Ragify - Transform Your Documents with AI</title>
   <meta name="description"
     content="Upload PDFs, Word docs, and text files. Chat with your knowledge base using cutting-edge RAG technology." />

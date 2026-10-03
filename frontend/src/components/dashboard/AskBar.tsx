@@ -33,7 +33,7 @@ export function AskBar() {
         placeholder="Ask your documents…"
         aria-label="Ask your documents"
         autoComplete="off"
-        className="h-10 w-full bg-transparent px-2 text-body outline-none placeholder:text-muted-foreground"
+        className="h-10 w-full bg-transparent px-2 text-base outline-none placeholder:text-muted-foreground md:text-body"
       />
       <div className="mt-1 flex items-center justify-between gap-2">
         <CollectionSelect
