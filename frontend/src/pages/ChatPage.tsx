@@ -23,10 +23,10 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { CollectionSelect } from "@/components/shared/CollectionSelect";
 import { formatDate, formatTime } from "@/lib/format";
 import { AgentActivity } from "../components/chat/AgentActivity";
 import { ApiKeyRequiredDialog } from "../components/chat/ApiKeyRequiredDialog";
-import { CollectionFilter } from "../components/chat/CollectionFilter";
 import { DeleteConfirmDialog } from "../components/chat/DeleteConfirmDialog";
 import { MarkdownContent } from "../components/chat/MarkdownContent";
 import { Button } from "../components/ui/button";
@@ -631,14 +631,10 @@ export function ChatPage() {
               <div className="flex items-center gap-3">
                 {/* Collection Filter on Left */}
                 <div className="hidden sm:block flex-shrink-0">
-                  <CollectionFilter
-                    collections={collections.map((c) => ({
-                      collection_id: c.collection_id,
-                      name: c.name,
-                      document_count: c.document_count,
-                    }))}
-                    selectedCollectionId={selectedCollectionId}
-                    onSelectCollection={setSelectedCollectionId}
+                  <CollectionSelect
+                    collections={collections}
+                    value={selectedCollectionId}
+                    onChange={setSelectedCollectionId}
                   />
                 </div>
 
@@ -673,14 +669,10 @@ export function ChatPage() {
               <div className="flex items-center justify-between mt-2">
                 {/* Mobile Collection Filter */}
                 <div className="sm:hidden">
-                  <CollectionFilter
-                    collections={collections.map((c) => ({
-                      collection_id: c.collection_id,
-                      name: c.name,
-                      document_count: c.document_count,
-                    }))}
-                    selectedCollectionId={selectedCollectionId}
-                    onSelectCollection={setSelectedCollectionId}
+                  <CollectionSelect
+                    collections={collections}
+                    value={selectedCollectionId}
+                    onChange={setSelectedCollectionId}
                   />
                 </div>
                 {/* Help Text */}
@@ -692,31 +684,6 @@ export function ChatPage() {
           </div>
         </main>
       </div>
-
-      <style>{`
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(148, 163, 184, 0.3);
-          border-radius: 999px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(148, 163, 184, 0.5);
-        }
-
-        /* Dark mode scrollbar */
-        :global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(71, 85, 105, 0.3);
-        }
-        :global(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(71, 85, 105, 0.5);
-        }
-      `}</style>
 
       {/* Delete Confirmation Dialog */}
       <ApiKeyRequiredDialog
