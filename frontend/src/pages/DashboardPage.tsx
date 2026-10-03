@@ -1,9 +1,16 @@
 import { FileText, FolderOpen, HardDrive, Loader2 } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { DocumentList } from "../components/documents/DocumentList";
+import { DocumentTable } from "../components/documents/DocumentTable";
+import { ConfirmDialog } from "../components/shared/ConfirmDialog";
 import { Button } from "../components/ui/button";
-import { useDeleteDocument, useDocuments } from "../hooks/useDocuments";
+import {
+  useDeleteDocument,
+  useDocuments,
+  useRetryDocument,
+} from "../hooks/useDocuments";
 import { useUserStats } from "../hooks/useUserStats";
+import type { Document } from "../types/api";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -18,6 +25,10 @@ export function DashboardPage() {
   );
 
   const deleteDocumentMutation = useDeleteDocument();
+  const retryDocumentMutation = useRetryDocument();
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(
+    null,
+  );
 
   const handleDeleteDocument = async (documentId: string) => {
     try {
@@ -187,15 +198,28 @@ export function DashboardPage() {
         </div>
 
         <div className="px-5 py-2">
-          <DocumentList
+          <DocumentTable
             documents={recentDocumentsData?.documents || []}
-            onDocumentClick={(id) => navigate(`/documents/${id}`)}
-            onDeleteDocument={handleDeleteDocument}
-            onRetryDocument={(id) => console.log("Retry document:", id)}
-            hideCheckboxes={true}
+            onOpen={(doc) => navigate(`/documents/${doc.document_id}`)}
+            onRetry={(doc) => retryDocumentMutation.mutate(doc.document_id)}
+            onDelete={setDocumentToDelete}
           />
         </div>
       </div>
+      <ConfirmDialog
+        open={documentToDelete !== null}
+        onOpenChange={(open) => !open && setDocumentToDelete(null)}
+        tone="destructive"
+        title={`Delete “${documentToDelete?.filename ?? ""}”?`}
+        description="This permanently removes the file and its embeddings."
+        confirmLabel="Delete"
+        pending={deleteDocumentMutation.isPending}
+        onConfirm={async () => {
+          if (!documentToDelete) return;
+          await handleDeleteDocument(documentToDelete.document_id);
+          setDocumentToDelete(null);
+        }}
+      />
     </div>
   );
 }

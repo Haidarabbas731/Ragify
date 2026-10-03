@@ -21,7 +21,7 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   /** `destructive` styles the confirm button as a destructive action. */
   tone?: "default" | "destructive";
-  /** User must type this exact text before confirming (use only for delete-all). */
+  /** User must type this text (any letter case) before confirming. Use only for delete-all. */
   requireText?: string;
   /** Disables the buttons and shows a spinner while the action runs. */
   pending?: boolean;
@@ -48,7 +48,10 @@ export function ConfirmDialog({
     if (!open) setTyped("");
   }, [open]);
 
-  const canConfirm = !pending && (!requireText || typed === requireText);
+  const canConfirm =
+    !pending &&
+    (!requireText ||
+      typed.trim().toLowerCase() === requireText.trim().toLowerCase());
 
   return (
     <AlertDialog
