@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useState } from "react";
+import { formatDate } from "@/lib/format";
 import {
   useAdminInviteCodes,
   useCreateInviteCode,
@@ -70,17 +71,6 @@ export function AdminInviteCodes() {
     (code: InviteCode) =>
       statusFilter === "all" || code.status === statusFilter,
   );
-
-  // Format date
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Never";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   // Copy code to clipboard
   const handleCopyCode = (code: string) => {
@@ -322,13 +312,16 @@ export function AdminInviteCodes() {
                     <div className="flex items-center gap-4 text-xs font-mono text-gray-600 dark:text-slate-400">
                       <span>Created by {code.created_by}</span>
                       <span>•</span>
-                      <span>{formatDate(code.created_at)}</span>
+                      <span>
+                        {formatDate(code.created_at, { fallback: "Never" })}
+                      </span>
                       {code.expires_at && (
                         <>
                           <span>•</span>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            Expires {formatDate(code.expires_at)}
+                            Expires{" "}
+                            {formatDate(code.expires_at, { fallback: "Never" })}
                           </span>
                         </>
                       )}

@@ -10,11 +10,12 @@ import { useForm } from "react-hook-form";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { useDarkMode } from "../contexts/DarkModeContext";
-import api, { getApiErrorMessage } from "../lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useDarkMode } from "@/contexts/DarkModeContext";
+import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
 
 // Password strength validation
 const passwordRequirements = {

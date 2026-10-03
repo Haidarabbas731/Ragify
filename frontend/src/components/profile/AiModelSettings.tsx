@@ -1,5 +1,6 @@
 import { AlertCircle, Check, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getApiErrorMessage } from "@/lib/errors";
 import {
   useAiModels,
   useAiSettings,
@@ -7,7 +8,6 @@ import {
   useSaveAiSettings,
   useTestAiSettings,
 } from "../../hooks/useAiSettings";
-import { getApiErrorMessage } from "../../lib/api";
 import type { AiProvider } from "../../types/api";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";

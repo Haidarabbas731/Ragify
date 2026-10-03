@@ -72,7 +72,6 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
       );
 
       // Invalidate documents list to refresh (will show new status)
-      console.log("[SSE] Invalidating documents query");
       // The detail query carries the chunk list, which the status patch above can't supply
       queryClient.invalidateQueries({
         queryKey: ["document", update.document_id],
@@ -80,21 +79,17 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
 
       // Invalidate user stats to update counts and storage
-      console.log("[SSE] Invalidating userStats query");
       queryClient.invalidateQueries({ queryKey: ["userStats"] });
 
       // Show toast notification
-      console.log("[SSE] Showing toast for status:", update.status);
       if (update.status === "active") {
         toast.success(`${update.filename} processed successfully`, {
           description: `${update.chunks_count} chunks created`,
         });
-        console.log("[SSE] Success toast triggered");
       } else if (update.status === "error") {
         toast.error(`❌ ${update.filename} processing failed`, {
           description: update.error_message || "Unknown error",
         });
-        console.log("[SSE] Error toast triggered");
       }
       setLastUpdate(update);
     },
@@ -117,12 +112,10 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
     try {
       // EventSource doesn't support custom headers, so we pass token as query param
       const url = `${SSE_ENDPOINT}?token=${token}`;
-      console.log("[SSE] Connecting to:", SSE_ENDPOINT);
       const eventSource = new EventSource(url);
 
       eventSource.onopen = () => {
         if (isUnmountedRef.current) return;
-        console.log("[SSE] Connection opened successfully");
         setConnectionState("connected");
         reconnectAttemptsRef.current = 0; // Reset on successful connection
       };
@@ -132,7 +125,6 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
 
         try {
           const data = JSON.parse(event.data);
-          console.log("[SSE] Received message:", data);
 
           // Handle errors from backend
           if (data.error) {
@@ -142,7 +134,6 @@ export function useDocumentStatusUpdates(): UseDocumentStatusUpdatesReturn {
 
           // Handle document status updates
           if (data.document_id && data.status) {
-            console.log("[SSE] Updating document cache:", data);
             updateDocumentCache(data as DocumentStatusUpdate);
           }
         } catch (error) {

@@ -7,7 +7,8 @@
 import { AlertCircle, Check, Eye, EyeOff, Lock, Shield, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import api, { getApiErrorMessage } from "../../lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
+import api from "../../lib/api";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";

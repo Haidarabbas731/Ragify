@@ -1,7 +1,7 @@
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useDarkMode } from "../../hooks/useDarkMode";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { useAuthStore } from "../../store/authStore";
 import { Button } from "../ui/button";
 

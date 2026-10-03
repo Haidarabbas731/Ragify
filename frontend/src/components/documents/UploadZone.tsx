@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
+import { formatBytes } from "@/lib/format";
 import { useBulkUploadDocuments } from "../../hooks/useDocuments";
 import { Button } from "../ui/button";
 
@@ -152,12 +153,6 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
         ),
       );
     }
-  };
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const getStatusColor = (status: UploadedFile["status"]) => {
@@ -305,7 +300,7 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
 
                     <div className="flex items-center gap-3 text-xs font-['Fira_Code']">
                       <span className="text-slate-500 dark:text-slate-400">
-                        {formatFileSize(fileItem.file.size)}
+                        {formatBytes(fileItem.file.size)}
                       </span>
                       {fileItem.status === "success" && fileItem.chunks && (
                         <>

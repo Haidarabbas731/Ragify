@@ -6,7 +6,7 @@
 
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import { Component, type ReactNode } from "react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   children: ReactNode;
