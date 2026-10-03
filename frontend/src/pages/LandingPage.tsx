@@ -3,11 +3,11 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { FinalCta } from "@/components/landing/FinalCta";
-import { HeroDemo } from "@/components/landing/HeroDemo";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
 import { WhyRagify } from "@/components/landing/WhyRagify";
+import { CitedAnswerDemo } from "@/components/shared/CitedAnswerDemo";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
 
@@ -67,7 +67,7 @@ export function LandingPage() {
               </p>
             </div>
 
-            <HeroDemo />
+            <CitedAnswerDemo />
           </div>
         </section>
 
