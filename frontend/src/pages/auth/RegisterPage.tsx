@@ -1,96 +1,57 @@
-/**
- * Register Page - Structured Onboarding
- * Full-page form with minimal aesthetic, different from login
- * Fonts: Fira Code (main), IBM Plex Sans (secondary)
- */
-
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  AlertCircle,
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Eye,
-  EyeOff,
-  Loader2,
-  X,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { FieldError } from "@/components/auth/FieldError";
+import { FormError } from "@/components/auth/FormError";
+import { PasswordInput } from "@/components/auth/PasswordInput";
+import { PasswordStrength } from "@/components/auth/PasswordStrength";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useDarkMode } from "@/contexts/DarkModeContext";
 import { useAuthConfig } from "@/hooks/useAuthConfig";
 import api from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/errors";
+import { passwordSchema } from "@/lib/password";
 import { useAuthStore } from "@/store/authStore";
-
-// Password strength validation
-const passwordRequirements = {
-  minLength: /.{8,}/,
-  uppercase: /[A-Z]/,
-  lowercase: /[a-z]/,
-  number: /\d/,
-  special: /[!@#$%^&*(),.?":{}|<>]/,
-};
-
-const checkPasswordStrength = (password: string): number => {
-  if (!password) return 0;
-  let score = 0;
-  if (passwordRequirements.minLength.test(password)) score++;
-  if (passwordRequirements.uppercase.test(password)) score++;
-  if (passwordRequirements.lowercase.test(password)) score++;
-  if (passwordRequirements.number.test(password)) score++;
-  if (passwordRequirements.special.test(password)) score++;
-  return score;
-};
-
-const getStrengthColor = (score: number): string => {
-  if (score === 0) return "bg-stone-300 dark:bg-zinc-700";
-  if (score <= 2) return "bg-red-500";
-  if (score === 3) return "bg-orange-500";
-  if (score === 4) return "bg-lime-500";
-  return "bg-green-500";
-};
-
-const getStrengthLabel = (score: number): string => {
-  if (score === 0) return "";
-  if (score <= 2) return "Weak";
-  if (score === 3) return "Fair";
-  if (score === 4) return "Good";
-  return "Strong";
-};
 
 const INVITE_CODE_PATTERN = /^KB-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 
-// Validation schema. The invite code is only checked (and only sent) when the server runs
-// in invite-only mode, so one server setting controls both sides.
+/** Formats typed or pasted text as `KB-XXXX-XXXX-XXXX`. */
+function formatInviteCode(value: string): string {
+  const cleaned = value
+    .replace(/[^A-Z0-9]/gi, "")
+    .toUpperCase()
+    .slice(0, 14);
+  return [
+    cleaned.slice(0, 2),
+    cleaned.slice(2, 6),
+    cleaned.slice(6, 10),
+    cleaned.slice(10, 14),
+  ]
+    .filter(Boolean)
+    .join("-");
+}
+
+// The invite code is only checked (and only sent) when the server runs in invite-only
+// mode, so one server setting controls both sides.
 const createRegisterSchema = (inviteOnly: boolean) =>
   z
     .object({
-      email: z.string().email("Invalid email address"),
-      password: z
-        .string()
-        .min(8, "Password must be at least 8 characters")
-        .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-        .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-        .regex(/\d/, "Password must contain at least one number")
-        .regex(
-          /[!@#$%^&*(),.?":{}|<>]/,
-          "Password must contain at least one special character",
-        ),
+      email: z.string().email("Enter a valid email address"),
+      password: passwordSchema,
       inviteCode: z.string().optional(),
     })
     .superRefine((data, ctx) => {
       if (inviteOnly && !INVITE_CODE_PATTERN.test(data.inviteCode ?? "")) {
         ctx.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           path: ["inviteCode"],
-          message: "Invite code must be in format KB-XXXX-XXXX-XXXX",
+          message: "Invite codes look like KB-XXXX-XXXX-XXXX",
         });
       }
     });
@@ -100,8 +61,6 @@ type RegisterFormData = z.infer<ReturnType<typeof createRegisterSchema>>;
 export function RegisterPage() {
   const navigate = useNavigate();
   const { isAuthenticated, setLoading } = useAuthStore();
-  const [showPassword, setShowPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -112,17 +71,10 @@ export function RegisterPage() {
     [inviteOnly],
   );
 
-  // Initialize dark mode from localStorage
-  useDarkMode();
-
-  // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/dashboard", { replace: true });
-    }
+    if (isAuthenticated) navigate("/dashboard", { replace: true });
   }, [isAuthenticated, navigate]);
 
-  // Form setup
   const {
     register,
     handleSubmit,
@@ -134,71 +86,34 @@ export function RegisterPage() {
     mode: "onChange",
   });
 
-  // Watch password for strength indicator
-  const password = watch("password");
-  useEffect(() => {
-    if (password) {
-      setPasswordStrength(checkPasswordStrength(password));
-    } else {
-      setPasswordStrength(0);
-    }
-  }, [password]);
-
-  // Auto-format invite code (handles paste, typing, uppercase, and trimming)
+  const password = watch("password") ?? "";
   const inviteCode = watch("inviteCode");
+
   useEffect(() => {
-    if (inviteCode) {
-      // Remove all non-alphanumeric characters and convert to uppercase
-      const cleaned = inviteCode.replace(/[^A-Z0-9]/gi, "").toUpperCase();
-
-      // Trim to max 14 characters (will become 17 with hyphens: KB-XXXX-XXXX-XXXX)
-      const trimmed = cleaned.slice(0, 14);
-
-      // Format with hyphens: KB-XXXX-XXXX-XXXX
-      let formatted = "";
-      if (trimmed.length > 0) {
-        formatted = trimmed.slice(0, 2);
-        if (trimmed.length > 2) {
-          formatted += `-${trimmed.slice(2, 6)}`;
-        }
-        if (trimmed.length > 6) {
-          formatted += `-${trimmed.slice(6, 10)}`;
-        }
-        if (trimmed.length > 10) {
-          formatted += `-${trimmed.slice(10, 14)}`;
-        }
-      }
-
-      // Only update if the formatted value is different
-      if (formatted !== inviteCode) {
-        setValue("inviteCode", formatted, { shouldValidate: true });
-      }
+    if (!inviteCode) return;
+    const formatted = formatInviteCode(inviteCode);
+    if (formatted !== inviteCode) {
+      setValue("inviteCode", formatted, { shouldValidate: true });
     }
   }, [inviteCode, setValue]);
 
-  // Handle form submission
   const onSubmit = async (data: RegisterFormData) => {
     setFormError(null);
     try {
       setIsSubmitting(true);
       setLoading(true);
-
-      // Call register API
       const response = await api.post("/auth/register", {
         email: data.email,
         password: data.password,
         invite_code: inviteOnly ? data.inviteCode : undefined,
       });
-
-      // Store tokens
       localStorage.setItem("access_token", response.data.access_token);
       localStorage.setItem("refresh_token", response.data.refresh_token);
-
-      toast.success("Account created successfully!");
+      toast.success("Account created");
       navigate("/dashboard");
     } catch (error: unknown) {
       setFormError(
-        getApiErrorMessage(error, "Registration failed. Please try again."),
+        getApiErrorMessage(error, "Registration failed. Try again."),
       );
     } finally {
       setIsSubmitting(false);
@@ -207,382 +122,88 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left Side - Progress Indicator */}
-      <div className="hidden lg:flex lg:w-1/2 bg-card relative overflow-hidden flex-col justify-between p-16">
-        {/* Subtle texture overlay */}
-        <div
-          className="absolute inset-0 opacity-5"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }}
-        />
-
-        <div className="relative z-10">
-          {/* Logo & Brand */}
-          <div className="mb-12">
-            <div className="flex items-center gap-4 mb-6">
-              <img src="/ragify.png" alt="Ragify Logo" className="w-24 h-24" />
-              <h2 className="text-5xl font-bold font-sans text-card-foreground">
-                Ragify
-              </h2>
-            </div>
-            <p className="text-xl text-muted-foreground font-sans">
-              Your AI-Powered Knowledge Hub
-            </p>
-          </div>
-
-          {/* Progress Steps */}
-          <div className="space-y-8">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
-                <span
-                  className="text-zinc-950 font-bold"
-                  style={{ fontFamily: "'Fira Code', monospace" }}
-                >
-                  01
-                </span>
-              </div>
-              <div className="pt-2">
-                <h3
-                  className="text-card-foreground font-semibold mb-1"
-                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-                >
-                  Create Account
-                </h3>
-                <p
-                  className="text-muted-foreground text-sm"
-                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-                >
-                  Enter your details to get started
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 opacity-40">
-              <div className="w-10 h-10 rounded-full border-2 border-card-foreground flex items-center justify-center flex-shrink-0">
-                <span
-                  className="text-card-foreground font-bold"
-                  style={{ fontFamily: "'Fira Code', monospace" }}
-                >
-                  02
-                </span>
-              </div>
-              <div className="pt-2">
-                <h3
-                  className="text-card-foreground font-semibold mb-1"
-                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-                >
-                  Upload Documents
-                </h3>
-                <p
-                  className="text-muted-foreground text-sm"
-                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-                >
-                  Upload PDFs, DOCX, TXT, and markdown files to your knowledge
-                  base
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 opacity-40">
-              <div className="w-10 h-10 rounded-full border-2 border-card-foreground flex items-center justify-center flex-shrink-0">
-                <span
-                  className="text-card-foreground font-bold"
-                  style={{ fontFamily: "'Fira Code', monospace" }}
-                >
-                  03
-                </span>
-              </div>
-              <div className="pt-2">
-                <h3
-                  className="text-card-foreground font-semibold mb-1"
-                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-                >
-                  Start Chatting
-                </h3>
-                <p
-                  className="text-muted-foreground text-sm"
-                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-                >
-                  Use AI-powered chat to explore and query your documents
-                  instantly
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Quote */}
-        <div className="relative z-10">
-          <div className="w-12 h-1 bg-card-foreground mb-4" />
-          <p
-            className="text-muted-foreground text-sm leading-relaxed"
-            style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
+    <AuthShell
+      title="Create your account"
+      description="Start asking questions about your documents."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="font-medium text-primary underline-offset-4 hover:underline"
           >
-            Secure, private, and powerful. Your documents stay yours.
-          </p>
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        className="flex flex-col gap-5"
+      >
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            disabled={isSubmitting}
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "email-error" : undefined}
+            {...register("email")}
+          />
+          <FieldError id="email-error" message={errors.email?.message} />
         </div>
-      </div>
 
-      {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto bg-background relative">
-        {/* Back Button */}
-        <Link
-          to="/"
-          className="absolute top-8 left-8 flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="password">Password</Label>
+            <PasswordInput
+              id="password"
+              autoComplete="new-password"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.password}
+              {...register("password")}
+            />
+          </div>
+          <PasswordStrength password={password} />
+        </div>
+
+        {inviteOnly && !configLoading && (
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="inviteCode">Invite code</Label>
+            <Input
+              id="inviteCode"
+              autoComplete="off"
+              placeholder="KB-XXXX-XXXX-XXXX"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.inviteCode}
+              aria-describedby={
+                errors.inviteCode ? "invite-code-error" : undefined
+              }
+              className="font-mono uppercase tracking-wider"
+              {...register("inviteCode")}
+            />
+            <FieldError
+              id="invite-code-error"
+              message={errors.inviteCode?.message}
+            />
+          </div>
+        )}
+
+        <FormError message={formError} />
+
+        <Button
+          type="submit"
+          size="lg"
+          disabled={isSubmitting || configLoading}
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm">Back to home</span>
-        </Link>
-
-        <div className="w-full max-w-lg pt-16">
-          {/* Mobile Logo */}
-          <div className="lg:hidden mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <img src="/ragify.png" alt="Ragify Logo" className="w-16 h-16" />
-              <h2 className="text-2xl font-bold text-foreground font-sans">
-                Ragify
-              </h2>
-            </div>
-          </div>
-
-          {/* Heading */}
-          <div className="mb-12">
-            <h2 className="text-5xl font-bold text-foreground mb-3 font-sans">
-              Create Account
-            </h2>
-            <p className="text-lg text-muted-foreground font-sans">
-              Access your Ragify workspace
-            </p>
-          </div>
-
-          {/* Register Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-            {/* Email Field */}
-            <div className="space-y-3">
-              <Label
-                htmlFor="email"
-                className="text-xs uppercase tracking-widest text-foreground font-medium font-sans"
-              >
-                Email
-              </Label>
-              <Input
-                {...register("email")}
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="your@email.com"
-                className="h-14 border-0 border-b-2 border-border rounded-none focus:border-primary focus:ring-0 bg-transparent text-foreground placeholder:text-muted-foreground text-lg transition-colors font-sans"
-                disabled={isSubmitting}
-              />
-              {errors.email && (
-                <p className="text-sm text-destructive font-sans">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-
-            {/* Password Field with Strength Indicator */}
-            <div className="space-y-3">
-              <Label
-                htmlFor="password"
-                className="text-xs uppercase tracking-widest text-foreground font-medium font-sans"
-              >
-                Password
-              </Label>
-              <div className="relative">
-                <Input
-                  {...register("password")}
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  className="h-14 border-0 border-b-2 border-border rounded-none focus:border-primary focus:ring-0 bg-transparent text-foreground placeholder:text-muted-foreground text-lg pr-12 transition-colors font-sans"
-                  disabled={isSubmitting}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  disabled={isSubmitting}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-
-              {/* Password Strength Indicator */}
-              {password && (
-                <div className="space-y-2 mt-3">
-                  <div className="flex gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <div
-                        // biome-ignore lint/suspicious/noArrayIndexKey: Static array that never reorders
-                        key={i}
-                        className={`h-1 flex-1 transition-all duration-300 ${
-                          i < passwordStrength
-                            ? getStrengthColor(passwordStrength)
-                            : "bg-zinc-200 dark:bg-zinc-800"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  {passwordStrength > 0 && (
-                    <p
-                      className="text-xs text-zinc-600 dark:text-zinc-400"
-                      style={{ fontFamily: "'Fira Code', monospace" }}
-                    >
-                      Strength: {getStrengthLabel(passwordStrength)}
-                    </p>
-                  )}
-
-                  {/* Password Requirements Checklist */}
-                  <div className="space-y-1 mt-2">
-                    {[
-                      {
-                        label: "8+ characters",
-                        test: passwordRequirements.minLength,
-                      },
-                      {
-                        label: "Uppercase letter",
-                        test: passwordRequirements.uppercase,
-                      },
-                      {
-                        label: "Lowercase letter",
-                        test: passwordRequirements.lowercase,
-                      },
-                      { label: "Number", test: passwordRequirements.number },
-                      {
-                        label: "Special character",
-                        test: passwordRequirements.special,
-                      },
-                    ].map(({ label, test }) => (
-                      <div
-                        key={label}
-                        className="flex items-center gap-2 text-xs"
-                      >
-                        {test.test(password) ? (
-                          <Check className="w-3 h-3 text-green-500" />
-                        ) : (
-                          <X className="w-3 h-3 text-zinc-400 dark:text-zinc-600" />
-                        )}
-                        <span
-                          className={
-                            test.test(password)
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-zinc-500 dark:text-zinc-500"
-                          }
-                          style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-                        >
-                          {label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {errors.password && (
-                <p
-                  className="text-sm text-red-600 dark:text-red-400"
-                  style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-                >
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-
-            {/* Invite Code Field: only when the server requires one */}
-            {inviteOnly && !configLoading && (
-              <div className="space-y-3">
-                <Label
-                  htmlFor="inviteCode"
-                  className="text-xs uppercase tracking-widest text-foreground font-medium font-sans"
-                >
-                  Invite Code
-                </Label>
-                <Input
-                  {...register("inviteCode")}
-                  id="inviteCode"
-                  type="text"
-                  placeholder="KB-XXXX-XXXX-XXXX"
-                  maxLength={17}
-                  className="h-14 border-0 border-b-2 border-border rounded-none focus:border-primary focus:ring-0 bg-transparent text-foreground placeholder:text-muted-foreground uppercase tracking-widest text-center font-sans transition-colors"
-                  disabled={isSubmitting}
-                />
-                {errors.inviteCode && (
-                  <p className="text-sm text-destructive font-sans">
-                    {errors.inviteCode.message}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground font-sans">
-                  Don't have a code?{" "}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      toast.info(
-                        "Contact your administrator for an invite code",
-                      )
-                    }
-                    className="text-primary underline hover:no-underline"
-                  >
-                    Request access
-                  </button>
-                </p>
-              </div>
-            )}
-
-            {/* Inline error */}
-            {formError && (
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive font-sans">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <p className="text-sm font-medium">{formError}</p>
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={isSubmitting || configLoading}
-              className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-lg transition-all duration-300 hover:translate-y-[-2px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 group font-sans"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                <>
-                  Create Account
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </Button>
-          </form>
-
-          {/* Login Link */}
-          <div className="mt-12 pt-8 border-t border-border">
-            <p className="text-muted-foreground text-center font-sans">
-              Already have an account?{" "}
-              <Link
-                to="/login"
-                className="text-primary font-medium underline underline-offset-4 hover:no-underline transition-all"
-              >
-                Sign in
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
-      `}</style>
-    </div>
+          {isSubmitting && <Loader2 className="animate-spin" />}
+          {isSubmitting ? "Creating account…" : "Create account"}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }
