@@ -1,7 +1,7 @@
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Logo } from "@/components/shared/Logo";
+import { Wordmark } from "@/components/shared/Wordmark";
 import { Button } from "@/components/ui/button";
 import { useDarkMode } from "@/contexts/DarkModeContext";
 import { cn } from "@/lib/utils";
@@ -33,15 +33,12 @@ export function LandingNav() {
         scrolled ? "border-border" : "border-transparent",
       )}
     >
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-6">
-        <Link to="/" className="flex items-center gap-2.5" aria-label="Ragify">
-          <Logo size={32} />
-          <span className="text-title text-foreground">Ragify</span>
-        </Link>
+      <div className="mx-auto flex h-[72px] w-full max-w-6xl items-center gap-4 px-6">
+        <Wordmark />
 
         <nav
           aria-label="Page sections"
-          className="ml-8 hidden items-center gap-1 md:flex"
+          className="ml-6 hidden items-center gap-1 md:flex"
         >
           {LINKS.map((link) => (
             <a
