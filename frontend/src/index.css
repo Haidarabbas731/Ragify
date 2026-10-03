@@ -239,6 +239,53 @@ html, body {
     }
   }
 
+  /* A frame that must never scroll, even programmatically (scrollIntoView, focus).
+     `hidden` is the fallback for browsers without `clip`. */
+  .overflow-locked {
+    overflow: hidden;
+    overflow: clip;
+  }
+
+  /* Translucent top bar; falls back to solid when the user asks for less transparency. */
+  .material-bar {
+    background: color-mix(in oklab, var(--card) 80%, transparent);
+    backdrop-filter: blur(20px) saturate(160%);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .material-bar {
+      background: var(--card);
+      backdrop-filter: none;
+    }
+  }
+
+  /* New list row fades in and drops 4px into place. */
+  .motion-row-in {
+    animation: motion-row-in 180ms var(--ease-out) both;
+  }
+  @keyframes motion-row-in {
+    from {
+      opacity: 0;
+      transform: translateY(calc(var(--motion-shift) * -1));
+    }
+  }
+
+  /* Row collapse: animate grid rows 1fr -> 0fr (same trick as .faq-answer) plus fade. */
+  .collapse-rows {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition:
+      grid-template-rows var(--dur-base) var(--ease-out),
+      opacity var(--dur-base) var(--ease-out);
+  }
+  .collapse-rows[data-collapsed="true"] {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+  .collapse-rows > * {
+    overflow: hidden;
+    min-height: 0;
+  }
+
   /* ----- Easing helpers (use with transition-* utilities) ----- */
   .ease-snap {
     transition-timing-function: var(--ease-out);

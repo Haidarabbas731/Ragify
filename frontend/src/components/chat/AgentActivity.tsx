@@ -53,11 +53,8 @@ export function AgentActivity({ activity }: AgentActivityProps) {
   const showQuery = phase === "searching" && Boolean(query);
 
   return (
-    <div className="flex justify-start animate-in fade-in duration-200">
-      <output
-        aria-live="polite"
-        className="block bg-card border border-border rounded-xl rounded-tl-none px-5 py-4 shadow-md max-w-[80%]"
-      >
+    <div className="fade-in-soft flex justify-start">
+      <output aria-live="polite" className="block">
         <div className="flex items-center gap-3 min-h-5">
           {phase === "failed" ? (
             <TriangleAlert
@@ -94,10 +91,7 @@ export function AgentActivity({ activity }: AgentActivityProps) {
           )}
 
           {/* Keyed so a new phase replays the swap animation */}
-          <span
-            key={phase}
-            className="step-in text-sm text-muted-foreground font-sans"
-          >
+          <span key={phase} className="step-in text-body text-muted-foreground">
             {describe(activity)}
             {phase === "searching" ||
             phase === "reading" ||
