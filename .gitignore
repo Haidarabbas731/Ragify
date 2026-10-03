@@ -126,5 +126,5 @@ backend/temp/
 backend/storage/
 railpack/
 
-# Large local test fixtures
-backend/public/docs/60mb.pdf
+# Local sample documents
+backend/public/docs/
