@@ -8,7 +8,12 @@ from app.core.crypto import SecretDecryptionError, decrypt_secret, encrypt_secre
 from app.models.user_ai_settings import UserAISettings
 from app.prompts.chat_prompt import SEARCH_TOOL_NAME
 from app.services.chat_service import SEARCH_TOOL
-from app.services.providers.base import ChatProvider, Message, ProviderAuthError
+from app.services.providers.base import (
+    ChatProvider,
+    Message,
+    ProviderAuthError,
+    ProviderKeyMissingError,
+)
 from app.services.providers.registry import get_chat_provider
 
 logger = logging.getLogger(__name__)
@@ -112,8 +117,7 @@ async def resolve_chat_provider(db: AsyncSession, user_id: str) -> ChatProvider:
     """
     Pick the chat provider for a user's request.
 
-    The user's own saved provider, model and key win. Otherwise the server's configured
-    provider, model and key (from .env) are used.
+    Chat always runs on the user's own saved provider, model and key; the server has none.
 
     Args:
         db: Database session
@@ -123,12 +127,12 @@ async def resolve_chat_provider(db: AsyncSession, user_id: str) -> ChatProvider:
         ChatProvider: Provider to run the chat agent with
 
     Raises:
-        ProviderKeyMissingError: If the user has no key and the server has none either
+        ProviderKeyMissingError: If the user has not saved an API key
     """
     row = await get_ai_settings(db, user_id)
-    if row is not None:
-        return get_chat_provider(row.provider, row.model, stored_api_key(row))
-    return get_chat_provider()
+    if row is None:
+        raise ProviderKeyMissingError("The user has not saved an API key")
+    return get_chat_provider(row.provider, row.model, stored_api_key(row))
 
 
 async def check_connection(provider: ChatProvider) -> None:

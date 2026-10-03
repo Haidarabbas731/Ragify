@@ -45,11 +45,9 @@ export function ChatPage() {
   const { isStreaming, currentResponse, activity, streamChat } =
     useChatStream();
 
-  // Chat needs a key: the user's own, or the server's default. If neither exists, ask.
+  // Chat runs on the user's own key; the server has none. Without one, ask for it.
   const { data: aiSettings } = useAiSettings();
-  const needsApiKey = Boolean(
-    aiSettings && !aiSettings.has_key && !aiSettings.default_available,
-  );
+  const needsApiKey = Boolean(aiSettings && !aiSettings.has_key);
   const [keyDialogOpen, setKeyDialogOpen] = useState(false);
   useEffect(() => {
     if (needsApiKey) setKeyDialogOpen(true);

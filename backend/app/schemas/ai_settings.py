@@ -30,7 +30,7 @@ class AISettingsUpdate(BaseModel):
 
 
 class AISettingsResponse(BaseModel):
-    """The user's saved settings plus what chat uses when they have none. Never contains the key."""
+    """The user's saved settings plus the provider and model to suggest. Never contains the key."""
 
     provider: str | None
     model: str | None
@@ -38,9 +38,6 @@ class AISettingsResponse(BaseModel):
     key_last4: str | None
     default_provider: str
     default_model: str
-    # Whether the server (.env) has a key for its default provider. If not, a user without
-    # their own key cannot chat and must add one.
-    default_available: bool
     providers: list[str]
 
 

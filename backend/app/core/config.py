@@ -44,7 +44,8 @@ class Settings(BaseSettings):
     B2_APPLICATION_KEY: str | None = None
     B2_BUCKET_NAME: str | None = None
 
-    # Chat model provider: "gemini" or "openrouter"
+    # Provider suggested in the AI settings screen: "gemini" or "openrouter". The server holds
+    # no chat key; every user adds their own (Profile > AI model).
     LLM_PROVIDER: str = "gemini"
     # Optional: key used to encrypt users' saved provider API keys. When empty (the default)
     # one is derived from JWT_SECRET_KEY, so saving keys works with no extra setup. Either
@@ -59,20 +60,18 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("LLM_TIMEOUT_SECONDS", "GEMINI_RAG_TIMEOUT_SECONDS"),
     )
 
-    # Google Gemini (chat)
-    GOOGLE_API_KEY: str | None = None
+    # Google Gemini (chat): suggested model name only
     GEMINI_MODEL: str = "gemini-2.5-flash"
     # Thinking effort for chat/agent calls: "minimal", "low", "medium" or "high" (which
     # levels are valid depends on the model). Empty leaves the model default. If the
     # model rejects the setting, the call is retried without it.
     GEMINI_THINKING_LEVEL: str = "low"
 
-    # OpenRouter (chat, OpenAI-compatible API)
-    OPENROUTER_API_KEY: str | None = None
+    # OpenRouter (chat, OpenAI-compatible API): suggested model name only
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     OPENROUTER_MODEL: str = "openai/gpt-4o-mini"
 
-    # Cohere (embeddings)
+    # Cohere (embeddings): the one server-side key, needed to index files and embed questions
     COHERE_API_KEY: str
     EMBEDDING_MODEL: str = "embed-v4.0"
     # Embedding dimension. Cohere embed-v4.0 supports 256, 512, 1024 or 1536.

@@ -15,7 +15,7 @@ const POINTS = [
   {
     icon: KeyRound,
     title: "Bring your own model",
-    text: "Use the default model, or connect your own Gemini or OpenRouter API key from your profile.",
+    text: "Connect your own Gemini or OpenRouter API key from your profile and choose the model you want.",
   },
   {
     icon: LockKeyhole,

@@ -65,7 +65,7 @@ export function useResetAiSettings() {
     mutationFn: resetAiSettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: SETTINGS_KEY });
-      toast.success("Your key was removed. Chat now uses the default model.");
+      toast.success("Your key was removed. Add a new one to keep chatting.");
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Failed to remove your key"));
@@ -100,7 +100,7 @@ function fingerprint(value: string): string {
  * List models for a provider.
  *
  * OpenRouter's list is public. Gemini's needs a key: the one being typed (once the user
- * pauses), else the saved or server key, which the backend picks. With no key it is empty.
+ * pauses), else the saved key, which the backend picks. With no key it is empty.
  * @param provider - Provider to list models for
  * @param apiKey - Key the user is typing, if any
  * @returns Models with React Query state
