@@ -1,34 +1,26 @@
-/**
- * Document Upload Zone - Data Intake Terminal
- * Clean upload interface with drag-drop, validation, and progress tracking
- * Fonts: Geist (UI), Geist Mono (technical readouts)
- */
-
-import {
-  AlertCircle,
-  CheckCircle2,
-  FileText,
-  Loader2,
-  Upload,
-  X,
-} from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import { useState } from "react";
 import { type FileRejection, useDropzone } from "react-dropzone";
 import { toast } from "sonner";
+import { CollectionSelect } from "@/components/shared/CollectionSelect";
+import { StatusBadge } from "@/components/shared/StatusBadge";
+import { Button } from "@/components/ui/button";
+import { useCollections } from "@/hooks/useCollections";
+import { useBulkUploadDocuments } from "@/hooks/useDocuments";
 import { formatBytes } from "@/lib/format";
-import { useBulkUploadDocuments } from "../../hooks/useDocuments";
-import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
+import { FileIcon } from "./FileIcon";
 
-interface UploadedFile {
+interface QueuedFile {
   file: File;
   id: string;
   status: "pending" | "uploading" | "success" | "error";
-  progress: number;
   error?: string;
   chunks?: number;
 }
 
 interface UploadZoneProps {
+  /** Called after a batch finishes uploading, whether or not every file succeeded. */
   onUploadComplete?: () => void;
 }
 
@@ -40,39 +32,38 @@ const ALLOWED_TYPES = {
   "text/plain": [".txt"],
   "text/markdown": [".md"],
 };
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const extensionOf = (name: string) => name.split(".").pop() ?? "";
 
+/** Drop files (or browse), optionally pick a collection, and upload them in one batch. */
 export function UploadZone({ onUploadComplete }: UploadZoneProps) {
-  const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [selectedCollection, setSelectedCollection] = useState<string>("");
+  const [files, setFiles] = useState<QueuedFile[]>([]);
+  const [collectionId, setCollectionId] = useState<string | null>(null);
+  const { data: collectionsData } = useCollections();
+  const collections = collectionsData?.collections ?? [];
+  const bulkUpload = useBulkUploadDocuments();
 
-  // Use the real bulk upload mutation
-  const bulkUploadMutation = useBulkUploadDocuments();
-
-  const onDrop = (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
-    // Handle rejected files
-    rejectedFiles.forEach((rejection) => {
-      const errors = rejection.errors
+  const onDrop = (accepted: File[], rejected: FileRejection[]) => {
+    for (const rejection of rejected) {
+      const reasons = rejection.errors
         .map((e) => {
-          if (e.code === "file-too-large") return "File exceeds 50MB limit";
+          if (e.code === "file-too-large") return "larger than 50 MB";
           if (e.code === "file-invalid-type")
-            return "Invalid file type (PDF, DOCX, TXT, MD only)";
+            return "not a PDF, DOCX, TXT or MD file";
           return e.message;
         })
         .join(", ");
-      toast.error(`${rejection.file.name}: ${errors}`);
-    });
-
-    // Add accepted files to queue
-    const newFiles: UploadedFile[] = acceptedFiles.map((file) => ({
-      file,
-      id: Math.random().toString(36).substring(7),
-      status: "pending",
-      progress: 0,
-    }));
-
-    setFiles((prev) => [...prev, ...newFiles]);
+      toast.error(`${rejection.file.name} was skipped: ${reasons}`);
+    }
+    setFiles((prev) => [
+      ...prev,
+      ...accepted.map((file) => ({
+        file,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        status: "pending" as const,
+      })),
+    ]);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -82,65 +73,36 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
     multiple: true,
   });
 
-  const removeFile = (id: string) => {
-    setFiles((prev) => prev.filter((f) => f.id !== id));
-  };
+  const pending = files.filter((f) => f.status === "pending");
+  const uploading = files.some((f) => f.status === "uploading");
 
-  const uploadFiles = async () => {
-    const pendingFiles = files.filter((f) => f.status === "pending");
-
-    if (pendingFiles.length === 0) {
-      toast.error("No files to upload");
-      return;
-    }
-
-    // Set all pending files to uploading status
+  const upload = async () => {
+    if (pending.length === 0) return;
     setFiles((prev) =>
       prev.map((f) =>
-        f.status === "pending" ? { ...f, status: "uploading", progress: 0 } : f,
+        f.status === "pending" ? { ...f, status: "uploading" } : f,
       ),
     );
-
     try {
-      // Call the real API with bulk upload
-      const filesToUpload = pendingFiles.map((f) => f.file);
-      const result = await bulkUploadMutation.mutateAsync({
-        files: filesToUpload,
-        collectionId: selectedCollection || undefined,
+      const result = await bulkUpload.mutateAsync({
+        files: pending.map((f) => f.file),
+        collectionId: collectionId ?? undefined,
       });
-
-      // Update successful uploads
       setFiles((prev) =>
         prev.map((f) => {
-          const uploaded = result.documents?.find(
-            (doc) => doc.filename === f.file.name,
+          if (f.status !== "uploading") return f;
+          const done = result.documents?.find(
+            (d) => d.filename === f.file.name,
           );
-          if (uploaded) {
-            return {
-              ...f,
-              status: "success",
-              progress: 100,
-              chunks: uploaded.chunks_count || 0,
-            };
-          }
-          // Check if file failed
+          if (done)
+            return { ...f, status: "success", chunks: done.chunks_count || 0 };
           const failed = result.failed_uploads?.find(
-            (fail) => fail.filename === f.file.name,
+            (x) => x.filename === f.file.name,
           );
-          if (failed) {
-            return {
-              ...f,
-              status: "error",
-              error: failed.error,
-            };
-          }
-          return f;
+          return failed ? { ...f, status: "error", error: failed.error } : f;
         }),
       );
-
-      onUploadComplete?.();
     } catch (error) {
-      // Mark all uploading files as error
       setFiles((prev) =>
         prev.map((f) =>
           f.status === "uploading"
@@ -152,216 +114,107 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
             : f,
         ),
       );
-    }
-  };
-
-  const getStatusColor = (status: UploadedFile["status"]) => {
-    switch (status) {
-      case "pending":
-        return "text-muted-foreground";
-      case "uploading":
-        return "text-primary";
-      case "success":
-        return "text-emerald-600 dark:text-emerald-400";
-      case "error":
-        return "text-destructive";
-    }
-  };
-
-  const getStatusIcon = (status: UploadedFile["status"]) => {
-    switch (status) {
-      case "pending":
-        return <FileText className="w-5 h-5" />;
-      case "uploading":
-        return <Loader2 className="w-5 h-5 animate-spin" />;
-      case "success":
-        return <CheckCircle2 className="w-5 h-5" />;
-      case "error":
-        return <AlertCircle className="w-5 h-5" />;
+    } finally {
+      onUploadComplete?.();
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Drop Zone */}
+    <div className="flex flex-col gap-4">
       <div
         {...getRootProps()}
-        className={`relative overflow-hidden rounded-xl border-2 border-dashed transition-all duration-300 cursor-pointer ${
+        className={cn(
+          "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-dashed px-6 py-10 text-center transition-colors duration-150 ease-snap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           isDragActive
-            ? "border-primary bg-primary/10 scale-[1.02]"
-            : "border-border bg-card hover:border-primary/50"
-        }`}
+            ? "border-primary bg-secondary/60"
+            : "border-input bg-muted/40 hover:bg-muted",
+        )}
       >
         <input {...getInputProps()} />
-
-        {/* Scan line animation */}
-        {isDragActive && (
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan" />
-          </div>
-        )}
-
-        <div className="p-12 text-center">
-          <div
-            className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 transition-all duration-300 ${
-              isDragActive ? "bg-primary/20 scale-110" : "bg-muted"
-            }`}
-          >
-            <Upload
-              className={`w-10 h-10 transition-colors ${
-                isDragActive ? "text-primary" : "text-muted-foreground"
-              }`}
-            />
-          </div>
-
-          <h3 className="text-xl font-bold text-foreground mb-2 font-sans">
-            {isDragActive ? "Drop files here" : "Upload Documents"}
-          </h3>
-
-          <p className="text-sm text-muted-foreground mb-1 font-sans">
-            Drag & drop files here or click to browse
-          </p>
-
-          <p className="text-xs text-muted-foreground font-mono">
-            PDF, DOCX, TXT, MD • Max 50MB per file
-          </p>
+        <div className="flex size-10 items-center justify-center rounded-xl bg-secondary text-primary">
+          <Upload className="size-5" aria-hidden="true" />
         </div>
+        <p className="text-body font-medium text-foreground">
+          {isDragActive
+            ? "Drop files to add them"
+            : "Drag files here, or click to browse"}
+        </p>
+        <p className="text-meta text-muted-foreground">
+          PDF, DOCX, TXT or MD, up to 50 MB each
+        </p>
       </div>
 
-      {/* Collection Selector */}
       {files.length > 0 && (
-        <div className="bg-card border border-border rounded-xl p-4">
-          <label
-            htmlFor="collection"
-            className="block text-sm font-medium text-foreground mb-2 font-sans"
-          >
-            Collection (Optional)
-          </label>
-          <select
-            id="collection"
-            value={selectedCollection}
-            onChange={(e) => setSelectedCollection(e.target.value)}
-            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground font-sans focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-          >
-            <option value="">All Documents</option>
-            {/* TODO: Replace with real collections from API */}
-            {/* <option value="collection-1">Work Documents</option>
-            <option value="collection-2">Personal Notes</option>
-            <option value="collection-3">Research Papers</option> */}
-          </select>
-        </div>
-      )}
-
-      {/* File List */}
-      {files.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 font-['Space_Grotesk']">
-              Files ({files.length})
-            </h4>
-            <Button
-              onClick={uploadFiles}
-              disabled={files.every((f) => f.status !== "pending")}
-              className="gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all duration-300 font-['Inter'] font-medium"
+        <ul className="flex max-h-56 flex-col gap-2 overflow-y-auto">
+          {files.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-center gap-3 rounded-xl border border-border bg-card p-2.5"
             >
-              <Upload className="w-4 h-4" />
-              Upload All
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            {files.map((fileItem) => (
-              <div
-                key={fileItem.id}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4 transition-all hover:border-slate-300 dark:hover:border-slate-700"
-              >
-                <div className="flex items-start gap-3">
-                  {/* Status Icon */}
-                  <div className={getStatusColor(fileItem.status)}>
-                    {getStatusIcon(fileItem.status)}
-                  </div>
-
-                  {/* File Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate font-['Inter']">
-                        {fileItem.file.name}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => removeFile(fileItem.id)}
-                        disabled={fileItem.status === "uploading"}
-                        className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label="Remove file"
-                      >
-                        <X className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-xs font-['Fira_Code']">
-                      <span className="text-slate-500 dark:text-slate-400">
-                        {formatBytes(fileItem.file.size)}
-                      </span>
-                      {fileItem.status === "success" && fileItem.chunks && (
-                        <>
-                          <span className="text-slate-400 dark:text-slate-600">
-                            •
-                          </span>
-                          <span className="text-emerald-600 dark:text-emerald-400">
-                            {fileItem.chunks} chunks
-                          </span>
-                        </>
-                      )}
-                      {fileItem.error && (
-                        <>
-                          <span className="text-slate-400 dark:text-slate-600">
-                            •
-                          </span>
-                          <span className="text-red-600 dark:text-red-400">
-                            {fileItem.error}
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Progress Bar - Indeterminate loading */}
-                    {fileItem.status === "uploading" && (
-                      <div className="mt-2">
-                        <div className="h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse w-full" />
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-['Fira_Code']">
-                          Uploading...
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <FileIcon type={extensionOf(item.file.name)} className="size-9" />
+              <div className="min-w-0 flex-1">
+                <p
+                  className="truncate text-body text-foreground"
+                  title={item.file.name}
+                >
+                  {item.file.name}
+                </p>
+                <p
+                  className={cn(
+                    "truncate text-meta tabular-nums",
+                    item.status === "error"
+                      ? "text-destructive"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {item.status === "error"
+                    ? item.error
+                    : item.status === "success"
+                      ? `${formatBytes(item.file.size)} · ${item.chunks} chunks`
+                      : formatBytes(item.file.size)}
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
+              {item.status === "uploading" && (
+                <Loader2
+                  className="size-4 animate-spin text-muted-foreground"
+                  aria-label="Uploading"
+                />
+              )}
+              {item.status === "success" && <StatusBadge status="active" />}
+              {item.status === "error" && <StatusBadge status="error" />}
+              {(item.status === "pending" || item.status === "error") && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={`Remove ${item.file.name}`}
+                  onClick={() =>
+                    setFiles((prev) => prev.filter((f) => f.id !== item.id))
+                  }
+                >
+                  <X />
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
 
-      <style>{`
-        @keyframes scan {
-          0% {
-            top: 0%;
-            opacity: 0;
-          }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            top: 100%;
-            opacity: 0;
-          }
-        }
-
-        .animate-scan {
-          animation: scan 2s ease-in-out infinite;
-        }
-      `}</style>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="text-meta text-muted-foreground">Add to</span>
+          <CollectionSelect
+            collections={collections}
+            value={collectionId}
+            onChange={setCollectionId}
+            allLabel="No collection"
+            className="h-9 w-auto"
+          />
+        </div>
+        <Button onClick={upload} disabled={pending.length === 0 || uploading}>
+          {uploading && <Loader2 className="animate-spin" />}
+          {pending.length > 1 ? `Upload ${pending.length} files` : "Upload"}
+        </Button>
+      </div>
     </div>
   );
 }

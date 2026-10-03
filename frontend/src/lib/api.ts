@@ -322,6 +322,7 @@ export const uploadDocument = async (
 export const getDocuments = async (params?: {
   page?: number;
   limit?: number;
+  search?: string;
   collection_id?: string;
   status_filter?: string;
   sort_by?: string;
@@ -391,6 +392,46 @@ export const deleteDocument = async (documentId: string) => {
  * @param documentIds - Array of document IDs
  * @returns Success message with count
  */
+/**
+ * Move documents into a collection, or out of any collection.
+ * @param documentIds - At most 100 documents (the backend limit)
+ * @param collectionId - Target collection, or `null` to remove from collections
+ */
+export const batchUpdateDocuments = async (
+  documentIds: string[],
+  collectionId: string | null,
+) => {
+  const { data } = await api.post("/documents/batch-update", {
+    document_ids: documentIds,
+    collection_id: collectionId ?? "",
+  });
+  return data as { updated_count: number; failed_count: number };
+};
+
+/**
+ * Collect the IDs of every document matching a filter, page by page.
+ * Used when "select all matching" spans more than one page.
+ */
+export const getAllMatchingDocumentIds = async (params: {
+  search?: string;
+  collection_id?: string;
+  status_filter?: string;
+}) => {
+  const ids: string[] = [];
+  let page = 1;
+  while (true) {
+    const data = await getDocuments({ ...params, page, limit: 100 });
+    ids.push(
+      ...(data.documents as { document_id: string }[]).map(
+        (doc) => doc.document_id,
+      ),
+    );
+    if (page >= data.pages) break;
+    page += 1;
+  }
+  return ids;
+};
+
 export const batchDeleteDocuments = async (documentIds: string[]) => {
   const { data } = await api.post("/documents/batch-delete", {
     document_ids: documentIds,
