@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   deleteConversation,
@@ -8,20 +14,55 @@ import {
 import { getApiErrorMessage } from "@/lib/errors";
 import type { Conversation, ConversationListItem } from "@/types/api";
 
+export const CONVERSATIONS_PAGE_SIZE = 20;
+
+const infiniteKey = (pageSize: number) => [
+  "conversations",
+  "infinite",
+  pageSize,
+];
+
 /**
- * Hook to fetch list of conversations
- * @param params - Pagination parameters
- * @returns React Query result with conversations list
+ * Hook to page through conversations for the sidebar history.
+ * The API has no total, so a short page means there is nothing more to load.
+ * @param pageSize - Conversations per request
  */
-export const useConversations = (params?: {
-  limit?: number;
-  offset?: number;
-}) => {
-  return useQuery<ConversationListItem[]>({
-    queryKey: ["conversations", params],
-    queryFn: () => getConversations(params),
+export const useInfiniteConversations = (
+  pageSize = CONVERSATIONS_PAGE_SIZE,
+) => {
+  return useInfiniteQuery({
+    queryKey: infiniteKey(pageSize),
+    queryFn: ({ pageParam }) =>
+      getConversations({ limit: pageSize, offset: pageParam }) as Promise<
+        ConversationListItem[]
+      >,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < pageSize ? undefined : allPages.length * pageSize,
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
+};
+
+/**
+ * Puts a just-created conversation at the top of the sidebar history so it appears
+ * before the next refetch confirms it.
+ */
+export const useAddConversationToHistory = () => {
+  const queryClient = useQueryClient();
+  return (conversation: ConversationListItem) => {
+    queryClient.setQueryData<InfiniteData<ConversationListItem[], number>>(
+      infiniteKey(CONVERSATIONS_PAGE_SIZE),
+      (data) => {
+        if (!data) return data;
+        const exists = data.pages.some((page) =>
+          page.some((c) => c.conversation_id === conversation.conversation_id),
+        );
+        if (exists) return data;
+        const [first = [], ...rest] = data.pages;
+        return { ...data, pages: [[conversation, ...first], ...rest] };
+      },
+    );
+  };
 };
 
 /**
