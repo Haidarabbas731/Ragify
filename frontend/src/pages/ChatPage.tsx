@@ -26,9 +26,13 @@ export function ChatPage() {
 
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
+  // The dashboard ask bar can hand over a collection to search in.
+  const requestedCollectionId =
+    (locationState as { collectionId?: string | null } | null)?.collectionId ??
+    null;
   const [selectedCollectionId, setSelectedCollectionId] = useState<
     string | null
-  >(null);
+  >(requestedCollectionId);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Tracks a conversation created mid-stream so the URL change doesn't flash a loading state.
@@ -73,7 +77,7 @@ export function ChatPage() {
   useEffect(() => {
     if (!conversationId) {
       setMessages([]);
-      setSelectedCollectionId(null);
+      setSelectedCollectionId(requestedCollectionId);
       newlyCreatedConversationRef.current = null;
     }
   }, [conversationId, locationKey]);
