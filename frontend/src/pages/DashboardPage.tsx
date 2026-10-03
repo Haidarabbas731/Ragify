@@ -1,10 +1,11 @@
 import { FilePlus2 } from "lucide-react";
 import { useOutletContext } from "react-router-dom";
 import { AskBar } from "@/components/dashboard/AskBar";
+import { AttentionStrip } from "@/components/dashboard/AttentionStrip";
 import { CollectionsSummary } from "@/components/dashboard/CollectionsSummary";
-import { IndexingStrip } from "@/components/dashboard/IndexingStrip";
+import { LibrarySummary } from "@/components/dashboard/LibrarySummary";
+import { MobileRecentChats } from "@/components/dashboard/MobileRecentChats";
 import { RecentDocuments } from "@/components/dashboard/RecentDocuments";
-import { StatTiles } from "@/components/dashboard/StatTiles";
 import type { AppOutletContext } from "@/components/layout/AppLayout";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -15,12 +16,8 @@ import { useUserStats } from "@/hooks/useUserStats";
 function DashboardSkeleton() {
   return (
     <div className="flex flex-col gap-4" aria-busy="true">
-      <Skeleton className="h-12 w-full rounded-2xl" />
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Skeleton className="h-24 rounded-2xl" />
-        <Skeleton className="h-24 rounded-2xl" />
-        <Skeleton className="h-24 rounded-2xl" />
-      </div>
+      <Skeleton className="h-[88px] w-full rounded-2xl" />
+      <Skeleton className="h-14 w-full rounded-2xl" />
       <div className="grid gap-4 lg:grid-cols-3">
         <Skeleton className="h-64 rounded-2xl lg:col-span-2" />
         <Skeleton className="h-64 rounded-2xl" />
@@ -35,6 +32,7 @@ export function DashboardPage() {
   const { data: stats, isLoading, error, refetch } = useUserStats();
 
   const processing = stats?.documents_by_status.processing ?? 0;
+  const failed = stats?.documents_by_status.error ?? 0;
 
   let content: React.ReactNode;
   if (isLoading) {
@@ -60,8 +58,9 @@ export function DashboardPage() {
     content = (
       <>
         <AskBar />
-        <IndexingStrip count={processing} />
-        <StatTiles stats={stats} />
+        <MobileRecentChats />
+        <AttentionStrip processing={processing} failed={failed} />
+        <LibrarySummary stats={stats} />
         <div className="grid gap-4 lg:grid-cols-3">
           <RecentDocuments />
           <CollectionsSummary />
