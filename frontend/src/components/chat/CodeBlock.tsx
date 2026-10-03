@@ -1,11 +1,7 @@
 import { Check, Copy } from "lucide-react";
-import { useState } from "react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import {
-  oneDark,
-  oneLight,
-} from "react-syntax-highlighter/dist/esm/styles/prism";
-import { useDarkMode } from "@/contexts/DarkModeContext";
+import { useEffect, useState } from "react";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { highlightCode } from "@/lib/highlight";
 import { Button } from "../ui/button";
 
 interface CodeBlockProps {
@@ -13,10 +9,32 @@ interface CodeBlockProps {
   value: string;
 }
 
-/** Syntax-highlighted code with a copy button; switches highlighting theme with dark mode. */
+// Wait for the text to stop changing so a streaming answer is coloured once it settles,
+// not on every token.
+const SETTLE_MS = 250;
+
+/**
+ * Code with a copy button. It shows as plain text straight away and is coloured as soon as
+ * the highlighter has loaded; colours follow light/dark through CSS variables.
+ */
 export function CodeBlock({ language = "text", value }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
-  const { darkMode } = useDarkMode();
+  const [html, setHtml] = useState<string | null>(null);
+  const settled = useDebouncedValue(value, SETTLE_MS);
+
+  useEffect(() => {
+    let cancelled = false;
+    highlightCode(settled, language)
+      .then((result) => {
+        if (!cancelled) setHtml(result);
+      })
+      .catch(() => {
+        if (!cancelled) setHtml(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [settled, language]);
 
   const handleCopy = async () => {
     try {
@@ -27,6 +45,9 @@ export function CodeBlock({ language = "text", value }: CodeBlockProps) {
       console.error("Failed to copy code:", err);
     }
   };
+
+  // Colours are only valid for the text they were made from
+  const showHighlighted = html !== null && settled === value;
 
   return (
     <div className="my-4 overflow-hidden rounded-xl border border-border">
@@ -50,23 +71,20 @@ export function CodeBlock({ language = "text", value }: CodeBlockProps) {
         </Button>
       </div>
 
-      <SyntaxHighlighter
-        language={language}
-        style={darkMode ? oneDark : oneLight}
-        customStyle={{
-          margin: 0,
-          padding: "1rem",
-          fontSize: "0.875rem",
-          lineHeight: "1.6",
-          background: "var(--card)",
-          borderRadius: "0",
-        }}
-        codeTagProps={{
-          style: { fontFamily: "var(--font-mono)", fontWeight: "normal" },
-        }}
-      >
-        {value}
-      </SyntaxHighlighter>
+      {showHighlighted ? (
+        <div
+          className="code-block overflow-x-auto bg-card p-4"
+          // Shiki escapes the source text; this is its own generated markup
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted highlighter output
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      ) : (
+        <div className="code-block overflow-x-auto bg-card p-4">
+          <pre>
+            <code>{value}</code>
+          </pre>
+        </div>
+      )}
     </div>
   );
 }

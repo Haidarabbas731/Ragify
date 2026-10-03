@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { Toaster } from "sonner";
 
 // Font imports - using JS imports for reliable bundling
 import "@fontsource/geist-mono/400.css";
@@ -35,7 +34,6 @@ createRoot(rootElement).render(
   <StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <Toaster position="top-right" richColors closeButton theme="system" />
         <App />
       </QueryClientProvider>
     </ErrorBoundary>
