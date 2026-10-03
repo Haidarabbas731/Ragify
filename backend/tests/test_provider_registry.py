@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.services.providers.base import ProviderKeyMissingError
 from app.services.providers.gemini import GeminiProvider
 from app.services.providers.openai_compat import OpenAICompatProvider
-from app.services.providers.registry import _build, get_chat_provider, server_key_available
+from app.services.providers.registry import _build, default_model, get_chat_provider
 
 
 @pytest.fixture(autouse=True)
@@ -21,26 +21,28 @@ def clear_cache():
     _build.cache_clear()
 
 
-def test_default_provider_comes_from_settings():
-    """With no arguments the server default provider, model and key are used."""
-    with (
-        patch.object(settings, "LLM_PROVIDER", "gemini"),
-        patch.object(settings, "GEMINI_MODEL", "gemini-x"),
-        patch.object(settings, "GOOGLE_API_KEY", "server-key"),
-    ):
-        provider = get_chat_provider()
+def test_gemini_provider_uses_the_users_key_and_model():
+    """The user's own key and model build the provider."""
+    provider = get_chat_provider("gemini", "gemini-x", "user-key")
 
     assert isinstance(provider, GeminiProvider)
     assert provider.model == "gemini-x"
 
 
+def test_model_defaults_to_the_suggested_model():
+    """With no model chosen the configured suggestion is used."""
+    with patch.object(settings, "GEMINI_MODEL", "gemini-suggested"):
+        provider = get_chat_provider("gemini", None, "user-key")
+
+    assert provider.model == "gemini-suggested"
+    assert default_model("gemini") == settings.GEMINI_MODEL
+    assert default_model("openrouter") == settings.OPENROUTER_MODEL
+
+
 def test_openrouter_uses_openai_compatible_adapter_with_app_headers():
     """OpenRouter is built on the OpenAI-compatible adapter with attribution headers."""
-    with (
-        patch.object(settings, "OPENROUTER_API_KEY", "or-key"),
-        patch("app.services.providers.registry.OpenAICompatProvider") as adapter,
-    ):
-        get_chat_provider("openrouter", model="vendor/model")
+    with patch("app.services.providers.registry.OpenAICompatProvider") as adapter:
+        get_chat_provider("openrouter", "vendor/model", "or-key")
 
     adapter.assert_called_once_with(
         api_key="or-key",
@@ -51,10 +53,9 @@ def test_openrouter_uses_openai_compatible_adapter_with_app_headers():
     assert adapter is not OpenAICompatProvider
 
 
-def test_explicit_key_and_model_override_the_server_settings():
-    """Per-user overrides win over the server's key and model."""
-    with patch.object(settings, "OPENROUTER_API_KEY", "server-key"):
-        provider = get_chat_provider("openrouter", model="user/model", api_key="user-key")
+def test_openrouter_provider_carries_the_users_key():
+    """The built OpenRouter provider holds the user's own key and model."""
+    provider = get_chat_provider("openrouter", "user/model", "user-key")
 
     assert isinstance(provider, OpenAICompatProvider)
     assert provider.model == "user/model"
@@ -63,45 +64,33 @@ def test_explicit_key_and_model_override_the_server_settings():
 
 def test_providers_are_cached_per_provider_model_and_key():
     """Same arguments reuse one instance; different arguments do not."""
-    with patch.object(settings, "OPENROUTER_API_KEY", "k"):
-        a = get_chat_provider("openrouter", "m1")
-        b = get_chat_provider("openrouter", "m1")
-        c = get_chat_provider("openrouter", "m2")
+    a = get_chat_provider("openrouter", "m1", "k")
+    b = get_chat_provider("openrouter", "m1", "k")
+    c = get_chat_provider("openrouter", "m2", "k")
+    d = get_chat_provider("openrouter", "m1", "other-key")
 
     assert a is b
     assert a is not c
+    assert a is not d
 
 
 @pytest.mark.parametrize("provider", ["gemini", "openrouter"])
-def test_missing_key_tells_the_user_to_add_one(provider):
-    """A provider with no key configured fails clearly instead of at request time."""
-    with (
-        patch.object(settings, "GOOGLE_API_KEY", None),
-        patch.object(settings, "OPENROUTER_API_KEY", None),
-        pytest.raises(ProviderKeyMissingError) as exc,
-    ):
-        get_chat_provider(provider)
+@pytest.mark.parametrize("missing", [None, ""])
+def test_missing_key_tells_the_user_to_add_one(provider, missing):
+    """Without the user's own key the call fails clearly; the server has no fallback."""
+    with pytest.raises(ProviderKeyMissingError) as exc:
+        get_chat_provider(provider, None, missing)
 
-    assert "Profile > Preferences" in exc.value.user_message
-
-
-@pytest.mark.parametrize(
-    ("provider", "setting", "value", "expected"),
-    [
-        ("gemini", "GOOGLE_API_KEY", "k", True),
-        ("gemini", "GOOGLE_API_KEY", None, False),
-        ("gemini", "GOOGLE_API_KEY", "", False),
-        ("openrouter", "OPENROUTER_API_KEY", "k", True),
-        ("openrouter", "OPENROUTER_API_KEY", None, False),
-    ],
-)
-def test_server_key_available(provider, setting, value, expected):
-    """Reports whether .env has a usable key for the provider."""
-    with patch.object(settings, setting, value):
-        assert server_key_available(provider) is expected
+    assert "Profile > AI model" in exc.value.user_message
 
 
 def test_unknown_provider_is_rejected():
     """An unknown provider name is a ValueError."""
     with pytest.raises(ValueError, match="Unknown LLM provider"):
-        get_chat_provider("nope")
+        get_chat_provider("nope", None, "k")
+
+
+def test_the_server_no_longer_has_chat_keys():
+    """Chat keys are not server settings any more; only users bring them."""
+    assert not hasattr(settings, "GOOGLE_API_KEY")
+    assert not hasattr(settings, "OPENROUTER_API_KEY")

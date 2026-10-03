@@ -87,11 +87,10 @@ Copy `.env.example` to `.env` and fill it in. The essentials:
 DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/knowledge_base
 REDIS_URL=redis://localhost:6379/0
 
-# Chat model: the default for everyone who has not saved their own key
+# Chat model: only the suggested provider and model. The server holds no chat key; each user
+# adds their own in Profile > AI model (https://aistudio.google.com/apikey or https://openrouter.ai/keys)
 LLM_PROVIDER=gemini                  # gemini | openrouter
-GOOGLE_API_KEY=your-google-api-key   # https://aistudio.google.com/apikey
 GEMINI_MODEL=gemini-2.5-flash
-OPENROUTER_API_KEY=                  # https://openrouter.ai/keys
 OPENROUTER_MODEL=openai/gpt-4o-mini
 
 # Embeddings (Cohere). Changing the model or dimension needs a re-index (see below)
@@ -114,9 +113,11 @@ JWT_SECRET_KEY=your-secret-key-here  # generate with: openssl rand -hex 32
 
 ### Which API key does chat use?
 
-1. **The user's own key**, if they saved one in Profile > Preferences (provider, model and key are theirs).
-2. Otherwise **the server key from `.env`** for `LLM_PROVIDER`.
-3. If neither exists, chat asks the user to add a key.
+Always **the user's own key**, saved in Profile > AI model (provider, model and key are theirs).
+The server holds no chat key. A user who has not saved one is asked to add it before chatting.
+
+The one server-side key is **`COHERE_API_KEY`**, used for embeddings (indexing files and
+embedding questions), which every account shares.
 
 Saved keys are stored encrypted. The encryption key is derived from `JWT_SECRET_KEY`
 (or set `APP_ENCRYPTION_KEY` to use a dedicated one), so changing either makes saved keys
@@ -306,7 +307,6 @@ git push origin dev
 # 4. Add secret environment variables in dashboard:
 #    - DATABASE_URL (from Neon/Aiven)
 #    - REDIS_URL (from Upstash)
-#    - GOOGLE_API_KEY (or OPENROUTER_API_KEY) for the default chat model
 #    - COHERE_API_KEY (embeddings)
 #    - VECTOR_DB_URI, VECTOR_DB_TOKEN (Milvus/Zilliz)
 #    - B2_APPLICATION_KEY_ID, B2_APPLICATION_KEY
@@ -395,7 +395,6 @@ After moving to Lite, delete the old `milvus_data` volume on the server to recla
 # Required Secrets
 DATABASE_URL=postgresql+asyncpg://user:pass@host.aivencloud.com:12345/knowledge_base
 REDIS_URL=redis://default:password@abc-123.upstash.io:6379
-GOOGLE_API_KEY=your-google-api-key
 COHERE_API_KEY=your-cohere-api-key
 VECTOR_DB_URI=https://your-cluster.cloud.zilliz.com
 VECTOR_DB_TOKEN=your-milvus-token

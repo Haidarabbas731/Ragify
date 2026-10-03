@@ -30,7 +30,6 @@ from app.services.providers.registry import (
     PROVIDERS,
     default_model,
     get_chat_provider,
-    server_key_available,
 )
 from app.services.redis_service import check_rate_limit
 
@@ -45,7 +44,7 @@ async def get_settings(
     db: AsyncSession = Depends(get_session),
 ) -> AISettingsResponse:
     """
-    Get the user's AI settings and what chat uses when they have none.
+    Get the user's AI settings and the provider and model to suggest when they have none.
 
     The API key is never returned, only whether one is saved and its last 4 characters.
     """
@@ -57,7 +56,6 @@ async def get_settings(
         key_last4=row.key_last4 if row else None,
         default_provider=settings.LLM_PROVIDER,
         default_model=default_model(settings.LLM_PROVIDER),
-        default_available=server_key_available(settings.LLM_PROVIDER),
         providers=list(PROVIDERS),
     )
 
@@ -160,7 +158,6 @@ async def list_models(
             row = await get_ai_settings(db, current_user.user_id)
             if row is not None and row.provider == "gemini":
                 api_key = stored_api_key(row)
-        api_key = api_key or settings.GOOGLE_API_KEY
         return await list_gemini_models(api_key) if api_key else []
     except ProviderError as e:
         raise HTTPException(status_code=e.status_code, detail=e.user_message) from e

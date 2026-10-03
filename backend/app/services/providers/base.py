@@ -64,9 +64,9 @@ class ProviderAuthError(ProviderError):
 
 
 class ProviderKeyMissingError(ProviderAuthError):
-    """Neither the user nor the server has an API key for the chat model."""
+    """The user has not added an API key for the chat model."""
 
-    user_message = "No AI API key is set. Add your own key in Profile > Preferences to use chat."
+    user_message = "No AI API key is set. Add your own key in Profile > AI model to use chat."
 
 
 @dataclass(frozen=True)

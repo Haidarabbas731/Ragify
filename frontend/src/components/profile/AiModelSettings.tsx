@@ -34,7 +34,7 @@ const PROVIDERS: Record<
  * Lets a user choose the chat model provider and model and save their own API key.
  *
  * The key is sent once and stored encrypted; afterwards only its last 4 characters are
- * shown. Without a saved key, chat uses the server's default model.
+ * shown. Chat needs a saved key; the server has none of its own.
  */
 export function AiModelSettings() {
   const { data: settings, isLoading, error } = useAiSettings();
@@ -115,10 +115,8 @@ export function AiModelSettings() {
   };
 
   const active = settings.has_key
-    ? `Using your own ${PROVIDERS[settings.provider as AiProvider].label} key ending ${settings.key_last4} · ${settings.model}`
-    : settings.default_available
-      ? `Using the default model: ${PROVIDERS[settings.default_provider].label} · ${settings.default_model}`
-      : "No API key is set. Add one below to use chat.";
+    ? `Using your ${PROVIDERS[settings.provider as AiProvider].label} key ending ${settings.key_last4} · ${settings.model}`
+    : "No API key is set. Add one below to use chat.";
 
   const modelCount = modelsQuery.data?.length ?? 0;
   const modelsStatus = modelsQuery.isLoading
