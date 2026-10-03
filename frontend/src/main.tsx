@@ -19,7 +19,7 @@ import "@fontsource/karla/800.css";
 
 import "./index.css";
 import App from "./App.tsx";
-import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ErrorBoundary } from "./components/shared/ErrorBoundary";
 
 // Create a query client instance
 const queryClient = new QueryClient({

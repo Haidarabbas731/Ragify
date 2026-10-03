@@ -16,6 +16,7 @@ import {
   UserX,
 } from "lucide-react";
 import { useState } from "react";
+import { formatBytes, formatDate, formatRelative } from "@/lib/format";
 import {
   useActivateUser,
   useAdminUsers,
@@ -75,41 +76,6 @@ export function AdminUsers() {
       .includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
-
-  // Format bytes to MB/GB
-  const formatBytes = (bytes: number) => {
-    const mb = bytes / (1024 * 1024);
-    if (mb >= 1000) {
-      return `${(mb / 1024).toFixed(2)} GB`;
-    }
-    return `${mb.toFixed(0)} MB`;
-  };
-
-  // Format date
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Never";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  // Format relative time
-  const formatRelativeTime = (dateString: string | null) => {
-    if (!dateString) return "Never";
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffHours < 1) return "Just now";
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return formatDate(dateString);
-  };
 
   // Action handlers
   const handleSuspend = (user: User) => {
@@ -297,10 +263,17 @@ export function AdminUsers() {
                       )}
                     </div>
                     <div className="flex items-center gap-4 text-xs font-mono text-gray-600 dark:text-slate-400">
-                      <span>Registered {formatDate(user.created_at)}</span>
+                      <span>
+                        Registered{" "}
+                        {formatDate(user.created_at, { fallback: "Never" })}
+                      </span>
                       <span>•</span>
                       <span>
-                        Last login {formatRelativeTime(user.last_login_at)}
+                        Last login{" "}
+                        {formatRelative(user.last_login_at, {
+                          fallback: "Never",
+                          absoluteAfterDays: 7,
+                        })}
                       </span>
                     </div>
                   </div>
@@ -485,7 +458,7 @@ export function AdminUsers() {
                     Registered
                   </p>
                   <p className="font-mono text-gray-900 dark:text-slate-100">
-                    {formatDate(selectedUser.created_at)}
+                    {formatDate(selectedUser.created_at, { fallback: "Never" })}
                   </p>
                 </div>
                 <div>
@@ -493,7 +466,10 @@ export function AdminUsers() {
                     Last Login
                   </p>
                   <p className="font-mono text-gray-900 dark:text-slate-100">
-                    {formatRelativeTime(selectedUser.last_login_at)}
+                    {formatRelative(selectedUser.last_login_at, {
+                      fallback: "Never",
+                      absoluteAfterDays: 7,
+                    })}
                   </p>
                 </div>
               </div>

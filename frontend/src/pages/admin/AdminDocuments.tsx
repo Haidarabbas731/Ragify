@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { formatBytes, formatDate } from "@/lib/format";
 import { useAdminDocuments, useAdminUsers } from "../../hooks/useAdmin";
 
 interface AdminDocument {
@@ -75,27 +76,6 @@ export function AdminDocuments() {
       .includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
-
-  // Format bytes
-  const formatBytes = (bytes: number) => {
-    const kb = bytes / 1024;
-    if (kb >= 1024) {
-      return `${(kb / 1024).toFixed(2)} MB`;
-    }
-    return `${kb.toFixed(0)} KB`;
-  };
-
-  // Format date
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "—";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   // Get file icon
   const getFileIcon = (fileType: string) => {
@@ -292,7 +272,10 @@ export function AdminDocuments() {
                         {doc.filename}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-slate-500 font-mono">
-                        {formatDate(doc.uploaded_at)}
+                        {formatDate(doc.uploaded_at, {
+                          withTime: true,
+                          withYear: false,
+                        })}
                       </p>
                     </div>
                   </div>
@@ -543,7 +526,10 @@ export function AdminDocuments() {
                     Uploaded
                   </p>
                   <p className="font-mono text-gray-900 dark:text-slate-100">
-                    {formatDate(selectedDoc.uploaded_at)}
+                    {formatDate(selectedDoc.uploaded_at, {
+                      withTime: true,
+                      withYear: false,
+                    })}
                   </p>
                 </div>
                 {selectedDoc.processed_at && (
@@ -552,7 +538,10 @@ export function AdminDocuments() {
                       Processed
                     </p>
                     <p className="font-mono text-gray-900 dark:text-slate-100">
-                      {formatDate(selectedDoc.processed_at)}
+                      {formatDate(selectedDoc.processed_at, {
+                        withTime: true,
+                        withYear: false,
+                      })}
                     </p>
                   </div>
                 )}
@@ -714,7 +703,6 @@ export function AdminDocuments() {
                     });
                   } else {
                     // Execute action
-                    console.log("Confirm:", confirmDialog.type);
                     setConfirmDialog(null);
                     // TODO: API call
                   }

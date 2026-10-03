@@ -4,9 +4,9 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/lib/errors";
 import {
   getAiSettings,
-  getApiErrorMessage,
   listAiModels,
   resetAiSettings,
   saveAiSettings,

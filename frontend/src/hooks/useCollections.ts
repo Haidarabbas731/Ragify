@@ -3,11 +3,11 @@ import { toast } from "sonner";
 import {
   createCollection,
   deleteCollection,
-  getApiErrorMessage,
   getCollection,
   getCollections,
   updateCollection,
 } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
 import type {
   Collection,
   CollectionListResponse,

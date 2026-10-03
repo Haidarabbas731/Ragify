@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { formatDate } from "@/lib/format";
 import { AiModelSettings } from "../components/profile/AiModelSettings";
 import { ChangePasswordForm } from "../components/profile/ChangePasswordForm";
 import { Button } from "../components/ui/button";
@@ -182,7 +183,7 @@ export function ProfilePage() {
                       {userData.email}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1 font-mono">
-                      Member since {userData.created_at.toLocaleDateString()}
+                      Member since {formatDate(userData.created_at)}
                     </p>
                     <Button
                       variant="outline"

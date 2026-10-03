@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAdminAuditLogs } from "@/hooks/useAdmin";
+import { formatRelative } from "@/lib/format";
 
 interface AuditLog {
   log_id: string;
@@ -67,28 +68,6 @@ export function AdminAuditLogs() {
     const matchesAction = actionFilter === "all" || log.action === actionFilter;
     return matchesSearch && matchesAction;
   });
-
-  // Format timestamp
-  const formatTimestamp = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   // Get action icon
   const getActionIcon = (action: AuditLog["action"]) => {
@@ -284,7 +263,9 @@ export function AdminAuditLogs() {
                         </span>
                         <span className="flex items-center gap-1.5 text-gray-500 dark:text-slate-500">
                           <Clock className="w-3.5 h-3.5" />
-                          {formatTimestamp(log.created_at)}
+                          {formatRelative(log.created_at, {
+                            absoluteAfterDays: 7,
+                          })}
                         </span>
                       </div>
                     </div>

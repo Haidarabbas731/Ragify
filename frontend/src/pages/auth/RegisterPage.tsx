@@ -20,13 +20,14 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { useDarkMode } from "../contexts/DarkModeContext";
-import { useAuthConfig } from "../hooks/useAuthConfig";
-import api, { getApiErrorMessage } from "../lib/api";
-import { useAuthStore } from "../store/authStore";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useDarkMode } from "@/contexts/DarkModeContext";
+import { useAuthConfig } from "@/hooks/useAuthConfig";
+import api from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
+import { useAuthStore } from "@/store/authStore";
 
 // Password strength validation
 const passwordRequirements = {

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAdminStats } from "@/hooks/useAdmin";
+import { formatRelative, formatTime } from "@/lib/format";
 
 export function AdminDashboard() {
   // Fetch real system stats from backend
@@ -42,17 +43,6 @@ export function AdminDashboard() {
       registeredAt: new Date().toISOString(),
     },
   ];
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-    if (diffHours < 1) return "Just now";
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return date.toLocaleDateString();
-  };
 
   // Show loading state
   if (isLoading || !stats) {
@@ -112,7 +102,7 @@ export function AdminDashboard() {
                 <span>SYSTEM ONLINE</span>
               </div>
               <div className="px-3 py-1.5 bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded text-gray-600 dark:text-slate-400">
-                {new Date().toLocaleTimeString()}
+                {formatTime(new Date())}
               </div>
             </div>
           </div>
@@ -241,7 +231,9 @@ export function AdminDashboard() {
                         {user.email}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-slate-500 font-mono mt-0.5">
-                        {formatDate(user.registeredAt)}
+                        {formatRelative(user.registeredAt, {
+                          absoluteAfterDays: 1,
+                        })}
                       </p>
                     </div>
                     <div>

@@ -1,0 +1,180 @@
+import { lazy, type ReactNode } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { AdminRoute } from "@/components/auth/AdminRoute";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { DocumentStatusProvider } from "@/components/providers/DocumentStatusProvider";
+import { useAuthStore } from "@/store/authStore";
+
+// Pages are code-split; `.then` adapts named exports to React.lazy's default export.
+const LandingPage = lazy(() =>
+  import("@/pages/LandingPage").then((m) => ({ default: m.LandingPage })),
+);
+const LoginPage = lazy(() =>
+  import("@/pages/auth/LoginPage").then((m) => ({ default: m.LoginPage })),
+);
+const RegisterPage = lazy(() =>
+  import("@/pages/auth/RegisterPage").then((m) => ({
+    default: m.RegisterPage,
+  })),
+);
+const ForgotPasswordPage = lazy(() =>
+  import("@/pages/auth/ForgotPasswordPage").then((m) => ({
+    default: m.ForgotPasswordPage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import("@/pages/auth/ResetPasswordPage").then((m) => ({
+    default: m.ResetPasswordPage,
+  })),
+);
+const DashboardPage = lazy(() =>
+  import("@/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const ChatPage = lazy(() =>
+  import("@/pages/ChatPage").then((m) => ({ default: m.ChatPage })),
+);
+const ProfilePage = lazy(() =>
+  import("@/pages/ProfilePage").then((m) => ({ default: m.ProfilePage })),
+);
+const CollectionsPage = lazy(() =>
+  import("@/pages/CollectionsPage").then((m) => ({
+    default: m.CollectionsPage,
+  })),
+);
+const DocumentsPage = lazy(() =>
+  import("@/pages/DocumentsPage").then((m) => ({ default: m.DocumentsPage })),
+);
+const DocumentDetailPage = lazy(() =>
+  import("@/pages/DocumentDetailPage").then((m) => ({
+    default: m.DocumentDetailPage,
+  })),
+);
+const TestErrorPage = lazy(() =>
+  import("@/pages/dev/TestErrorPage").then((m) => ({
+    default: m.TestErrorPage,
+  })),
+);
+
+const AdminLayout = lazy(() =>
+  import("@/components/admin/AdminLayout").then((m) => ({
+    default: m.AdminLayout,
+  })),
+);
+const AdminDashboard = lazy(() =>
+  import("@/pages/admin/AdminDashboard").then((m) => ({
+    default: m.AdminDashboard,
+  })),
+);
+const AdminUsers = lazy(() =>
+  import("@/pages/admin/AdminUsers").then((m) => ({ default: m.AdminUsers })),
+);
+const AdminDocuments = lazy(() =>
+  import("@/pages/admin/AdminDocuments").then((m) => ({
+    default: m.AdminDocuments,
+  })),
+);
+const AdminInviteCodes = lazy(() =>
+  import("@/pages/admin/AdminInviteCodes").then((m) => ({
+    default: m.AdminInviteCodes,
+  })),
+);
+const AdminAuditLogs = lazy(() =>
+  import("@/pages/admin/AdminAuditLogs").then((m) => ({
+    default: m.AdminAuditLogs,
+  })),
+);
+
+/** Sends signed-in users to the dashboard instead of showing a guest-only page. */
+function GuestOnly({ children }: { children: ReactNode }) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : children;
+}
+
+/** The app's route table. */
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route
+        path="/login"
+        element={
+          <GuestOnly>
+            <LoginPage />
+          </GuestOnly>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <GuestOnly>
+            <RegisterPage />
+          </GuestOnly>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <GuestOnly>
+            <ForgotPasswordPage />
+          </GuestOnly>
+        }
+      />
+      <Route
+        path="/reset-password"
+        element={
+          <GuestOnly>
+            <ResetPasswordPage />
+          </GuestOnly>
+        }
+      />
+      {/* Chat — full-screen dedicated layout, no AppLayout sidebar */}
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <DocumentStatusProvider>
+              <ChatPage />
+            </DocumentStatusProvider>
+          </ProtectedRoute>
+        }
+      />
+      {/* All other authenticated pages share AppLayout (sidebar + top bar) */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <DocumentStatusProvider>
+              <AppLayout />
+            </DocumentStatusProvider>
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/collections" element={<CollectionsPage />} />
+        <Route path="/documents" element={<DocumentsPage />} />
+        <Route path="/documents/:documentId" element={<DocumentDetailPage />} />
+      </Route>
+      {import.meta.env.DEV && (
+        <Route path="/test-error" element={<TestErrorPage />} />
+      )}
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <DocumentStatusProvider>
+              <AdminLayout />
+            </DocumentStatusProvider>
+          </AdminRoute>
+        }
+      >
+        <Route index element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="documents" element={<AdminDocuments />} />
+        <Route path="invite-codes" element={<AdminInviteCodes />} />
+        <Route path="audit-logs" element={<AdminAuditLogs />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}

@@ -12,11 +12,12 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NewSourceDialog } from "@/components/documents/NewSourceDialog";
+import { DEFAULT_ROUTE_META, ROUTE_META } from "@/routeMeta";
 import { useDarkMode } from "../../contexts/DarkModeContext";
 import { useDocuments } from "../../hooks/useDocuments";
 import { useUserStats } from "../../hooks/useUserStats";
 import { useAuthStore } from "../../store/authStore";
-import { NewSourceDialog } from "../dashboard/NewSourceDialog";
 
 const NAV_LINKS = [
   { label: "Dashboard", href: "/dashboard", icon: HardDrive },
@@ -25,22 +26,6 @@ const NAV_LINKS = [
   { label: "Collections", href: "/collections", icon: FolderOpen },
   { label: "Profile", href: "/profile", icon: User },
 ];
-
-const PAGE_META: Record<string, { title: string; subtitle: string }> = {
-  "/dashboard": {
-    title: "Overview",
-    subtitle: "Your knowledge base at a glance",
-  },
-  "/documents": {
-    title: "Documents",
-    subtitle: "All uploaded files and their status",
-  },
-  "/collections": {
-    title: "Collections",
-    subtitle: "Organise documents into groups",
-  },
-  "/profile": { title: "Profile", subtitle: "Manage your account settings" },
-};
 
 function ProfileDropdown({ onLogout }: { onLogout: () => void }) {
   const { user } = useAuthStore();
@@ -130,10 +115,7 @@ export function AppLayout() {
     navigate("/login");
   };
 
-  const pageMeta = PAGE_META[location.pathname] ?? {
-    title: "Ragify",
-    subtitle: "",
-  };
+  const pageMeta = ROUTE_META[location.pathname] ?? DEFAULT_ROUTE_META;
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">

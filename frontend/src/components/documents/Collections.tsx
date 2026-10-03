@@ -22,6 +22,7 @@ import {
   useDeleteCollection,
   useUpdateCollection,
 } from "@/hooks/useCollections";
+import { formatDate } from "@/lib/format";
 import type { Collection } from "@/types/api";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -346,27 +347,13 @@ export function Collections({
                 <div className="flex items-center justify-between">
                   <span>Created</span>
                   <span className="tabular-nums">
-                    {new Date(collection.created_at).toLocaleDateString(
-                      "en-US",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      },
-                    )}
+                    {formatDate(collection.created_at)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Modified</span>
                   <span className="tabular-nums">
-                    {new Date(collection.updated_at).toLocaleDateString(
-                      "en-US",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      },
-                    )}
+                    {formatDate(collection.updated_at)}
                   </span>
                 </div>
               </div>
