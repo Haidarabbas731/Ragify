@@ -200,7 +200,7 @@ async def update_collection_endpoint(
 
         # Add document count using optimized query
         count_query = select(func.count(Document.document_id)).where(  # type:ignore
-            Document.collection_id == collection_id, Document.status != "DELETED"
+            Document.collection_id == collection_id, Document.status != "deleted"
         )
         count_result = await db.exec(count_query)
         collection.document_count = count_result.one() or 0
