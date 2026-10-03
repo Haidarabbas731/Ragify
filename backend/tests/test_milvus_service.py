@@ -1,22 +1,31 @@
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+"""
+Tests for the Milvus vector service.
+
+The first group mocks the `MilvusClient` to check what the service asks it to do (filters,
+payloads, error handling). The last group runs the real service against a throwaway Milvus Lite
+file, so search, user isolation and deletion are tested against an actual vector store without
+touching the application's data.
+"""
+
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.core.config import settings
 from app.services.milvus_service import MilvusService, get_milvus_service
 
 
 @pytest.fixture
 def milvus_service():
-    """Create a Milvus service instance with mocked connection."""
+    """Service wired to a mocked client, as if already connected."""
     service = MilvusService()
-    service._connected = True
-    service.collection = MagicMock()
+    service.client = MagicMock()
     return service
 
 
 @pytest.fixture
 def sample_chunks():
-    """Create sample chunk data for testing."""
+    """Sample chunk data for testing."""
     return {
         "chunk_ids": ["chunk-1", "chunk-2", "chunk-3"],
         "user_id": "user-123",
@@ -28,368 +37,488 @@ def sample_chunks():
     }
 
 
+@pytest.fixture
+def state():
+    """Mock the database-backed embedding fingerprint; yields (get_state, set_state)."""
+    with (
+        patch("app.services.milvus_service.get_state", new=AsyncMock(return_value=None)) as get,
+        patch("app.services.milvus_service.set_state", new=AsyncMock()) as set_,
+    ):
+        yield get, set_
+
+
+# --------------------------------------------------------------------------- connect
+
+
 @pytest.mark.asyncio
 async def test_connect_success():
-    """Test successful Milvus connection."""
-    with patch("app.services.milvus_service.connections") as mock_connections:
-        with patch("app.services.milvus_service.utility") as mock_utility:
-            mock_utility.has_collection.return_value = True
-            with patch("app.services.milvus_service.Collection"):
-                service = MilvusService()
-                result = await service.connect()
+    """Connecting builds a client from the configured URI and prepares the collection."""
+    with (
+        patch("app.services.milvus_service.MilvusClient") as client_class,
+        patch.object(MilvusService, "_init_collection", new=AsyncMock()) as init,
+        patch.object(settings, "VECTOR_DB_URI", "./some.db"),
+        patch.object(settings, "VECTOR_DB_TOKEN", ""),
+    ):
+        service = MilvusService()
+        result = await service.connect()
 
-                assert result is True
-                assert service._connected is True
-                mock_connections.connect.assert_called_once()
+    assert result is True
+    assert service.client is client_class.return_value
+    client_class.assert_called_once_with(uri="./some.db")
+    init.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_connect_passes_token_when_set():
+    """A remote cluster token is forwarded; local files get none."""
+    with (
+        patch("app.services.milvus_service.MilvusClient") as client_class,
+        patch.object(MilvusService, "_init_collection", new=AsyncMock()),
+        patch.object(settings, "VECTOR_DB_URI", "https://cluster.example"),
+        patch.object(settings, "VECTOR_DB_TOKEN", "secret-token"),
+    ):
+        await MilvusService().connect()
+
+    client_class.assert_called_once_with(uri="https://cluster.example", token="secret-token")
 
 
 @pytest.mark.asyncio
 async def test_connect_failure():
-    """Test Milvus connection failure."""
-    with patch("app.services.milvus_service.connections") as mock_connections:
-        mock_connections.connect.side_effect = Exception("Connection refused")
-
+    """A failing connection raises and leaves the service disconnected."""
+    with patch(
+        "app.services.milvus_service.MilvusClient", side_effect=Exception("Connection refused")
+    ):
         service = MilvusService()
-
         with pytest.raises(Exception, match="Connection refused"):
             await service.connect()
 
-        assert service._connected is False
+    assert service.client is None
+
+
+# ---------------------------------------------------------------- collection setup
 
 
 @pytest.mark.asyncio
-async def test_init_collection_creates_new():
-    """Test collection creation when it doesn't exist."""
-    with patch("app.services.milvus_service.utility") as mock_utility:
-        with patch("app.services.milvus_service.Collection") as MockCollection:
-            with patch("app.services.milvus_service.CollectionSchema") as MockSchema:
-                mock_utility.has_collection.return_value = False
-                mock_collection_instance = MagicMock()
-                MockCollection.return_value = mock_collection_instance
+async def test_init_collection_creates_new(milvus_service, state):
+    """A missing collection is created with an index, loaded, and its fingerprint recorded."""
+    _, set_ = state
+    milvus_service.client.has_collection.return_value = False
 
-                service = MilvusService()
-                service._connected = True
-                await service._init_collection()
+    with patch("app.services.milvus_service.MilvusClient.create_schema") as create_schema:
+        await milvus_service._init_collection()
 
-                MockSchema.assert_called_once()
-                MockCollection.assert_called_once()
-                mock_collection_instance.create_index.assert_called_once()
+    schema = create_schema.return_value
+    field_names = [call.args[0] for call in schema.add_field.call_args_list]
+    assert field_names == [
+        "chunk_id",
+        "user_id",
+        "document_id",
+        "collection_id",
+        "embedding",
+        "chunk_text",
+        "chunk_index",
+    ]
+    milvus_service.client.create_collection.assert_called_once()
+    milvus_service.client.load_collection.assert_called_once_with(milvus_service.collection_name)
+    set_.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_init_collection_uses_existing():
-    """Test using existing collection."""
-    with patch("app.services.milvus_service.utility") as mock_utility:
-        with patch("app.services.milvus_service.Collection") as MockCollection:
-            mock_utility.has_collection.return_value = True
-            mock_collection_instance = MagicMock()
-            MockCollection.return_value = mock_collection_instance
+async def test_init_collection_uses_existing(milvus_service, state):
+    """An existing, matching collection is loaded, not recreated."""
+    get, _ = state
+    get.return_value = settings.embedding_fingerprint
+    milvus_service.client.has_collection.return_value = True
+    milvus_service.client.get_collection_stats.return_value = {"row_count": 10}
 
-            service = MilvusService()
-            service._connected = True
-            await service._init_collection()
+    await milvus_service._init_collection()
 
-            MockCollection.assert_called_once()
-            assert service.collection is mock_collection_instance
+    milvus_service.client.create_collection.assert_not_called()
+    milvus_service.client.load_collection.assert_called_once_with(milvus_service.collection_name)
+
+
+@pytest.mark.asyncio
+async def test_operations_require_connection(sample_chunks):
+    """Every operation refuses to run before connect()."""
+    service = MilvusService()
+
+    with pytest.raises(RuntimeError, match="Milvus not connected"):
+        await service.insert_chunks(**sample_chunks)
+    with pytest.raises(RuntimeError, match="Milvus not connected"):
+        await service.search_similar("user-123", [0.1] * 1024)
+    with pytest.raises(RuntimeError, match="Milvus not connected"):
+        await service.delete_document_chunks("doc-456")
+    with pytest.raises(RuntimeError, match="Milvus not connected"):
+        await service.delete_user_data("user-123")
+
+
+# ------------------------------------------------------------------------- insert
 
 
 @pytest.mark.asyncio
 async def test_insert_chunks_success(milvus_service, sample_chunks):
-    """Test successful chunk insertion."""
-    milvus_service.collection.insert = Mock()
-    milvus_service.collection.flush = Mock()
-
+    """Chunks are sent as one row per chunk, with a null collection when none is given."""
     result = await milvus_service.insert_chunks(**sample_chunks)
 
     assert result is True
-    milvus_service.collection.insert.assert_called_once()
-    milvus_service.collection.flush.assert_called_once()
+    kwargs = milvus_service.client.insert.call_args.kwargs
+    assert kwargs["collection_name"] == milvus_service.collection_name
+    rows = kwargs["data"]
+    assert [row["chunk_id"] for row in rows] == ["chunk-1", "chunk-2", "chunk-3"]
+    assert all(row["user_id"] == "user-123" for row in rows)
+    assert all(row["collection_id"] == "coll-789" for row in rows)
+    assert rows[1]["chunk_text"] == "Text chunk 2"
+    assert rows[2]["chunk_index"] == 2
 
 
 @pytest.mark.asyncio
-async def test_insert_chunks_not_connected(sample_chunks):
-    """Test insert fails when not connected."""
-    service = MilvusService()
-    service._connected = False
+async def test_insert_chunks_without_collection_stores_null(milvus_service, sample_chunks):
+    """No collection means NULL, not an empty string."""
+    sample_chunks["collection_id"] = None
 
-    with pytest.raises(RuntimeError, match="Milvus not connected"):
-        await service.insert_chunks(**sample_chunks)
+    await milvus_service.insert_chunks(**sample_chunks)
+
+    rows = milvus_service.client.insert.call_args.kwargs["data"]
+    assert all(row["collection_id"] is None for row in rows)
 
 
 @pytest.mark.asyncio
 async def test_insert_chunks_mismatched_lengths(milvus_service):
-    """Test insert fails with mismatched input lengths."""
+    """Inputs of different lengths are rejected before anything is sent."""
     with pytest.raises(ValueError, match="All input lists must have the same length"):
         await milvus_service.insert_chunks(
             chunk_ids=["chunk-1", "chunk-2"],
             user_id="user-123",
             document_id="doc-456",
-            embeddings=[[0.1] * 1024],  # Only 1 embedding for 2 chunks
+            embeddings=[[0.1] * 1024],  # only one embedding for two chunks
             chunk_texts=["Text 1", "Text 2"],
             chunk_indices=[0, 1],
         )
 
+    milvus_service.client.insert.assert_not_called()
+
 
 @pytest.mark.asyncio
 async def test_insert_chunks_api_failure(milvus_service, sample_chunks):
-    """Test insert handles Milvus API errors."""
-    milvus_service.collection.insert.side_effect = Exception("Storage full")
+    """Errors from Milvus propagate to the caller."""
+    milvus_service.client.insert.side_effect = Exception("Storage full")
 
     with pytest.raises(Exception, match="Storage full"):
         await milvus_service.insert_chunks(**sample_chunks)
 
 
 @pytest.mark.asyncio
-async def test_search_similar_success(milvus_service):
-    """Test successful similarity search."""
-    query_embedding = [0.5] * 1024
-    user_id = "user-123"
+async def test_insert_refused_when_index_built_with_another_model(milvus_service, sample_chunks):
+    """A mismatched embedding index blocks writes."""
+    milvus_service.index_mismatch = "built with other embeddings"
 
-    # Mock search results
-    mock_hit_1 = MagicMock()
-    mock_hit_1.entity.get = Mock(side_effect=lambda key: {
-        "chunk_id": "chunk-1",
+    with pytest.raises(RuntimeError, match="built with other embeddings"):
+        await milvus_service.insert_chunks(**sample_chunks)
+
+    milvus_service.client.insert.assert_not_called()
+
+
+# ------------------------------------------------------------------------- search
+
+
+def _hit(chunk_id: str, score: float, **extra) -> dict:
+    entity = {
+        "chunk_id": chunk_id,
         "document_id": "doc-456",
-        "chunk_text": "Text chunk 1",
+        "collection_id": None,
+        "chunk_text": f"Text {chunk_id}",
         "chunk_index": 0,
-    }.get(key))
-    mock_hit_1.score = 0.95
-
-    mock_hit_2 = MagicMock()
-    mock_hit_2.entity.get = Mock(side_effect=lambda key: {
-        "chunk_id": "chunk-2",
-        "document_id": "doc-456",
-        "chunk_text": "Text chunk 2",
-        "chunk_index": 1,
-    }.get(key))
-    mock_hit_2.score = 0.87
-
-    mock_hits = [mock_hit_1, mock_hit_2]
-    milvus_service.collection.load = Mock()
-    milvus_service.collection.search = Mock(return_value=[mock_hits])
-
-    results = await milvus_service.search_similar(user_id, query_embedding, top_k=2)
-
-    assert len(results) == 2
-    assert results[0]["chunk_id"] == "chunk-1"
-    assert results[0]["score"] == 0.95
-    assert results[1]["chunk_id"] == "chunk-2"
-    assert results[1]["score"] == 0.87
-
-    milvus_service.collection.load.assert_called_once()
-    milvus_service.collection.search.assert_called_once()
+        **extra,
+    }
+    return {"entity": entity, "distance": score}
 
 
 @pytest.mark.asyncio
-async def test_search_similar_with_document_filter(milvus_service):
-    """Test search with document ID filter."""
-    query_embedding = [0.5] * 1024
-    user_id = "user-123"
-    document_ids = ["doc-456", "doc-789"]
+async def test_search_similar_success(milvus_service):
+    """Hits are flattened into plain dicts with a score."""
+    milvus_service.client.search.return_value = [[_hit("chunk-1", 0.95), _hit("chunk-2", 0.85)]]
 
-    milvus_service.collection.load = Mock()
-    milvus_service.collection.search = Mock(return_value=[[]])
+    results = await milvus_service.search_similar("user-123", [0.5] * 1024, top_k=2)
+
+    assert [r["chunk_id"] for r in results] == ["chunk-1", "chunk-2"]
+    assert results[0]["score"] == 0.95
+    assert results[0]["chunk_text"] == "Text chunk-1"
+    assert milvus_service.client.search.call_args.kwargs["limit"] == 2
+
+
+@pytest.mark.asyncio
+async def test_search_similar_with_filters(milvus_service):
+    """Document and collection filters are added to the user filter."""
+    milvus_service.client.search.return_value = [[]]
 
     await milvus_service.search_similar(
-        user_id, query_embedding, top_k=5, document_ids=document_ids
+        "user-123",
+        [0.5] * 1024,
+        document_ids=["doc-1", "doc-2"],
+        collection_id="coll-9",
     )
 
-    # Verify search was called with document filter
-    call_args = milvus_service.collection.search.call_args
-    expr = call_args[1]["expr"]
-    assert "user_id == 'user-123'" in expr
-    assert "document_id == 'doc-456'" in expr
-    assert "document_id == 'doc-789'" in expr
-
-
-@pytest.mark.asyncio
-async def test_search_similar_not_connected():
-    """Test search fails when not connected."""
-    service = MilvusService()
-    service._connected = False
-
-    with pytest.raises(RuntimeError, match="Milvus not connected"):
-        await service.search_similar("user-123", [0.5] * 1024)
+    expression = milvus_service.client.search.call_args.kwargs["filter"]
+    assert "user_id == 'user-123'" in expression
+    assert "collection_id == 'coll-9'" in expression
+    assert "document_id == 'doc-1'" in expression
+    assert "document_id == 'doc-2'" in expression
 
 
 @pytest.mark.asyncio
 async def test_search_similar_api_failure(milvus_service):
-    """Test search handles Milvus API errors."""
-    milvus_service.collection.load = Mock()
-    milvus_service.collection.search = Mock(side_effect=Exception("Index not loaded"))
+    """Search errors propagate."""
+    milvus_service.client.search.side_effect = Exception("Search failed")
 
-    with pytest.raises(Exception, match="Index not loaded"):
+    with pytest.raises(Exception, match="Search failed"):
         await milvus_service.search_similar("user-123", [0.5] * 1024)
 
 
 @pytest.mark.asyncio
-async def test_delete_document_chunks_success(milvus_service):
-    """Test successful document chunk deletion."""
-    document_id = "doc-456"
+async def test_search_always_filters_by_user(milvus_service):
+    """Each search is restricted to the asking user's own chunks."""
+    milvus_service.client.search.return_value = [[]]
 
-    milvus_service.collection.delete = Mock()
-    milvus_service.collection.flush = Mock()
+    await milvus_service.search_similar("user-123", [0.5] * 1024)
+    assert "user_id == 'user-123'" in milvus_service.client.search.call_args.kwargs["filter"]
 
-    result = await milvus_service.delete_document_chunks(document_id)
+    await milvus_service.search_similar("user-456", [0.5] * 1024)
+    assert "user_id == 'user-456'" in milvus_service.client.search.call_args.kwargs["filter"]
 
-    assert result is True
-    milvus_service.collection.delete.assert_called_once()
-    milvus_service.collection.flush.assert_called_once()
+
+# ------------------------------------------------------------------------- delete
 
 
 @pytest.mark.asyncio
-async def test_delete_document_chunks_not_connected():
-    """Test delete fails when not connected."""
-    service = MilvusService()
-    service._connected = False
+async def test_delete_document_chunks_success(milvus_service):
+    """Deleting a document filters on its id."""
+    assert await milvus_service.delete_document_chunks("doc-456") is True
 
-    with pytest.raises(RuntimeError, match="Milvus not connected"):
-        await service.delete_document_chunks("doc-456")
+    kwargs = milvus_service.client.delete.call_args.kwargs
+    assert kwargs["collection_name"] == milvus_service.collection_name
+    assert kwargs["filter"] == "document_id == 'doc-456'"
 
 
 @pytest.mark.asyncio
 async def test_delete_user_data_success(milvus_service):
-    """Test successful user data deletion."""
-    user_id = "user-123"
+    """Deleting a user's data filters on their id."""
+    assert await milvus_service.delete_user_data("user-123") is True
 
-    milvus_service.collection.delete = Mock()
-    milvus_service.collection.flush = Mock()
+    assert milvus_service.client.delete.call_args.kwargs["filter"] == "user_id == 'user-123'"
 
-    result = await milvus_service.delete_user_data(user_id)
 
-    assert result is True
-    milvus_service.collection.delete.assert_called_once()
-
-    # Verify filter expression uses user_id
-    call_args = milvus_service.collection.delete.call_args
-    filter_expr = call_args[0][0]
-    assert "user_id == 'user-123'" in filter_expr
+# --------------------------------------------------------------------- read chunks
 
 
 @pytest.mark.asyncio
-async def test_get_document_chunk_count_success(milvus_service):
-    """Test getting document chunk count."""
-    document_id = "doc-456"
-
-    # Mock query result with 3 chunks
-    mock_chunks = [
-        {"chunk_id": "chunk-1"},
-        {"chunk_id": "chunk-2"},
-        {"chunk_id": "chunk-3"},
+async def test_get_document_chunks_sorted_by_index(milvus_service):
+    """Chunks come back in document order, scoped to the user."""
+    milvus_service.client.query.return_value = [
+        {"chunk_id": "b", "chunk_text": "second", "chunk_index": 1},
+        {"chunk_id": "a", "chunk_text": "first", "chunk_index": 0},
     ]
-    milvus_service.collection.query = Mock(return_value=mock_chunks)
 
-    count = await milvus_service.get_document_chunk_count(document_id)
+    chunks = await milvus_service.get_document_chunks("doc-456", "user-123")
 
-    assert count == 3
-    milvus_service.collection.query.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_get_document_chunk_count_zero(milvus_service):
-    """Test chunk count when document has no chunks."""
-    milvus_service.collection.query = Mock(return_value=[])
-
-    count = await milvus_service.get_document_chunk_count("doc-789")
-
-    assert count == 0
+    assert [c["chunk_id"] for c in chunks] == ["a", "b"]
+    expression = milvus_service.client.query.call_args.kwargs["filter"]
+    assert "doc-456" in expression
+    assert "user-123" in expression
 
 
 @pytest.mark.asyncio
-async def test_drop_and_recreate_collection_success(milvus_service):
-    """Test dropping and recreating collection."""
-    with patch("app.services.milvus_service.utility") as mock_utility:
-        with patch("app.services.milvus_service.Collection") as MockCollection:
-            with patch("app.services.milvus_service.CollectionSchema"):
-                mock_utility.has_collection.return_value = True
-                mock_utility.drop_collection = Mock()
-                MockCollection.return_value = MagicMock()
+async def test_get_document_chunks_returns_empty_on_error(milvus_service):
+    """A read failure is logged and yields an empty list, not an exception."""
+    milvus_service.client.query.side_effect = Exception("down")
 
-                result = await milvus_service.drop_and_recreate_collection()
-
-                assert result is True
-                mock_utility.drop_collection.assert_called_once()
-                MockCollection.assert_called()
+    assert await milvus_service.get_document_chunks("doc-456", "user-123") == []
 
 
 @pytest.mark.asyncio
-async def test_drop_and_recreate_collection_not_exists(milvus_service):
-    """Test recreating collection when it doesn't exist."""
-    with patch("app.services.milvus_service.utility") as mock_utility:
-        with patch("app.services.milvus_service.Collection") as MockCollection:
-            with patch("app.services.milvus_service.CollectionSchema"):
-                mock_utility.has_collection.return_value = False
-                mock_utility.drop_collection = Mock()
-                MockCollection.return_value = MagicMock()
+async def test_get_document_chunk_count(milvus_service):
+    """The count is the number of rows returned for the document."""
+    milvus_service.client.query.return_value = [{"chunk_id": "a"}, {"chunk_id": "b"}]
+    assert await milvus_service.get_document_chunk_count("doc-456") == 2
 
-                result = await milvus_service.drop_and_recreate_collection()
+    milvus_service.client.query.return_value = []
+    assert await milvus_service.get_document_chunk_count("doc-456") == 0
 
-                assert result is True
-                mock_utility.drop_collection.assert_not_called()
-                MockCollection.assert_called()
+
+# ------------------------------------------------------------------ drop / recreate
 
 
 @pytest.mark.asyncio
-async def test_disconnect(milvus_service):
-    """Test Milvus disconnection."""
-    with patch("app.services.milvus_service.connections") as mock_connections:
-        milvus_service.disconnect()
+async def test_drop_and_recreate_collection(milvus_service, state):
+    """An existing collection is dropped, then created again."""
+    milvus_service.client.has_collection.side_effect = [True, False]
 
-        assert milvus_service._connected is False
-        mock_connections.disconnect.assert_called_once_with(alias="default")
+    with patch("app.services.milvus_service.MilvusClient.create_schema"):
+        assert await milvus_service.drop_and_recreate_collection() is True
+
+    milvus_service.client.drop_collection.assert_called_once_with(milvus_service.collection_name)
+    milvus_service.client.create_collection.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_disconnect_when_not_connected():
-    """Test disconnect when already disconnected."""
-    with patch("app.services.milvus_service.connections") as mock_connections:
-        service = MilvusService()
-        service._connected = False
+async def test_drop_and_recreate_when_collection_missing(milvus_service, state):
+    """A missing collection is simply created."""
+    milvus_service.client.has_collection.return_value = False
 
-        service.disconnect()
+    with patch("app.services.milvus_service.MilvusClient.create_schema"):
+        assert await milvus_service.drop_and_recreate_collection() is True
 
-        mock_connections.disconnect.assert_not_called()
+    milvus_service.client.drop_collection.assert_not_called()
+    milvus_service.client.create_collection.assert_called_once()
+
+
+# ---------------------------------------------------------------- disconnect / singleton
+
+
+def test_disconnect_closes_the_client(milvus_service):
+    """Disconnecting closes the client and clears it."""
+    client = milvus_service.client
+
+    milvus_service.disconnect()
+
+    client.close.assert_called_once()
+    assert milvus_service.client is None
+
+
+def test_disconnect_when_not_connected_does_nothing():
+    """Disconnecting twice, or before connecting, is harmless."""
+    service = MilvusService()
+
+    service.disconnect()
+
+    assert service.client is None
 
 
 @pytest.mark.asyncio
 async def test_get_milvus_service_singleton():
-    """Test Milvus service singleton pattern."""
-    get_milvus_service.reset()
-    with patch("app.services.milvus_service.MilvusService") as MockMilvusService:
-        mock_instance = MockMilvusService.return_value
-        mock_instance.connect = AsyncMock(return_value=True)
+    """The getter builds and connects one shared service."""
+    get_milvus_service.reset()  # type: ignore[attr-defined]
+    with patch("app.services.milvus_service.MilvusService") as service_class:
+        instance = service_class.return_value
+        instance.connect = AsyncMock(return_value=True)
 
-        service1 = await get_milvus_service()
-        service2 = await get_milvus_service()
+        first = await get_milvus_service()
+        second = await get_milvus_service()
 
-        assert service1 is service2
-        MockMilvusService.assert_called_once()
-        mock_instance.connect.assert_called_once()
-    get_milvus_service.reset()
+        assert first is second
+        service_class.assert_called_once()
+        instance.connect.assert_awaited_once()
+    get_milvus_service.reset()  # type: ignore[attr-defined]
+
+
+# --------------------------------------------------- real store (throwaway Milvus Lite)
+
+
+@pytest.fixture
+async def real_service(tmp_path):
+    """The real service on a temporary Milvus Lite file, with 4-dimensional vectors."""
+    pytest.importorskip("milvus_lite")
+    with (
+        patch.object(settings, "VECTOR_DB_URI", str(tmp_path / "test.db")),
+        patch.object(settings, "VECTOR_DB_TOKEN", ""),
+        patch.object(settings, "MILVUS_COLLECTION", "test_chunks"),
+        patch.object(settings, "EMBEDDING_DIMENSION", 4),
+        patch("app.services.milvus_service.get_state", new=AsyncMock(return_value=None)),
+        patch("app.services.milvus_service.set_state", new=AsyncMock()),
+    ):
+        service = MilvusService()
+        await service.connect()
+        yield service
+        service.disconnect()
+        # Stop the throwaway server now, not at interpreter exit when logging is already closed
+        from milvus_lite.server_manager import server_manager_instance
+
+        server_manager_instance.release_all()
+
+
+async def _add(service, user_id, document_id, vectors, collection_id=None):
+    await service.insert_chunks(
+        chunk_ids=[f"{document_id}-{i}" for i in range(len(vectors))],
+        user_id=user_id,
+        document_id=document_id,
+        embeddings=vectors,
+        chunk_texts=[f"{document_id} passage {i}" for i in range(len(vectors))],
+        chunk_indices=list(range(len(vectors))),
+        collection_id=collection_id,
+    )
 
 
 @pytest.mark.asyncio
-async def test_user_data_isolation(milvus_service):
-    """Test that search respects user data isolation."""
-    user_id_1 = "user-123"
-    user_id_2 = "user-456"
-    query_embedding = [0.5] * 1024
+async def test_real_store_search_ranks_the_closest_chunk_first(real_service):
+    """The nearest vector comes back first, with its text and a score."""
+    await _add(real_service, "u1", "doc-a", [[1, 0, 0, 0], [0, 1, 0, 0]])
 
-    milvus_service.collection.load = Mock()
-    milvus_service.collection.search = Mock(return_value=[[]])
+    results = await real_service.search_similar("u1", [1, 0, 0, 0], top_k=2)
 
-    # Search for user 1
-    await milvus_service.search_similar(user_id_1, query_embedding)
+    assert results[0]["chunk_id"] == "doc-a-0"
+    assert results[0]["chunk_text"] == "doc-a passage 0"
+    assert results[0]["score"] > results[1]["score"]
 
-    # Verify filter includes user_id_1
-    call_args = milvus_service.collection.search.call_args
-    expr = call_args[1]["expr"]
-    assert f"user_id == '{user_id_1}'" in expr
 
-    # Search for user 2
-    await milvus_service.search_similar(user_id_2, query_embedding)
+@pytest.mark.asyncio
+async def test_real_store_never_returns_another_users_chunks(real_service):
+    """Search only sees the asking user's data, even for an identical vector."""
+    await _add(real_service, "u1", "doc-a", [[1, 0, 0, 0]])
+    await _add(real_service, "u2", "doc-b", [[1, 0, 0, 0]])
 
-    # Verify filter includes user_id_2
-    call_args = milvus_service.collection.search.call_args
-    expr = call_args[1]["expr"]
-    assert f"user_id == '{user_id_2}'" in expr
+    mine = await real_service.search_similar("u1", [1, 0, 0, 0], top_k=10)
+    theirs = await real_service.search_similar("u2", [1, 0, 0, 0], top_k=10)
+
+    assert {r["document_id"] for r in mine} == {"doc-a"}
+    assert {r["document_id"] for r in theirs} == {"doc-b"}
+
+
+@pytest.mark.asyncio
+async def test_real_store_collection_and_document_filters(real_service):
+    """Scoping a search to a collection or specific documents narrows the results."""
+    await _add(real_service, "u1", "doc-a", [[1, 0, 0, 0]], collection_id="c1")
+    await _add(real_service, "u1", "doc-b", [[1, 0, 0, 0]], collection_id="c2")
+    await _add(real_service, "u1", "doc-c", [[1, 0, 0, 0]])
+
+    in_c1 = await real_service.search_similar("u1", [1, 0, 0, 0], collection_id="c1")
+    only_b = await real_service.search_similar("u1", [1, 0, 0, 0], document_ids=["doc-b"])
+
+    assert {r["document_id"] for r in in_c1} == {"doc-a"}
+    assert {r["document_id"] for r in only_b} == {"doc-b"}
+
+
+@pytest.mark.asyncio
+async def test_real_store_chunks_and_counts(real_service):
+    """Chunks come back ordered, and the count matches what was stored."""
+    await _add(real_service, "u1", "doc-a", [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]])
+
+    chunks = await real_service.get_document_chunks("doc-a", "u1")
+
+    assert [c["chunk_index"] for c in chunks] == [0, 1, 2]
+    assert await real_service.get_document_chunk_count("doc-a") == 3
+    assert await real_service.get_document_chunks("doc-a", "someone-else") == []
+
+
+@pytest.mark.asyncio
+async def test_real_store_delete_document_and_user(real_service):
+    """Deleting a document removes only its chunks; deleting a user removes all of theirs."""
+    await _add(real_service, "u1", "doc-a", [[1, 0, 0, 0]])
+    await _add(real_service, "u1", "doc-b", [[0, 1, 0, 0]])
+    await _add(real_service, "u2", "doc-c", [[0, 0, 1, 0]])
+
+    await real_service.delete_document_chunks("doc-a")
+    assert await real_service.get_document_chunk_count("doc-a") == 0
+    assert await real_service.get_document_chunk_count("doc-b") == 1
+
+    await real_service.delete_user_data("u1")
+    assert await real_service.get_document_chunk_count("doc-b") == 0
+    assert await real_service.get_document_chunk_count("doc-c") == 1
+
+
+@pytest.mark.asyncio
+async def test_real_store_drop_and_recreate_empties_the_index(real_service):
+    """Dropping and recreating removes every stored vector."""
+    await _add(real_service, "u1", "doc-a", [[1, 0, 0, 0]])
+
+    await real_service.drop_and_recreate_collection()
+
+    assert await real_service.get_document_chunk_count("doc-a") == 0
