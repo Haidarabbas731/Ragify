@@ -17,7 +17,6 @@ import {
 import { useCollections } from "../hooks/useCollections";
 import {
   useBatchDeleteDocuments,
-  useDeleteAllDocuments,
   useDeleteDocument,
   useDocuments,
   useRetryDocument,
@@ -59,7 +58,6 @@ export function DocumentsPage() {
   const deleteDocumentMutation = useDeleteDocument();
   const retryDocumentMutation = useRetryDocument();
   const batchDeleteMutation = useBatchDeleteDocuments();
-  const deleteAllMutation = useDeleteAllDocuments();
   const updateDocumentMutation = useUpdateDocument();
 
   // Fetch collections from backend
@@ -69,6 +67,7 @@ export function DocumentsPage() {
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
     setCurrentPage(1); // Reset to first page when filters change
+    setSelectedDocuments(new Set()); // Never carry a selection across filter changes
   };
 
   // Batch operations state
@@ -77,7 +76,13 @@ export function DocumentsPage() {
   );
   const [batchDeleteDialog, setBatchDeleteDialog] = useState(false);
 
+  // `total` from the API is the *filtered* count, so it only means "everything"
+  // when no filter is active.
   const totalDocuments = documentsData?.total || 0;
+  const hasActiveFilters = Boolean(
+    filters.searchTerm || filters.collectionId || filters.statusFilter,
+  );
+  const everythingCount = hasActiveFilters ? 0 : totalDocuments;
 
   const handleSelectionChange = (documentId: string, selected: boolean) => {
     setSelectedDocuments((prev) => {
@@ -107,17 +112,11 @@ export function DocumentsPage() {
   };
 
   const handleConfirmBatchDelete = async () => {
-    const isAllSelected = selectedDocuments.size === totalDocuments;
-
-    if (isAllSelected) {
-      // All documents selected - use delete-all endpoint
-      await deleteAllMutation.mutateAsync();
-    } else {
-      // Partial selection - use batch-delete endpoint
-      await batchDeleteMutation.mutateAsync({
-        document_ids: Array.from(selectedDocuments),
-      });
-    }
+    // Always delete by explicit IDs. The delete-all endpoint ignores filters and
+    // must never be reachable from a selection.
+    await batchDeleteMutation.mutateAsync({
+      document_ids: Array.from(selectedDocuments),
+    });
 
     setSelectedDocuments(new Set());
     setBatchDeleteDialog(false);
@@ -151,7 +150,7 @@ export function DocumentsPage() {
           <div className="animate-in slide-in-from-top-2 duration-300">
             <BatchActions
               selectedCount={selectedDocuments.size}
-              totalCount={totalDocuments}
+              totalCount={everythingCount}
               onSelectAll={handleSelectAll}
               onDeselectAll={handleDeselectAll}
               onBatchDelete={handleBatchDelete}
@@ -193,7 +192,7 @@ export function DocumentsPage() {
       <BatchDeleteDialog
         isOpen={batchDeleteDialog}
         selectedCount={selectedDocuments.size}
-        totalCount={totalDocuments}
+        totalCount={everythingCount}
         onConfirm={handleConfirmBatchDelete}
         onCancel={() => setBatchDeleteDialog(false)}
       />
