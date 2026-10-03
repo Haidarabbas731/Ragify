@@ -651,8 +651,6 @@ This is a learning project. Contributions welcome!
 ## 📞 Support
 
 - **Issues**: Open a GitHub issue
-- **Documentation**: See `docs/PRD.md` for full specifications
-- **Tasks**: See `tasks/*.md` for implementation tracking
 
 ---
 
