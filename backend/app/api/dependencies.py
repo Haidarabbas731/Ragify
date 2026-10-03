@@ -1,4 +1,3 @@
-
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import select
@@ -12,10 +11,33 @@ from app.services.redis_service import (
     is_token_issued_before_password_change,
 )
 
-security = HTTPBearer()
+
+class BearerOr401(HTTPBearer):
+    """HTTPBearer that answers 401 (not 403) when credentials are missing or malformed.
+
+    Older FastAPI versions return 403 here; 401 with a ``WWW-Authenticate`` header is the
+    correct status and lets clients tell "not signed in" apart from "not allowed".
+    """
+
+    async def __call__(  # type:ignore
+        self, request: Request
+    ) -> HTTPAuthorizationCredentials | None:
+        try:
+            return await super().__call__(request)
+        except HTTPException as exc:
+            if exc.status_code == status.HTTP_403_FORBIDDEN:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=exc.detail,
+                    headers={"WWW-Authenticate": "Bearer"},
+                ) from exc
+            raise
 
 
-class TokenBearer(HTTPBearer):
+security = BearerOr401()
+
+
+class TokenBearer(BearerOr401):
     """
     Base Bearer token class that handles token validation and blocklist checking.
     """
