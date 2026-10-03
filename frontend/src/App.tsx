@@ -1,5 +1,6 @@
 import { Suspense, useEffect } from "react";
 import { BrowserRouter } from "react-router-dom";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { DarkModeProvider } from "./contexts/DarkModeContext";
 import { AppRoutes } from "./routes";
 import { useAuthStore } from "./store/authStore";
@@ -26,7 +27,9 @@ function App() {
     <DarkModeProvider>
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
-          <AppRoutes />
+          <TooltipProvider delayDuration={300} skipDelayDuration={400}>
+            <AppRoutes />
+          </TooltipProvider>
         </Suspense>
       </BrowserRouter>
     </DarkModeProvider>

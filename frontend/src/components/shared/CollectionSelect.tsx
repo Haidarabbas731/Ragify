@@ -19,6 +19,8 @@ interface CollectionSelectProps {
   /** Selected collection, or `null` for all collections. */
   value: string | null;
   onChange: (collectionId: string | null) => void;
+  /** Text for the `null` option: "All collections" for filters, "No collection" for a target. */
+  allLabel?: string;
   className?: string;
 }
 
@@ -30,6 +32,7 @@ export function CollectionSelect({
   collections,
   value,
   onChange,
+  allLabel = "All collections",
   className,
 }: CollectionSelectProps) {
   return (
@@ -47,7 +50,7 @@ export function CollectionSelect({
         <SelectItem value={ALL}>
           <span className="flex items-center gap-2">
             <Layers className="size-4 text-muted-foreground" />
-            All collections
+            {allLabel}
           </span>
         </SelectItem>
         {collections.map((collection) => (

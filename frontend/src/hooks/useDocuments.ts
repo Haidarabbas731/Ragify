@@ -1,7 +1,13 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   batchDeleteDocuments,
+  batchUpdateDocuments,
   bulkUploadDocuments,
   deleteAllDocuments,
   deleteDocument,
@@ -36,6 +42,8 @@ export const useDocuments = (params?: DocumentListParams) => {
   return useQuery<DocumentListResponse>({
     queryKey: ["documents", params],
     queryFn: () => getDocuments(params),
+    // Keep showing the previous list while a new page or filter loads.
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 2, // 2 minutes
     // Poll every 5s if any documents are processing (fallback safety net)
     refetchInterval: (query) => {
@@ -172,6 +180,45 @@ export const useBatchDeleteDocuments = () => {
     onError: (error: unknown) => {
       const message = getApiErrorMessage(error, "Failed to delete documents");
       toast.error(message);
+    },
+  });
+};
+
+/**
+ * Hook to move many documents into a collection (or out of any) in as few requests as possible.
+ * @returns Mutation function and state for moving documents
+ */
+export const useBatchMoveDocuments = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      documentIds,
+      collectionId,
+    }: {
+      documentIds: string[];
+      collectionId: string | null;
+    }) => {
+      // The backend accepts at most 100 documents per request.
+      let updated = 0;
+      for (let i = 0; i < documentIds.length; i += 100) {
+        const result = await batchUpdateDocuments(
+          documentIds.slice(i, i + 100),
+          collectionId,
+        );
+        updated += result.updated_count;
+      }
+      return { updated_count: updated };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["collections"] });
+      toast.success(
+        `${data.updated_count} document${data.updated_count === 1 ? "" : "s"} moved`,
+      );
+    },
+    onError: (error: unknown) => {
+      toast.error(getApiErrorMessage(error, "Failed to move documents"));
     },
   });
 };
