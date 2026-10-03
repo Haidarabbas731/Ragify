@@ -95,7 +95,7 @@ async def get_user_details(session: AsyncSession, user_id: str) -> dict[str, Any
 
     # Count documents
     doc_count_result = await session.exec(
-        select(func.count()).where(Document.user_id == user_id, Document.status != "DELETED")
+        select(func.count()).where(Document.user_id == user_id, Document.status != "deleted")
     )
     document_count = doc_count_result.one()
 
@@ -298,7 +298,7 @@ async def get_system_stats(session: AsyncSession) -> dict[str, Any]:
 
     # Total documents
     total_docs_result = await session.exec(
-        select(func.count()).where(Document.status != "DELETED")
+        select(func.count()).where(Document.status != "deleted")
     )
     total_documents = total_docs_result.one()
 
@@ -320,7 +320,7 @@ async def get_system_stats(session: AsyncSession) -> dict[str, Any]:
 
     # Failed documents
     failed_docs_result = await session.exec(
-        select(func.count()).where(Document.status == "ERROR")
+        select(func.count()).where(Document.status == "error")
     )
     failed_documents = failed_docs_result.one()
 
