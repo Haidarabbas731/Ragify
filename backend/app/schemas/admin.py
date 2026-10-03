@@ -64,10 +64,43 @@ class SuspendUserRequest(BaseModel):
 # Response Schemas for Admin Endpoints
 
 
+class AdminUserItem(BaseModel):
+    """One user in the admin list. Lists only fields that are safe to send (no password hash)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: str
+    email: str
+    role: str
+    status: str
+    storage_used_bytes: int
+    storage_limit_bytes: int
+    last_login_at: datetime | None
+    created_at: datetime
+
+
+class AdminDocumentItem(BaseModel):
+    """One document in the admin list. Omits internal storage keys and raw metadata."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    document_id: str
+    user_id: str
+    user_email: str
+    filename: str
+    file_type: str
+    size_bytes: int
+    status: str
+    chunks_count: int
+    uploaded_at: datetime
+    processed_at: datetime | None
+    error_message: str | None
+
+
 class UsersListResponse(BaseModel):
     """Response schema for admin user list endpoint."""
 
-    users: list[dict]  # User model dicts
+    users: list[AdminUserItem]
     total: int = Field(..., description="Total number of users")
     page: int = Field(..., description="Current page number")
     limit: int = Field(..., description="Items per page")
@@ -100,7 +133,7 @@ class SuspendUserResponse(BaseModel):
 class AdminDocumentsListResponse(BaseModel):
     """Response schema for admin documents list endpoint."""
 
-    documents: list[dict]  # Each dict has document fields + user_email
+    documents: list[AdminDocumentItem]
     total: int = Field(..., description="Total number of documents")
     page: int = Field(..., description="Current page number")
     limit: int = Field(..., description="Items per page")

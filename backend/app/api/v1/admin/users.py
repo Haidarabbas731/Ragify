@@ -11,6 +11,7 @@ from app.api.dependencies import get_current_admin
 from app.db.database import get_session
 from app.models.user import User
 from app.schemas.admin import (
+    AdminUserItem,
     AdminUserListParams,
     SuspendUserRequest,
     SuspendUserResponse,
@@ -61,7 +62,7 @@ async def list_users(
     )
 
     return {
-        "users": [user.model_dump() for user in users],
+        "users": [AdminUserItem.model_validate(user) for user in users],
         "total": total,
         "page": params.page,
         "limit": params.limit,

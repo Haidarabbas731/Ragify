@@ -13,6 +13,7 @@ from app.db.database import get_session
 from app.models.document import Document
 from app.models.user import User
 from app.schemas.admin import (
+    AdminDocumentItem,
     AdminDocumentListParams,
     AdminDocumentsListResponse,
     CleanupAllResponse,
@@ -90,9 +91,11 @@ async def list_all_documents(
 
     documents_list = []
     for doc in documents:
-        doc_dict = doc.model_dump()
-        doc_dict["user_email"] = user_map.get(doc.user_id, "Unknown")
-        documents_list.append(doc_dict)
+        documents_list.append(
+            AdminDocumentItem.model_validate(
+                {**doc.model_dump(), "user_email": user_map.get(doc.user_id, "Unknown")}
+            )
+        )
 
     return {
         "documents": documents_list,
