@@ -12,6 +12,7 @@ import {
   updateDocument,
   uploadDocument,
 } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
 import type {
   BatchDeleteRequest,
   BulkUploadResponse,
@@ -97,9 +98,7 @@ export const useUploadDocument = () => {
       toast.success("Document uploaded successfully");
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to upload document";
+      const message = getApiErrorMessage(error, "Failed to upload document");
       toast.error(message);
     },
   });
@@ -128,9 +127,7 @@ export const useUpdateDocument = () => {
       toast.success("Document updated successfully");
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to update document";
+      const message = getApiErrorMessage(error, "Failed to update document");
       toast.error(message);
     },
   });
@@ -151,9 +148,7 @@ export const useDeleteDocument = () => {
       toast.success("Document deleted successfully");
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to delete document";
+      const message = getApiErrorMessage(error, "Failed to delete document");
       toast.error(message);
     },
   });
@@ -175,9 +170,7 @@ export const useBatchDeleteDocuments = () => {
       toast.success(`${data.deleted_count} document(s) deleted successfully`);
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to delete documents";
+      const message = getApiErrorMessage(error, "Failed to delete documents");
       toast.error(message);
     },
   });
@@ -198,9 +191,10 @@ export const useDeleteAllDocuments = () => {
       toast.success(`${data.deleted_count} document(s) deleted successfully`);
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to delete all documents";
+      const message = getApiErrorMessage(
+        error,
+        "Failed to delete all documents",
+      );
       toast.error(message);
     },
   });
@@ -221,9 +215,7 @@ export const useRetryDocument = () => {
       toast.success("Document processing queued");
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to retry document";
+      const message = getApiErrorMessage(error, "Failed to retry document");
       toast.error(message);
     },
   });
@@ -268,8 +260,7 @@ export const useBulkUploadDocuments = () => {
       }
     },
     onError: (error) => {
-      const message =
-        error.response?.data?.message || "Failed to upload documents";
+      const message = getApiErrorMessage(error, "Failed to upload documents");
       toast.error(message);
     },
   });
@@ -299,8 +290,7 @@ export const useRetryAllFailedDocuments = () => {
       }
     },
     onError: (error) => {
-      const message =
-        error.response?.data?.message || "Failed to retry documents";
+      const message = getApiErrorMessage(error, "Failed to retry documents");
       toast.error(message);
     },
   });

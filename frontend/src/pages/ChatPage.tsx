@@ -23,6 +23,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { formatDate, formatTime } from "@/lib/format";
 import { AgentActivity } from "../components/chat/AgentActivity";
 import { ApiKeyRequiredDialog } from "../components/chat/ApiKeyRequiredDialog";
 import { CollectionFilter } from "../components/chat/CollectionFilter";
@@ -476,13 +477,7 @@ export function ChatPage() {
                             <span>{conv.message_count} msgs</span>
                             <span className="text-muted-foreground">•</span>
                             <span>
-                              {new Date(conv.created_at).toLocaleDateString(
-                                "en-US",
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                },
-                              )}
+                              {formatDate(conv.created_at, { withYear: false })}
                             </span>
                           </div>
                         </div>
@@ -576,12 +571,7 @@ export function ChatPage() {
                             {msg.content}
                           </p>
                           <p className="text-xs text-primary-foreground/70 mt-2 font-mono tabular-nums">
-                            {new Date(
-                              msg.timestamp || Date.now(),
-                            ).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {formatTime(msg.timestamp)}
                           </p>
                         </div>
                       </div>
@@ -601,12 +591,7 @@ export function ChatPage() {
                             <MarkdownContent content={msg.content} />
                           </div>
                           <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border font-mono tabular-nums">
-                            {new Date(
-                              msg.timestamp || Date.now(),
-                            ).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {formatTime(msg.timestamp)}
                           </p>
                         </div>
 

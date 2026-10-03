@@ -5,6 +5,7 @@ import {
   getConversation,
   getConversations,
 } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
 import type { Conversation, ConversationListItem } from "@/types/api";
 
 /**
@@ -51,9 +52,10 @@ export const useDeleteConversation = () => {
       toast.success("Conversation deleted successfully");
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to delete conversation";
+      const message = getApiErrorMessage(
+        error,
+        "Failed to delete conversation",
+      );
       toast.error(message);
     },
   });

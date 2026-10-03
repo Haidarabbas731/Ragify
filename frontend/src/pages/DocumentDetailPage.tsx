@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { formatBytes, formatDate } from "@/lib/format";
 import {
   Select,
   SelectContent,
@@ -142,20 +143,6 @@ export function DocumentDetailPage() {
     setIsEditOpen(false);
   };
 
-  const formatFileSize = (bytes: number) => {
-    const mb = bytes / (1024 * 1024);
-    return mb >= 1 ? `${mb.toFixed(2)} MB` : `${(bytes / 1024).toFixed(1)} KB`;
-  };
-
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
   const getExt = (filename: string) => {
     const parts = filename.split(".");
     return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : "FILE";
@@ -247,7 +234,7 @@ export function DocumentDetailPage() {
               <MetaRow
                 icon={HardDrive}
                 label="File size"
-                value={formatFileSize(document.size_bytes)}
+                value={formatBytes(document.size_bytes)}
               />
               <MetaRow
                 icon={FileText}
@@ -274,7 +261,7 @@ export function DocumentDetailPage() {
                 label="Uploaded"
                 value={
                   <span className="text-[12px]">
-                    {formatDate(document.uploaded_at)}
+                    {formatDate(document.uploaded_at, { withTime: true })}
                   </span>
                 }
               />
@@ -284,7 +271,7 @@ export function DocumentDetailPage() {
                   label="Processed"
                   value={
                     <span className="text-[12px]">
-                      {formatDate(document.processed_at)}
+                      {formatDate(document.processed_at, { withTime: true })}
                     </span>
                   }
                 />
@@ -682,7 +669,7 @@ export function DocumentDetailPage() {
                   </p>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
                     {document.chunks_count} chunks ·{" "}
-                    {formatFileSize(document.size_bytes)}
+                    {formatBytes(document.size_bytes)}
                   </p>
                 </div>
               </div>

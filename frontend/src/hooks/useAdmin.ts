@@ -18,6 +18,7 @@ import {
   getAdminUsers,
   suspendUser,
 } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
 
 // ============================================================================
 // System Stats
@@ -88,9 +89,7 @@ export const useSuspendUser = () => {
       toast.success("User suspended successfully");
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to suspend user";
+      const message = getApiErrorMessage(error, "Failed to suspend user");
       toast.error(message);
     },
   });
@@ -110,9 +109,7 @@ export const useActivateUser = () => {
       toast.success("User activated successfully");
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to activate user";
+      const message = getApiErrorMessage(error, "Failed to activate user");
       toast.error(message);
     },
   });
@@ -132,9 +129,7 @@ export const useDeleteUser = () => {
       toast.success("User deleted successfully");
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to delete user";
+      const message = getApiErrorMessage(error, "Failed to delete user");
       toast.error(message);
     },
   });
@@ -174,9 +169,7 @@ export const useCreateInviteCode = () => {
       toast.success("Invite code created successfully");
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to create invite code";
+      const message = getApiErrorMessage(error, "Failed to create invite code");
       toast.error(message);
     },
   });
@@ -196,9 +189,10 @@ export const useDeactivateInviteCode = () => {
       toast.success("Invite code deactivated successfully");
     },
     onError: (error: unknown) => {
-      const message =
-        (error as { response?: { data?: { message?: string } } }).response?.data
-          ?.message || "Failed to deactivate invite code";
+      const message = getApiErrorMessage(
+        error,
+        "Failed to deactivate invite code",
+      );
       toast.error(message);
     },
   });

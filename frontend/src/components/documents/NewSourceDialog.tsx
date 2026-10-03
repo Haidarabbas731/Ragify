@@ -1,6 +1,7 @@
 import { FileText, Globe, Info, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { useUploadDocument } from "../../hooks/useDocuments";
+import { useUploadDocument } from "@/hooks/useDocuments";
+import { formatBytes } from "@/lib/format";
 
 interface NewSourceDialogProps {
   open: boolean;
@@ -157,7 +158,7 @@ export function NewSourceDialog({
                           {selectedFile.name}
                         </p>
                         <p className="text-[12px] text-[#717187] mt-0.5">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          {formatBytes(selectedFile.size)}
                         </p>
                       </div>
                       <button

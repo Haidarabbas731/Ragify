@@ -5,7 +5,8 @@
 import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import api, { getApiErrorMessage } from "../lib/api";
+import { getApiErrorMessage } from "@/lib/errors";
+import api from "../lib/api";
 import type {
   AuthActions,
   AuthState,

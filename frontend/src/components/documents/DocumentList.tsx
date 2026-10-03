@@ -4,7 +4,6 @@
  * Fonts: Geist (sans), Geist Mono (mono)
  */
 
-import { formatDistanceToNow } from "date-fns";
 import {
   AlertCircle,
   CheckCircle2,
@@ -18,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { formatBytes, formatRelative } from "@/lib/format";
 import { Button } from "../ui/button";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
@@ -93,12 +93,6 @@ export function DocumentList({
       return newRetrying;
     });
   }, [documents]);
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
 
   const getStatusBadge = (status: Document["status"]) => {
     switch (status) {
@@ -283,7 +277,7 @@ export function DocumentList({
                         Size
                       </p>
                       <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Fira_Code']">
-                        {formatFileSize(doc.size_bytes)}
+                        {formatBytes(doc.size_bytes)}
                       </p>
                       {doc.status === "active" && doc.chunks_count > 0 && (
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 font-['Fira_Code']">
@@ -296,9 +290,7 @@ export function DocumentList({
                         Uploaded
                       </p>
                       <p className="text-xs text-slate-700 dark:text-slate-300 font-sans">
-                        {formatDistanceToNow(new Date(doc.uploaded_at), {
-                          addSuffix: true,
-                        })}
+                        {formatRelative(doc.uploaded_at)}
                       </p>
                     </div>
                     <div className="flex items-end justify-end">
@@ -401,7 +393,7 @@ export function DocumentList({
                 <div className="hidden md:flex col-span-2 flex-col justify-center gap-2">
                   <div>
                     <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-['Fira_Code']">
-                      {formatFileSize(doc.size_bytes)}
+                      {formatBytes(doc.size_bytes)}
                     </p>
                     {doc.status === "active" && doc.chunks_count > 0 && (
                       <p className="text-xs text-slate-500 dark:text-slate-400 font-['Fira_Code']">
@@ -460,9 +452,7 @@ export function DocumentList({
                   <Clock className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm text-slate-700 dark:text-slate-300 font-sans">
-                      {formatDistanceToNow(new Date(doc.uploaded_at), {
-                        addSuffix: true,
-                      })}
+                      {formatRelative(doc.uploaded_at)}
                     </p>
                   </div>
                 </div>
