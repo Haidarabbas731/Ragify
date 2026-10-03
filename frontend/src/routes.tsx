@@ -56,32 +56,34 @@ const TestErrorPage = lazy(() =>
   })),
 );
 
-const AdminLayout = lazy(() =>
-  import("@/components/admin/AdminLayout").then((m) => ({
-    default: m.AdminLayout,
+const AdminSection = lazy(() =>
+  import("@/components/admin/AdminSection").then((m) => ({
+    default: m.AdminSection,
   })),
 );
-const AdminDashboard = lazy(() =>
-  import("@/pages/admin/AdminDashboard").then((m) => ({
-    default: m.AdminDashboard,
+const AdminOverviewPage = lazy(() =>
+  import("@/pages/admin/AdminOverviewPage").then((m) => ({
+    default: m.AdminOverviewPage,
   })),
 );
-const AdminUsers = lazy(() =>
-  import("@/pages/admin/AdminUsers").then((m) => ({ default: m.AdminUsers })),
-);
-const AdminDocuments = lazy(() =>
-  import("@/pages/admin/AdminDocuments").then((m) => ({
-    default: m.AdminDocuments,
+const AdminUsersPage = lazy(() =>
+  import("@/pages/admin/AdminUsersPage").then((m) => ({
+    default: m.AdminUsersPage,
   })),
 );
-const AdminInviteCodes = lazy(() =>
-  import("@/pages/admin/AdminInviteCodes").then((m) => ({
-    default: m.AdminInviteCodes,
+const AdminDocumentsPage = lazy(() =>
+  import("@/pages/admin/AdminDocumentsPage").then((m) => ({
+    default: m.AdminDocumentsPage,
   })),
 );
-const AdminAuditLogs = lazy(() =>
-  import("@/pages/admin/AdminAuditLogs").then((m) => ({
-    default: m.AdminAuditLogs,
+const AdminInviteCodesPage = lazy(() =>
+  import("@/pages/admin/AdminInviteCodesPage").then((m) => ({
+    default: m.AdminInviteCodesPage,
+  })),
+);
+const AdminAuditLogsPage = lazy(() =>
+  import("@/pages/admin/AdminAuditLogsPage").then((m) => ({
+    default: m.AdminAuditLogsPage,
   })),
 );
 
@@ -155,26 +157,24 @@ export function AppRoutes() {
         <Route path="/collections" element={<CollectionsPage />} />
         <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/documents/:documentId" element={<DocumentDetailPage />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminSection />
+            </AdminRoute>
+          }
+        >
+          <Route index element={<AdminOverviewPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="documents" element={<AdminDocumentsPage />} />
+          <Route path="invite-codes" element={<AdminInviteCodesPage />} />
+          <Route path="audit-logs" element={<AdminAuditLogsPage />} />
+        </Route>
       </Route>
       {import.meta.env.DEV && (
         <Route path="/test-error" element={<TestErrorPage />} />
       )}
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
-            <DocumentStatusProvider>
-              <AdminLayout />
-            </DocumentStatusProvider>
-          </AdminRoute>
-        }
-      >
-        <Route index element={<AdminDashboard />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="documents" element={<AdminDocuments />} />
-        <Route path="invite-codes" element={<AdminInviteCodes />} />
-        <Route path="audit-logs" element={<AdminAuditLogs />} />
-      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

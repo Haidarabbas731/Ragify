@@ -332,3 +332,113 @@ export interface AiModel {
 export interface AuthConfig {
   invite_only: boolean;
 }
+
+// ============================================================================
+// Admin
+// ============================================================================
+
+/** System-wide counts from GET /admin/stats. */
+export interface AdminStats {
+  total_users: number;
+  active_users_30d: number;
+  total_documents: number;
+  total_conversations: number;
+  total_storage_bytes: number;
+  active_invite_codes: number;
+  failed_documents: number;
+  timestamp: string;
+}
+
+/** A user row from GET /admin/users. */
+export interface AdminUser {
+  user_id: string;
+  email: string;
+  role: "user" | "admin";
+  status: "active" | "suspended";
+  storage_used_bytes: number;
+  storage_limit_bytes: number;
+  last_login_at: string | null;
+  created_at: string;
+}
+
+/** Extra counts from GET /admin/users/:id. */
+export interface AdminUserDetails extends AdminUser {
+  document_count: number;
+  conversation_count: number;
+  collection_count: number;
+}
+
+/** A document row from GET /admin/documents. */
+export interface AdminDocument {
+  document_id: string;
+  user_id: string;
+  user_email: string;
+  filename: string;
+  file_type: string;
+  size_bytes: number;
+  status: DocumentStatus;
+  chunks_count: number;
+  uploaded_at: string;
+  processed_at: string | null;
+  error_message: string | null;
+}
+
+export type InviteCodeStatus = "active" | "expired" | "fully_used" | "revoked";
+
+export interface InviteCode {
+  invite_code_id: string;
+  code: string;
+  created_by: string | null;
+  max_uses: number;
+  current_uses: number;
+  status: InviteCodeStatus;
+  expires_at: string | null;
+  description: string | null;
+  created_at: string;
+}
+
+export interface CreateInviteCodeRequest {
+  max_uses: number;
+  expires_at?: string;
+  description?: string;
+}
+
+/** One entry of the admin audit trail. */
+export interface AuditLogEntry {
+  audit_id: string;
+  admin_user_id: string;
+  action: string;
+  target_type: string;
+  target_id: string;
+  details: Record<string, unknown>;
+  ip_address: string;
+  timestamp: string;
+}
+
+/** Shape shared by the paginated admin lists. */
+export interface Paginated {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+export interface AdminUsersResponse extends Paginated {
+  users: AdminUser[];
+}
+
+export interface AdminDocumentsResponse extends Paginated {
+  documents: AdminDocument[];
+}
+
+export interface AuditLogsResponse extends Paginated {
+  logs: AuditLogEntry[];
+}
+
+/** Result of a bulk document delete. */
+export interface CleanupResult {
+  status: string;
+  message: string;
+  deleted_count: number;
+  errors: string[] | null;
+}
