@@ -39,7 +39,7 @@ export function MarkdownContent({ content, className }: MarkdownContentProps) {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-primary underline-offset-2 hover:underline"
+                className="font-medium text-primary underline underline-offset-2"
                 {...props}
               >
                 {children}

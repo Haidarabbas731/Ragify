@@ -26,7 +26,7 @@ export function ProfileMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Account menu"
+        aria-label={`Account menu, ${initials}`}
         className="flex size-9 select-none items-center justify-center rounded-full bg-primary text-meta font-semibold text-primary-foreground transition-[transform,filter] duration-150 ease-snap hover:brightness-110 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         {initials}
