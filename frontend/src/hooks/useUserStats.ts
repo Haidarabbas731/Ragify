@@ -12,7 +12,8 @@ import type { UserStats } from "../types/api";
  */
 export function useUserStats() {
   return useQuery<UserStats>({
-    queryKey: ["user", "stats"],
+    // Must match the ["userStats"] key that uploads, deletes and SSE updates invalidate.
+    queryKey: ["userStats"],
     queryFn: getUserStats,
     staleTime: 1000 * 60 * 2, // 2 minutes - stats change more frequently
   });

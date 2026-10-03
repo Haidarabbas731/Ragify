@@ -18,7 +18,7 @@ import { useAuthStore } from "@/store/authStore";
 /** Chat with your documents. Lives in the app shell; history is in the sidebar. */
 export function ChatPage() {
   const navigate = useNavigate();
-  const { key: locationKey } = useLocation();
+  const { key: locationKey, state: locationState } = useLocation();
   const { conversationId } = useParams<{ conversationId: string }>();
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.user_id);
@@ -117,9 +117,10 @@ export function ChatPage() {
     textareaRef.current?.focus();
   };
 
-  const handleSendMessage = async () => {
-    if (!message.trim() || isStreaming) return;
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isStreaming) return;
     if (needsApiKey) {
+      setMessage(text);
       setKeyDialogOpen(true);
       return;
     }
@@ -127,7 +128,7 @@ export function ChatPage() {
     const userMessage: DisplayMessage = {
       id: Date.now().toString(),
       role: "user",
-      content: message.trim(),
+      content: text.trim(),
       timestamp: new Date().toISOString(),
     };
     const assistantMessageId = (Date.now() + 1).toString();
@@ -196,6 +197,23 @@ export function ChatPage() {
     });
   };
 
+  // A question typed on the dashboard arrives as router state and is sent once.
+  // The nonce is remembered for the session so reloading /chat doesn't send it again.
+  const prefill = (locationState as { prefill?: string; nonce?: number } | null)
+    ?.prefill;
+  const prefillNonce = (locationState as { nonce?: number } | null)?.nonce;
+  const prefillSent = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: send once per arrival
+  useEffect(() => {
+    if (!prefill || conversationId || !aiSettings || prefillSent.current)
+      return;
+    const seen = sessionStorage.getItem("chat:prefill-nonce");
+    if (seen === String(prefillNonce)) return;
+    prefillSent.current = true;
+    sessionStorage.setItem("chat:prefill-nonce", String(prefillNonce));
+    void sendMessage(prefill);
+  }, [prefill, prefillNonce, conversationId, aiSettings]);
+
   const isJustCreated = newlyCreatedConversationRef.current === conversationId;
   const loadingConversation =
     Boolean(conversationId) && conversationLoading && !isJustCreated;
@@ -213,7 +231,7 @@ export function ChatPage() {
       <Composer
         value={message}
         onChange={setMessage}
-        onSend={handleSendMessage}
+        onSend={() => sendMessage(message)}
         isStreaming={isStreaming}
         collections={collections}
         collectionId={selectedCollectionId}

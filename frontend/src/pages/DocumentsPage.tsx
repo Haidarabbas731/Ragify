@@ -29,7 +29,7 @@ import {
 } from "@/hooks/useDocuments";
 import { getAllMatchingDocumentIds } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import type { Document } from "@/types/api";
+import type { Document, DocumentStatus } from "@/types/api";
 
 const PAGE_SIZE = 50;
 
@@ -40,6 +40,13 @@ const EMPTY_FILTERS: DocumentFilterValues = {
   sort: DEFAULT_SORT,
 };
 
+/** `?status=` from a link (e.g. the dashboard's "Indexing" strip); anything unknown is ignored. */
+function parseStatus(value: string | null): DocumentStatus | null {
+  return value === "active" || value === "processing" || value === "error"
+    ? value
+    : null;
+}
+
 type DeleteTarget = { kind: "single"; doc: Document } | { kind: "selection" };
 
 /** All of the user's documents: search, filter, sort, select, move and delete. */
@@ -49,6 +56,7 @@ export function DocumentsPage() {
   const [filters, setFilters] = useState<DocumentFilterValues>(() => ({
     ...EMPTY_FILTERS,
     collectionId: searchParams.get("collection"),
+    status: parseStatus(searchParams.get("status")),
   }));
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
