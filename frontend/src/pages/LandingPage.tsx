@@ -1,456 +1,83 @@
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  ArrowDown,
-  ArrowRight,
-  FileText,
-  Folder,
-  Github,
-  Link,
-  Linkedin,
-  MessageSquare,
-  Share2,
-  Twitter,
-  Upload,
-  Zap,
-} from "lucide-react";
-import { useEffect, useRef } from "react";
-import { FAQSection } from "../components/landing/FAQSection";
-import { FeatureCard } from "../components/landing/FeatureCard";
-import { StepCard } from "../components/landing/StepCard";
-import { LandingNav } from "../components/layout/LandingNav";
-import { Button } from "../components/ui/button";
-import { useAuthStore } from "../store/authStore";
+import { ArrowRight } from "lucide-react";
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { FAQSection } from "@/components/landing/FAQSection";
+import { FinalCta } from "@/components/landing/FinalCta";
+import { HeroDemo } from "@/components/landing/HeroDemo";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { LandingFooter } from "@/components/landing/LandingFooter";
+import { LandingNav } from "@/components/landing/LandingNav";
+import { WhyRagify } from "@/components/landing/WhyRagify";
+import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/authStore";
 
-gsap.registerPlugin(ScrollTrigger);
-
+/** The public front page: what Ragify does, shown with one cited answer. */
 export function LandingPage() {
-  const { isAuthenticated } = useAuthStore();
-  const heroRef = useRef<HTMLDivElement>(null);
-  const headlineRef = useRef<HTMLHeadingElement>(null);
-  const subheadRef = useRef<HTMLParagraphElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
-  const trustRef = useRef<HTMLDivElement>(null);
-  const featuresRef = useRef<HTMLDivElement>(null);
-  const stepsRef = useRef<HTMLDivElement>(null);
-  const ctaSectionRef = useRef<HTMLDivElement>(null);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
+  // Anchor links scroll smoothly on this page only (and not for reduced motion)
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-
-      tl.from(headlineRef.current, {
-        y: 50,
-        opacity: 0,
-        duration: 0.9,
-        delay: 0.2,
-      })
-        .from(subheadRef.current, { y: 30, opacity: 0, duration: 0.7 }, "-=0.5")
-        .from(
-          ctaRef.current?.children || [],
-          { y: 20, opacity: 0, duration: 0.5, stagger: 0.12 },
-          "-=0.4",
-        )
-        .from(
-          trustRef.current?.children || [],
-          { y: 15, opacity: 0, duration: 0.4, stagger: 0.08 },
-          "-=0.2",
-        );
-
-      gsap.set(featuresRef.current?.querySelectorAll(".feature-card") || [], {
-        opacity: 0,
-        y: 40,
-      });
-      ScrollTrigger.create({
-        trigger: featuresRef.current,
-        start: "top 85%",
-        onEnter: () => {
-          gsap.to(
-            featuresRef.current?.querySelectorAll(".feature-card") || [],
-            {
-              y: 0,
-              opacity: 1,
-              duration: 0.7,
-              stagger: 0.12,
-              ease: "power2.out",
-            },
-          );
-        },
-        once: true,
-      });
-
-      // Set initial state explicitly so cards are never stuck invisible
-      gsap.set(stepsRef.current?.querySelectorAll(".step-card") || [], {
-        opacity: 0,
-        y: 40,
-      });
-      ScrollTrigger.create({
-        trigger: stepsRef.current,
-        start: "top 85%",
-        onEnter: () => {
-          gsap.to(stepsRef.current?.querySelectorAll(".step-card") || [], {
-            y: 0,
-            opacity: 1,
-            duration: 0.7,
-            stagger: 0.15,
-            ease: "power2.out",
-          });
-        },
-        once: true,
-      });
-
-      gsap.set(ctaSectionRef.current?.children || [], { opacity: 0, y: 30 });
-      ScrollTrigger.create({
-        trigger: ctaSectionRef.current,
-        start: "top 85%",
-        onEnter: () => {
-          gsap.to(ctaSectionRef.current?.children || [], {
-            y: 0,
-            opacity: 1,
-            duration: 0.7,
-            stagger: 0.1,
-            ease: "power2.out",
-          });
-        },
-        once: true,
-      });
-    }, heroRef);
-
-    return () => ctx.revert();
+    const root = document.documentElement;
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      root.style.scrollBehavior = "smooth";
+    }
+    return () => {
+      root.style.scrollBehavior = "";
+    };
   }, []);
 
-  const features = [
-    {
-      icon: MessageSquare,
-      title: "RAG-Powered Chat",
-      description:
-        "Ask questions and get intelligent answers powered by Retrieval-Augmented Generation. Your documents become a conversational knowledge base.",
-    },
-    {
-      icon: FileText,
-      title: "Multi-Format Support",
-      description:
-        "Upload PDFs, Word documents, text files, and Markdown. Up to 50MB per file with intelligent chunking for optimal processing.",
-    },
-    {
-      icon: Folder,
-      title: "Smart Collections",
-      description:
-        "Create collections to organize your documents by topic, project, or category. Keep your knowledge base structured and searchable.",
-    },
-    {
-      icon: Link,
-      title: "Source Citations",
-      description:
-        "Every answer shows which documents it came from, so you can trust and verify what the AI tells you.",
-    },
-  ];
-
-  const steps = [
-    {
-      number: "01",
-      icon: Upload,
-      title: "Upload Documents",
-      description: "Drag and drop your files — PDF, DOCX, TXT, or Markdown.",
-    },
-    {
-      number: "02",
-      icon: Zap,
-      title: "AI Indexes Everything",
-      description:
-        "Ragify chunks, embeds, and indexes your documents for semantic search.",
-    },
-    {
-      number: "03",
-      icon: MessageSquare,
-      title: "Ask in Plain Language",
-      description:
-        "Ask questions naturally. Get instant answers that show their source documents.",
-    },
-    {
-      number: "04",
-      icon: Share2,
-      title: "Organize & Share",
-      description:
-        "Group documents into collections and collaborate with your team.",
-    },
-  ];
-
-  const trustItems = [
-    "PDF · DOCX · TXT · MD",
-    "Up to 50MB per file",
-    "Vector search powered",
-    "Source documents shown with every answer",
-  ];
-
   return (
-    <div
-      ref={heroRef}
-      className="relative min-h-screen bg-background text-foreground overflow-x-hidden"
-    >
+    <div className="min-h-dvh bg-background text-foreground">
       <LandingNav />
 
-      {/* ── Hero ── */}
-      <section
-        id="hero"
-        className="relative min-h-[88vh] flex flex-col items-center justify-center px-6 pt-24 pb-16 bg-[#12375c]"
-      >
-        {/* Subtle dot grid overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, #fffeff 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          {/* Headline */}
-          <h1
-            ref={headlineRef}
-            className="text-5xl sm:text-6xl md:text-7xl font-bold leading-[1.08] tracking-tight text-white mb-6"
-          >
-            Your Documents, <br className="hidden sm:block" />
-            <span className="text-[#cd79f5]">Supercharged</span> with AI
-          </h1>
-
-          {/* Subheadline */}
-          <p
-            ref={subheadRef}
-            className="text-lg md:text-xl text-white/70 max-w-xl mx-auto mb-10 leading-relaxed"
-          >
-            Transform your knowledge base with AI-powered search and chat.
-            Instant answers from your documents, with the sources shown.
-          </p>
-
-          {/* CTAs */}
-          <div
-            ref={ctaRef}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14"
-          >
-            {isAuthenticated ? (
-              <a href="/dashboard">
-                <Button
-                  size="lg"
-                  className="bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl px-8 py-3 text-base font-bold transition-colors duration-150"
-                >
-                  Go to Dashboard
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </a>
-            ) : (
-              <>
-                <a href="/register">
-                  <Button
-                    size="lg"
-                    className="bg-[#7734e7] hover:bg-[#6620d4] text-white rounded-2xl px-8 py-3 text-base font-bold transition-colors duration-150"
-                  >
-                    Get Started Free
-                    <ArrowRight className="ml-2 w-4 h-4" />
+      <main>
+        <section className="pt-28 pb-20 sm:pt-32 sm:pb-24">
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+            <div className="fade-in-soft flex flex-col items-start gap-6">
+              <h1 className="text-[clamp(2.5rem,6vw,4.25rem)] font-bold leading-[1.05] tracking-[-0.03em] text-foreground">
+                Ask your documents. See exactly where the answer came from.
+              </h1>
+              <p className="max-w-xl text-lg text-muted-foreground">
+                Upload PDFs, Word, text or Markdown files. Ragify finds the
+                passages that matter and answers from them, with the source on
+                every answer.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                {isAuthenticated ? (
+                  <Button asChild size="lg">
+                    <Link to="/dashboard">
+                      Go to dashboard <ArrowRight />
+                    </Link>
                   </Button>
-                </a>
-                <button
-                  type="button"
-                  onClick={() =>
-                    document
-                      .getElementById("how-it-works")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
-                  className="flex items-center gap-2 text-white/65 hover:text-white text-sm font-semibold transition-colors duration-150"
-                >
-                  See how it works
-                  <ArrowDown className="w-4 h-4" />
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Trust bar */}
-          <div
-            ref={trustRef}
-            className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3"
-          >
-            {trustItems.map((item) => (
-              <span
-                key={item}
-                className="text-xs font-semibold text-white/40 uppercase tracking-[1.5px]"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Features ── */}
-      <section id="features" className="py-24 px-6 bg-background">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="text-[11px] font-bold uppercase tracking-[2px] text-[#7734e7] dark:text-[#cd79f5]">
-              Features
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 mb-3">
-              Why Choose Ragify?
-            </h2>
-            <p className="text-base text-muted-foreground max-w-xl mx-auto">
-              Everything you need to turn documents into an intelligent
-              knowledge base
-            </p>
-          </div>
-
-          <div
-            ref={featuresRef}
-            className="grid grid-cols-1 md:grid-cols-2 gap-5"
-          >
-            {features.map((feature) => (
-              <div key={feature.title} className="feature-card">
-                <FeatureCard {...feature} />
+                ) : (
+                  <>
+                    <Button asChild size="lg">
+                      <Link to="/register">
+                        Create account <ArrowRight />
+                      </Link>
+                    </Button>
+                    <Button asChild size="lg" variant="outline">
+                      <Link to="/login">Sign in</Link>
+                    </Button>
+                  </>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── How It Works ── */}
-      <section id="how-it-works" className="py-24 px-6 bg-muted">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="text-[11px] font-bold uppercase tracking-[2px] text-[#7734e7] dark:text-[#cd79f5]">
-              How It Works
-            </span>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mt-2 mb-3">
-              Get Started in 4 Steps
-            </h2>
-            <p className="text-base text-muted-foreground">
-              From documents to intelligent answers in minutes
-            </p>
-          </div>
-
-          <div
-            ref={stepsRef}
-            className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-6"
-          >
-            {steps.map((step, index) => (
-              <div key={step.number} className="step-card">
-                <StepCard {...step} isLast={index === steps.length - 1} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ ── */}
-      <FAQSection />
-
-      {/* ── Bottom CTA ── */}
-      <section className="py-24 px-6 bg-[#7734e7]">
-        <div ref={ctaSectionRef} className="max-w-2xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
-            Ready to chat with your documents?
-          </h2>
-          <p className="text-base text-white/70 mb-10">
-            Free to start. No credit card required.
-          </p>
-          <a href={isAuthenticated ? "/dashboard" : "/register"}>
-            <Button
-              size="lg"
-              className="bg-white hover:bg-white/90 text-[#7734e7] rounded-2xl px-10 py-3 text-base font-bold transition-colors duration-150"
-            >
-              {isAuthenticated ? "Go to Dashboard" : "Get Started Free"}
-            </Button>
-          </a>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer className="bg-[#12375c] py-16 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-            {/* Brand */}
-            <div className="md:col-span-1">
-              <div className="flex items-center gap-3 mb-3">
-                <img
-                  src="/images/ragify.png"
-                  alt="Ragify"
-                  className="w-9 h-9"
-                />
-                <span className="text-white font-bold text-lg">Ragify</span>
-              </div>
-              <p className="text-white/50 text-sm leading-relaxed">
-                AI-powered document intelligence. Chat with your knowledge base.
+              <p className="text-meta text-muted-foreground">
+                Works with PDF, DOCX, TXT and Markdown files.
               </p>
             </div>
 
-            {/* Product */}
-            <div>
-              <h4 className="text-white font-bold text-sm mb-4">Product</h4>
-              <ul className="space-y-2.5">
-                {["Features", "How It Works", "FAQ"].map((item) => (
-                  <li key={item}>
-                    <span className="text-white/50 hover:text-white/80 text-sm transition-colors cursor-pointer">
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h4 className="text-white font-bold text-sm mb-4">Company</h4>
-              <ul className="space-y-2.5">
-                {["About", "Blog", "Careers", "Contact"].map((item) => (
-                  <li key={item}>
-                    <span className="text-white/50 hover:text-white/80 text-sm transition-colors cursor-pointer">
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Legal + Social */}
-            <div>
-              <h4 className="text-white font-bold text-sm mb-4">Legal</h4>
-              <ul className="space-y-2.5 mb-6">
-                {["Privacy Policy", "Terms of Service"].map((item) => (
-                  <li key={item}>
-                    <span className="text-white/50 hover:text-white/80 text-sm transition-colors cursor-pointer">
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="flex gap-4">
-                {(
-                  [
-                    ["Twitter", Twitter],
-                    ["Github", Github],
-                    ["Linkedin", Linkedin],
-                  ] as const
-                ).map(([name, Icon]) => (
-                  <button
-                    key={name}
-                    type="button"
-                    className="text-white/40 hover:text-white/80 transition-colors"
-                  >
-                    <Icon className="w-4 h-4" />
-                  </button>
-                ))}
-              </div>
-            </div>
+            <HeroDemo />
           </div>
+        </section>
 
-          <div className="border-t border-white/10 pt-8 text-center">
-            <p className="text-white/35 text-xs">
-              © {new Date().getFullYear()} Ragify. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+        <HowItWorks />
+        <WhyRagify />
+        <FAQSection />
+        <FinalCta />
+      </main>
+
+      <LandingFooter />
     </div>
   );
 }
-
-export default LandingPage;
