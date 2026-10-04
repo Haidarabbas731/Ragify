@@ -36,12 +36,17 @@ import type {
  * polls every 5 seconds. Otherwise, relies on SSE updates from useDocumentStatusUpdates.
  *
  * @param params - Query parameters (pagination, filters, sorting)
+ * @param options - `enabled: false` skips the request, e.g. while a search box is empty
  * @returns React Query result with documents list
  */
-export const useDocuments = (params?: DocumentListParams) => {
+export const useDocuments = (
+  params?: DocumentListParams,
+  options?: { enabled?: boolean },
+) => {
   return useQuery<DocumentListResponse>({
     queryKey: ["documents", params],
     queryFn: () => getDocuments(params),
+    enabled: options?.enabled ?? true,
     // Keep showing the previous list while a new page or filter loads.
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 2, // 2 minutes

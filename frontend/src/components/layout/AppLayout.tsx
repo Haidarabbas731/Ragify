@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Outlet, useLocation, useMatch } from "react-router-dom";
+import { CommandMenu } from "@/components/command/CommandMenu";
 import { NewSourceDialog } from "@/components/documents/NewSourceDialog";
 import {
   Sheet,
@@ -8,6 +9,7 @@ import {
   SheetDescription,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useCommandMenu } from "@/hooks/useCommandMenu";
 import { useInfiniteConversations } from "@/hooks/useConversations";
 import { conversationLabel } from "@/lib/conversations";
 import { cn } from "@/lib/utils";
@@ -30,6 +32,7 @@ export function AppLayout() {
   const { data: history } = useInfiniteConversations();
   const [menuOpen, setMenuOpen] = useState(false);
   const [newSourceOpen, setNewSourceOpen] = useState(false);
+  const commandMenu = useCommandMenu();
 
   const isChat = pathname.startsWith("/chat");
   const meta = useMemo(() => {
@@ -63,6 +66,7 @@ export function AppLayout() {
           subtitle={meta.subtitle}
           onOpenMenu={() => setMenuOpen(true)}
           onNewSource={() => setNewSourceOpen(true)}
+          onOpenCommandMenu={commandMenu.toggle}
         />
         <main
           className={cn(
@@ -79,6 +83,12 @@ export function AppLayout() {
           />
         </main>
       </div>
+
+      <CommandMenu
+        open={commandMenu.open}
+        onOpenChange={commandMenu.setOpen}
+        onNewSource={() => setNewSourceOpen(true)}
+      />
 
       <NewSourceDialog
         open={newSourceOpen}
