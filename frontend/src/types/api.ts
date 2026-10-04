@@ -331,6 +331,13 @@ export interface AuthConfig {
   invite_only: boolean;
 }
 
+/**
+ * Whether a password reset link can still be used
+ */
+export interface PasswordResetValidation {
+  valid: boolean;
+}
+
 // ============================================================================
 // Admin
 // ============================================================================
