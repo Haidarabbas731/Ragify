@@ -34,6 +34,11 @@ class User(SQLModel, table=True):
     # Login tracking for security & analytics
     last_login_at: datetime | None = Field(default=None, sa_column=Column(DateTime(timezone=True)))  # type:ignore
 
+    # Set once the user proves they own the email address; signing in requires it
+    email_verified_at: datetime | None = Field(
+        default=None, sa_column=Column(DateTime(timezone=True))
+    )  # type:ignore
+
     # Timestamps
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))

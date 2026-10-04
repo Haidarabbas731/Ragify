@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
@@ -11,14 +13,21 @@ from app.core.security import (
 )
 from app.services.redis_service import (
     add_jti_to_blocklist,
+    delete_verification_code,
     is_token_issued_before_password_change,
     store_token_pair,
 )
 from app.services.user_service import (
     create_user,
     get_user_by_email,
+    mark_email_verified,
     update_user_last_login,
+    update_user_password,
 )
+from app.services.verification_service import CodeCheck, check_code
+
+# Returned instead of tokens when the password is right but the email was never verified
+EMAIL_NOT_VERIFIED = "email_not_verified"
 
 
 async def register_user(
@@ -40,11 +49,17 @@ async def register_user(
         return False, error, None  # type: ignore
 
     existing = await get_user_by_email(session, email)
-    if existing:
+    if existing and (existing.email_verified_at is not None or not existing.is_active):
         return False, "Email already registered", None
 
     password_hash = hash_password(password)
-    user = await create_user(session, email, password_hash)
+    if existing:
+        # Never verified, so nobody has proven they own this address: the newest sign-up wins and
+        # replaces the password. Keeping the old one would let whoever typed it first sign in to
+        # the account once the real owner verifies.
+        user = await update_user_password(session, existing.user_id, password_hash)
+    else:
+        user = await create_user(session, email, password_hash)
 
     return (
         True,
@@ -86,6 +101,23 @@ async def authenticate_user(
     if not user.is_active:
         return False, "Account is suspended", None
 
+    if user.email_verified_at is None:
+        return False, EMAIL_NOT_VERIFIED, None
+
+    return await create_login_session(session, user)
+
+
+async def create_login_session(session: AsyncSession, user) -> tuple[bool, str, dict | None]:
+    """
+    Issue the access and refresh tokens for a user who has passed every sign-in check.
+
+    Args:
+        session: Database session
+        user: The user to sign in
+
+    Returns:
+        Tuple of (success, message, tokens_dict)
+    """
     access_token = create_access_token(
         {"sub": user.user_id, "email": user.email, "role": user.role}
     )
@@ -216,12 +248,50 @@ async def logout_user(
 
         max_ttl = max(
             access_ttl,
-            (
-                refresh_ttl
-                if refresh_ttl
-                else settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
-            ),
+            (refresh_ttl if refresh_ttl else settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60),
         )
         await revoke_all_user_sessions(user_id, max_ttl)
 
     return True, "Logged out successfully"
+
+
+@dataclass(frozen=True)
+class EmailVerification:
+    """Result of submitting a verification code."""
+
+    status: str  # ok, wrong, expired, locked, already_verified or error
+    tokens: dict | None = None
+    attempts_left: int = 0
+
+
+async def verify_email(session: AsyncSession, email: str, code: str) -> EmailVerification:
+    """
+    Check a verification code and, if it is right, verify the email and sign the user in.
+
+    Args:
+        session: Database session
+        email: The address being verified
+        code: The 6-digit code from the email
+
+    Returns:
+        The outcome, with tokens when it is ok and the tries left when it is wrong
+    """
+    user = await get_user_by_email(session, email)
+    if user is None or not user.is_active:
+        # Answer like a wrong code, so this cannot be used to find out which addresses have accounts
+        return EmailVerification(
+            "wrong", attempts_left=settings.EMAIL_VERIFICATION_MAX_ATTEMPTS - 1
+        )
+    if user.email_verified_at is not None:
+        return EmailVerification("already_verified")
+
+    result = await check_code(user.user_id, code)
+    if result.outcome is not CodeCheck.OK:
+        return EmailVerification(result.outcome.value, attempts_left=result.attempts_left)
+
+    await delete_verification_code(user.user_id)
+    user = await mark_email_verified(session, user.user_id)
+    success, _, tokens = await create_login_session(session, user)
+    if not success:
+        return EmailVerification("error")
+    return EmailVerification("ok", tokens=tokens)

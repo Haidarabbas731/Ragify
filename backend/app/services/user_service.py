@@ -209,6 +209,32 @@ async def update_user_password(
     return user
 
 
+async def mark_email_verified(session: AsyncSession, user_id: str) -> User:
+    """
+    Record that a user proved they own their email address.
+
+    Args:
+        session: Database session
+        user_id: User ID
+
+    Returns:
+        Updated user instance
+
+    Raises:
+        ValueError: If user not found
+    """
+    user = await get_user_by_id(session, user_id)
+    if not user:
+        raise ValueError(f"User {user_id} not found")
+
+    user.email_verified_at = datetime.now(UTC)
+    user.updated_at = datetime.now(UTC)
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
 async def update_user_email(
     session: AsyncSession, user_id: str, new_email: str
 ) -> tuple[bool, str, User | None]:
