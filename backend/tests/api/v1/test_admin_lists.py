@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from app.core.security import create_access_token, hash_password
 
-SENSITIVE_USER_FIELDS = {"password_hash", "invited_by_code", "invited_at", "is_active"}
+SENSITIVE_USER_FIELDS = {"password_hash", "is_active"}
 SENSITIVE_DOCUMENT_FIELDS = {"storage_key", "doc_metadata", "deleted_at"}
 
 

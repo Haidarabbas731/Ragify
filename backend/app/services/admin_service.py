@@ -14,7 +14,6 @@ from app.models.admin_audit_log import AdminAuditLog
 from app.models.collection import Collection
 from app.models.conversation import Conversation
 from app.models.document import Document
-from app.models.invite_code import InviteCode
 from app.models.user import User
 from app.services.redis_service import revoke_all_user_sessions
 
@@ -121,8 +120,6 @@ async def get_user_details(session: AsyncSession, user_id: str) -> dict[str, Any
         "last_login_at": user.last_login_at,
         "created_at": user.created_at,
         "updated_at": user.updated_at,
-        "invited_by_code": user.invited_by_code,
-        "invited_at": user.invited_at,
         "document_count": document_count,
         "conversation_count": conversation_count,
         "collection_count": collection_count,
@@ -312,12 +309,6 @@ async def get_system_stats(session: AsyncSession) -> dict[str, Any]:
     total_convs_result = await session.exec(select(func.count(Conversation.conversation_id)))
     total_conversations = total_convs_result.one()
 
-    # Active invite codes
-    active_invites_result = await session.exec(
-        select(func.count()).where(InviteCode.status == "active")
-    )
-    active_invite_codes = active_invites_result.one()
-
     # Failed documents
     failed_docs_result = await session.exec(
         select(func.count()).where(Document.status == "error")
@@ -330,7 +321,6 @@ async def get_system_stats(session: AsyncSession) -> dict[str, Any]:
         "total_documents": total_documents,
         "total_storage_bytes": total_storage,
         "total_conversations": total_conversations,
-        "active_invite_codes": active_invite_codes,
         "failed_documents": failed_documents,
         "timestamp": datetime.utcnow().isoformat(),
     }
@@ -352,7 +342,7 @@ async def log_admin_action(
         session: Database session
         admin_user_id: Admin user performing the action
         action: Action type (SUSPEND_USER, ACTIVATE_USER, DELETE_USER, etc.)
-        target_type: Type of target (user, document, invite_code)
+        target_type: Type of target (user, document)
         target_id: ID of target
         details: Additional details as JSON
         ip_address: IP address of admin

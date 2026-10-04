@@ -325,13 +325,6 @@ export interface AiModel {
 }
 
 /**
- * Public sign-up settings from the server (no login needed)
- */
-export interface AuthConfig {
-  invite_only: boolean;
-}
-
-/**
  * Whether a password reset link can still be used
  */
 export interface PasswordResetValidation {
@@ -349,7 +342,6 @@ export interface AdminStats {
   total_documents: number;
   total_conversations: number;
   total_storage_bytes: number;
-  active_invite_codes: number;
   failed_documents: number;
   timestamp: string;
 }
@@ -386,26 +378,6 @@ export interface AdminDocument {
   uploaded_at: string;
   processed_at: string | null;
   error_message: string | null;
-}
-
-export type InviteCodeStatus = "active" | "expired" | "fully_used" | "revoked";
-
-export interface InviteCode {
-  invite_code_id: string;
-  code: string;
-  created_by: string | null;
-  max_uses: number;
-  current_uses: number;
-  status: InviteCodeStatus;
-  expires_at: string | null;
-  description: string | null;
-  created_at: string;
-}
-
-export interface CreateInviteCodeRequest {
-  max_uses: number;
-  expires_at?: string;
-  description?: string;
 }
 
 /** One entry of the admin audit trail. */

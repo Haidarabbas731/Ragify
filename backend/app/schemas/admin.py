@@ -3,30 +3,6 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class InviteCodeCreate(BaseModel):
-    """Schema for creating a new invite code."""
-
-    max_uses: int = Field(default=1, ge=1, le=1000)
-    expires_at: datetime | None = None
-    description: str | None = None
-
-
-class InviteCodeResponse(BaseModel):
-    """Schema for invite code data in API responses."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    invite_code_id: str
-    code: str
-    created_by: str | None
-    max_uses: int
-    current_uses: int
-    status: str
-    expires_at: datetime | None
-    description: str | None
-    created_at: datetime
-
-
 class AuditLogResponse(BaseModel):
     """Schema for admin audit log entries."""
 
@@ -50,7 +26,6 @@ class SystemStatsResponse(BaseModel):
     total_documents: int
     total_conversations: int
     total_storage_bytes: int
-    active_invite_codes: int
     failed_documents: int
     timestamp: str
 
@@ -211,14 +186,6 @@ class AuditLogListParams(BaseModel):
     limit: int = Field(50, ge=1, le=100, description="Items per page")
     admin_user_id: str | None = Field(None, description="Filter by admin user who performed action")
     action: str | None = Field(None, description="Filter by action type")
-    target_type: str | None = Field(None, description="Filter by target type (user, document, invite_code)")
+    target_type: str | None = Field(None, description="Filter by target type (user, document)")
     start_date: datetime | None = Field(None, description="Filter by start date")
     end_date: datetime | None = Field(None, description="Filter by end date")
-
-
-class InviteCodeListParams(BaseModel):
-    """Query parameters for invite codes list endpoint."""
-
-    status_filter: str | None = Field(None, description="Filter by status (active, expired, revoked)")
-    limit: int = Field(50, ge=1, le=100, description="Number of invite codes to return")
-    offset: int = Field(0, ge=0, description="Number of invite codes to skip")

@@ -26,7 +26,6 @@ Comprehensive test suite for the AI Knowledge Base Chat System with 173 tests ac
 | security.py | 52% | 12 | Basic coverage |
 | llm_service.py | 19% | - | Needs unit tests |
 | redis_service.py | 18% | - | Needs unit tests |
-| invite_service.py | 19% | - | Needs unit tests |
 | admin_service.py | 17% | - | Needs unit tests |
 | email_service.py | 14% | - | Needs unit tests |
 

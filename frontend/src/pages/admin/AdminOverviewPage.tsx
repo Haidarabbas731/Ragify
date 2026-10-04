@@ -12,10 +12,10 @@ export function AdminOverviewPage() {
   if (isLoading) {
     return (
       <div
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
         aria-busy="true"
       >
-        {Array.from({ length: 6 }, (_, i) => (
+        {Array.from({ length: 4 }, (_, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static placeholder tiles
           <Skeleton key={i} className="h-[118px] rounded-2xl" />
         ))}
@@ -35,7 +35,7 @@ export function AdminOverviewPage() {
   const failed = stats.failed_documents;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatTile
         label="Users"
         value={stats.total_users.toLocaleString()}
@@ -66,18 +66,6 @@ export function AdminOverviewPage() {
         label="Storage used"
         value={formatBytes(stats.total_storage_bytes)}
         detail="Across all users"
-      />
-      <StatTile
-        label="Active invite codes"
-        value={stats.active_invite_codes.toLocaleString()}
-        detail={
-          <Link
-            to="/admin/invite-codes"
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            Manage invite codes
-          </Link>
-        }
       />
     </div>
   );

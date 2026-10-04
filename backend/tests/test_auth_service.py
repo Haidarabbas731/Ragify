@@ -2,7 +2,7 @@
 Unit tests for auth_service.py - Authentication logic.
 
 Tests:
-- User registration (with password validation, invite code validation)
+- User registration (with password validation)
 - User authentication (login, password verification, account status)
 - Token refresh
 - User logout (token revocation)
@@ -31,19 +31,14 @@ async def test_register_user_success(session: AsyncSession):
     with patch(
         "app.services.auth_service.validate_password_strength"
     ) as mock_validate_pwd, patch(
-        "app.services.auth_service.validate_invite_code_for_registration"
-    ) as mock_validate_invite, patch(
         "app.services.auth_service.get_user_by_email"
     ) as mock_get_user, patch(
         "app.services.auth_service.hash_password"
     ) as mock_hash, patch(
         "app.services.auth_service.create_user"
-    ) as mock_create, patch(
-        "app.services.auth_service.use_invite_code"
-    ) as mock_use_invite:
+    ) as mock_create:
         # Setup mocks
         mock_validate_pwd.return_value = (True, "")
-        mock_validate_invite.return_value = (True, "")
         mock_get_user.return_value = None
         mock_hash.return_value = "hashed_password_123"
 
@@ -56,7 +51,7 @@ async def test_register_user_success(session: AsyncSession):
 
         # Execute registration
         success, message, user_data = await register_user(
-            session, "newuser@example.com", "ValidPass123!", "KB-1234-5678-9ABC"
+            session, "newuser@example.com", "ValidPass123!"
         )
 
         # Assertions
@@ -66,9 +61,7 @@ async def test_register_user_success(session: AsyncSession):
         assert user_data["email"] == "newuser@example.com"
 
         mock_validate_pwd.assert_called_once_with("ValidPass123!")
-        mock_validate_invite.assert_called_once()
         mock_hash.assert_called_once_with("ValidPass123!")
-        mock_use_invite.assert_called_once()
 
 
 # Test: register_user - Weak password
@@ -87,35 +80,11 @@ async def test_register_user_weak_password(session: AsyncSession):
         )
 
         success, message, user_data = await register_user(
-            session, "newuser@example.com", "weak", None
+            session, "newuser@example.com", "weak"
         )
 
         assert success is False
         assert "at least 8 characters" in message
-        assert user_data is None
-
-
-# Test: register_user - Invalid invite code
-
-
-@pytest.mark.asyncio
-async def test_register_user_invalid_invite_code(session: AsyncSession):
-    """Test registration fails with invalid invite code."""
-
-    with patch(
-        "app.services.auth_service.validate_password_strength"
-    ) as mock_validate_pwd, patch(
-        "app.services.auth_service.validate_invite_code_for_registration"
-    ) as mock_validate_invite:
-        mock_validate_pwd.return_value = (True, "")
-        mock_validate_invite.return_value = (False, "Invalid invite code")
-
-        success, message, user_data = await register_user(
-            session, "newuser@example.com", "ValidPass123!", "INVALID-CODE"
-        )
-
-        assert success is False
-        assert "Invalid invite code" in message
         assert user_data is None
 
 
@@ -129,18 +98,15 @@ async def test_register_user_email_exists(session: AsyncSession):
     with patch(
         "app.services.auth_service.validate_password_strength"
     ) as mock_validate_pwd, patch(
-        "app.services.auth_service.validate_invite_code_for_registration"
-    ) as mock_validate_invite, patch(
         "app.services.auth_service.get_user_by_email"
     ) as mock_get_user:
         mock_validate_pwd.return_value = (True, "")
-        mock_validate_invite.return_value = (True, "")
         mock_get_user.return_value = User(
             email="existing@example.com", password_hash="hash", role="user"
         )
 
         success, message, user_data = await register_user(
-            session, "existing@example.com", "ValidPass123!", None
+            session, "existing@example.com", "ValidPass123!"
         )
 
         assert success is False

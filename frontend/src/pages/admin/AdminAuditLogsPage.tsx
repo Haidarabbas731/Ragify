@@ -38,7 +38,7 @@ export function AdminAuditLogsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader description="A record of what admins changed: suspensions, deletions and invite codes." />
+      <PageHeader description="A record of what admins changed: suspensions and deletions." />
 
       {actions.length > 0 && (
         <div>

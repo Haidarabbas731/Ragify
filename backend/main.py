@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from app.api.exceptions import register_exception_handlers
 from app.api.v1 import ai_settings, auth, chat, collections, conversations, documents, users
-from app.api.v1.admin import audit_logs, invite_codes
+from app.api.v1.admin import audit_logs
 from app.api.v1.admin import documents as admin_documents
 from app.api.v1.admin import users as admin_users
 from app.core.config import settings
@@ -200,7 +200,6 @@ app.include_router(users.router, prefix="/api/v1")
 app.include_router(admin_documents.router, prefix="/api/v1")
 app.include_router(admin_users.router, prefix="/api/v1")
 app.include_router(audit_logs.router, prefix="/api/v1")
-app.include_router(invite_codes.router, prefix="/api/v1/admin")
 
 
 @app.get("/ping")

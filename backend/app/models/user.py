@@ -44,9 +44,3 @@ class User(SQLModel, table=True):
 
     # Soft delete flag
     is_active: bool = Field(default=True)
-
-    # Invite tracking
-    invited_by_code: str | None = Field(default=None, max_length=24)
-    invited_at: datetime = Field(
-        default_factory=lambda: datetime.now(UTC), sa_column=Column(DateTime(timezone=True))
-    )  # type:ignore

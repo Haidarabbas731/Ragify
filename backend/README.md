@@ -63,7 +63,6 @@ backend/
 │   ├── tasks/           # ARQ background tasks
 │   └── utils/           # Helper functions
 ├── scripts/             # Utility scripts
-│   ├── bootstrap_admin.py  # Generate first invite code
 │   ├── seed_data.py        # Seed dev test data
 │   ├── start-api.sh        # Container entrypoint: migrate + seed admin + uvicorn
 │   ├── start-worker.sh     # Container entrypoint: arq worker
@@ -198,24 +197,6 @@ account is reverted the same way). Avoid `#`, `$`, quotes, backslashes and space
 value: env-file parsers cut or rewrite them. To also restore a demoted or suspended admin run
 `python scripts/seed_admin.py --restore-access`.
 
-### Generate First Admin Invite Code
-```bash
-uv run python scripts/bootstrap_admin.py
-```
-**Output:**
-```
-==================================================
-Admin Invite Code Generated Successfully!
-==================================================
-
-Invite Code: KB-XXXX-XXXX-XXXX
-Invite ID: uuid-here
-Max Uses: 1
-
-Use this code to create the first admin account.
-==================================================
-```
-
 ### Seed Development Data (Optional)
 ```bash
 uv run python scripts/seed_data.py
@@ -223,7 +204,6 @@ uv run python scripts/seed_data.py
 **Creates:**
 - Test user: `test@example.com` / `testpassword123`
 - Test collection
-- Test invite code: `KB-TEST-1234-ABCD`
 
 ---
 
@@ -419,7 +399,6 @@ ADMIN_EMAIL=admin@example.com
 - **Document**: File metadata, processing status, B2 storage keys, chunk counts
 - **Collection**: Organize documents into groups
 - **Conversation**: Chat history with JSONB messages
-- **InviteCode**: Invite-only registration system (KB-XXXX-XXXX-XXXX)
 - **AdminAuditLog**: Track admin actions
 
 ### Key Features
@@ -559,7 +538,7 @@ uv sync --reinstall
 - **Password hashing**: Argon2
 - **JWT blocklist**: Redis-based
 - **User isolation**: All queries filtered by `user_id`
-- **Invite-only registration**: KB-XXXX-XXXX-XXXX codes
+- **Open registration**: anyone can sign up
 - **No credentials in code**: All secrets in `.env`
 
 ---
@@ -568,7 +547,7 @@ uv sync --reinstall
 
 ### ✅ Phase 0: Setup & Foundation (Completed)
 - [x] Project structure setup
-- [x] Database models (User, Document, Collection, Conversation, InviteCode, AdminAuditLog)
+- [x] Database models (User, Document, Collection, Conversation, AdminAuditLog)
 - [x] Database session management (`database.py`); tables are managed by Alembic migrations
 - [x] Docker Compose (PostgreSQL + Redis)
 - [x] Configuration management
@@ -585,7 +564,7 @@ uv sync --reinstall
 - [x] Status enums and validation
 
 ### ✅ Phase 2: Authentication (Completed)
-- [x] User registration with invite codes
+- [x] User registration
 - [x] Login with JWT tokens (access + refresh)
 - [x] Password reset flow with email
 - [x] Token refresh endpoint

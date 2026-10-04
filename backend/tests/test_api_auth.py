@@ -9,7 +9,6 @@ Tests all endpoints in app/api/v1/auth.py:
 - POST /api/v1/auth/password-reset/request
 - POST /api/v1/auth/password-reset/confirm
 
-Note: INVITE_ONLY mode is disabled in conftest.py for tests.
 """
 
 import asyncio

@@ -15,7 +15,6 @@ async def test_create_user_with_valid_data(session: AsyncSession) -> None:
         session=session,
         email="create@example.com",
         password_hash="hashed",
-        invite_code="KB-TEST-0001-ABCD",
     )
 
     assert user.user_id is not None

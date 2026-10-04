@@ -15,10 +15,7 @@ import type {
   AiSettingsUpdate,
   AiTestResult,
   AuditLogsResponse,
-  AuthConfig,
   CleanupResult,
-  CreateInviteCodeRequest,
-  InviteCode,
   MessageResponse,
   PasswordResetValidation,
 } from "../types/api";
@@ -175,15 +172,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
-
-/**
- * Get the server's public sign-up settings (works without logging in)
- * @returns Whether registration needs an invite code
- */
-export const getAuthConfig = async (): Promise<AuthConfig> => {
-  const { data } = await api.get("/auth/config");
-  return data;
-};
 
 /**
  * Check whether a password reset link can still be used, without using it
@@ -666,26 +654,6 @@ export const activateUser = async (userId: string) => {
 /** Delete a user account (admin only). */
 export const deleteAdminUser = async (userId: string) => {
   const { data } = await api.delete(`/admin/users/${userId}`);
-  return data;
-};
-
-/** All invite codes (admin only). */
-export const getAdminInviteCodes = async (): Promise<InviteCode[]> => {
-  const { data } = await api.get("/admin/invite-codes");
-  return data;
-};
-
-/** Create a new invite code (admin only). */
-export const createInviteCode = async (
-  codeData: CreateInviteCodeRequest,
-): Promise<InviteCode> => {
-  const { data } = await api.post("/admin/invite-codes", codeData);
-  return data;
-};
-
-/** Revoke an invite code by its code string, e.g. `KB-XXXX-XXXX-XXXX` (admin only). */
-export const revokeInviteCode = async (code: string) => {
-  const { data } = await api.delete(`/admin/invite-codes/${code}`);
   return data;
 };
 

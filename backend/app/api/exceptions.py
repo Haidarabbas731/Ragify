@@ -88,7 +88,7 @@ _MAX_LISTED_ERRORS = 3
 
 
 def _field_label(location: tuple) -> str:
-    """Readable name of the field an error is about, e.g. ("body", "invite_code") -> "Invite code"."""
+    """Readable name of the field an error is about, e.g. ("body", "new_password") -> "New password"."""
     names = [str(part) for part in location if part != "body" and not isinstance(part, int)]
     return names[-1].replace("_", " ").capitalize() if names else "Request"
 

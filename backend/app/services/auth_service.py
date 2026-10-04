@@ -9,10 +9,6 @@ from app.core.security import (
     validate_password_strength,
     verify_password,
 )
-from app.services.invite_service import (
-    use_invite_code,
-    validate_invite_code_for_registration,
-)
 from app.services.redis_service import (
     add_jti_to_blocklist,
     is_token_issued_before_password_change,
@@ -26,7 +22,7 @@ from app.services.user_service import (
 
 
 async def register_user(
-    session: AsyncSession, email: str, password: str, invite_code: str | None
+    session: AsyncSession, email: str, password: str
 ) -> tuple[bool, str, dict | None]:
     """
     Register a new user.
@@ -35,7 +31,6 @@ async def register_user(
         session: Database session
         email: User email
         password: Plain text password
-        invite_code: Invite code (required if INVITE_ONLY=true)
 
     Returns:
         Tuple of (success, message, user_dict)
@@ -44,19 +39,12 @@ async def register_user(
     if not is_valid:
         return False, error, None  # type: ignore
 
-    is_valid, error = await validate_invite_code_for_registration(session, invite_code)
-    if not is_valid:
-        return False, error, None  # type: ignore
-
     existing = await get_user_by_email(session, email)
     if existing:
         return False, "Email already registered", None
 
     password_hash = hash_password(password)
-    user = await create_user(session, email, password_hash, invite_code)
-
-    if invite_code:
-        await use_invite_code(session, invite_code)
+    user = await create_user(session, email, password_hash)
 
     return (
         True,
