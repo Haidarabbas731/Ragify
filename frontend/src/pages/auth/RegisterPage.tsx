@@ -124,6 +124,7 @@ export function RegisterPage() {
 
   return (
     <AuthShell
+      align="top"
       panel={<OnboardPanel />}
       title="Create your account"
       description="Start asking questions about your documents."
@@ -159,7 +160,7 @@ export function RegisterPage() {
           <FieldError id="email-error" message={errors.email?.message} />
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col">
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">Password</Label>
             <PasswordInput

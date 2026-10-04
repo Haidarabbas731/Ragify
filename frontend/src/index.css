@@ -340,6 +340,13 @@ html, body {
     }
   }
 
+  .auth-no-scrollbar {
+    scrollbar-width: none;
+  }
+  .auth-no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Row collapse: animate grid rows 1fr -> 0fr (same trick as .faq-answer) plus fade. */
   .collapse-rows {
     display: grid;
@@ -506,6 +513,9 @@ html, body {
     }
     .step-in {
       animation-name: fadeInSoft;
+    }
+    .collapse-rows {
+      transition: opacity var(--dur-base) var(--ease-out);
     }
     .meter-in {
       animation: none;
