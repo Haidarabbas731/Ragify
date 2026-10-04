@@ -120,6 +120,9 @@ html, body {
 
   --ragify-shadow: 0 1px 2px oklch(0.25 0.04 285 / 0.05), 0 8px 24px -12px oklch(0.25 0.04 285 / 0.12);
   --shadow-float-value: 0 16px 48px -8px oklch(0.25 0.04 285 / 0.16);
+  /* Keycap boxes of the verification code: a key's drop shadow and the lit top edge. */
+  --keycap-shadow: 0 1px 0 oklch(0.25 0.04 285 / 0.12), 0 3px 6px -2px oklch(0.25 0.04 285 / 0.14);
+  --keycap-highlight: oklch(1 0 0 / 0.9);
 
   --sidebar: oklch(1 0 0);
   --sidebar-foreground: oklch(0.25 0.04 285);
@@ -180,6 +183,8 @@ html, body {
 
   --ragify-shadow: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 8px 24px -12px oklch(0 0 0 / 0.6);
   --shadow-float-value: 0 16px 48px -8px oklch(0 0 0 / 0.6);
+  --keycap-shadow: 0 1px 0 oklch(0 0 0 / 0.55), 0 4px 8px -2px oklch(0 0 0 / 0.45);
+  --keycap-highlight: oklch(1 0 0 / 0.07);
 
   --sidebar: oklch(0.16 0.02 288);
   --sidebar-foreground: oklch(0.95 0.01 288);
@@ -233,6 +238,61 @@ html, body {
   /* Plain fade for content that appears once, e.g. the source documents line. */
   .fade-in-soft {
     animation: fadeInSoft 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  /* ----- Verification code boxes. Seen once per sign-up, so a tactile detail is affordable, but
+     typing is never delayed: only the glyph eases in, the keystroke registers at once. ----- */
+  .keycap {
+    box-shadow: var(--keycap-shadow), inset 0 1px 0 var(--keycap-highlight);
+    transition:
+      transform 120ms var(--ease-out),
+      box-shadow 120ms var(--ease-out),
+      border-color 120ms var(--ease-out),
+      background-color 200ms var(--ease-out),
+      color 200ms var(--ease-out);
+  }
+  /* The active key sits pressed in: lower, and its drop shadow gone. */
+  .keycap[data-active="true"] {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 0 var(--keycap-highlight);
+  }
+  /* A character drops into its key; --keycap-delay staggers the six digits of a paste. */
+  .keycap-glyph {
+    animation: keycap-drop 160ms var(--ease-out) both;
+    animation-delay: var(--keycap-delay, 0ms);
+  }
+  .keycap-caret {
+    animation: caret-blink 1.1s steps(1, end) infinite;
+  }
+  /* One horizontal shake for a wrong code: 4 px, 250 ms. */
+  .shake-x {
+    animation: shake-x 250ms var(--ease-out) both;
+  }
+
+  @keyframes keycap-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+  @keyframes caret-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @keyframes shake-x {
+    20% {
+      transform: translateX(-4px);
+    }
+    40% {
+      transform: translateX(4px);
+    }
+    60% {
+      transform: translateX(-3px);
+    }
+    80% {
+      transform: translateX(2px);
+    }
   }
 
   @keyframes stepIn {
@@ -522,6 +582,21 @@ html, body {
     }
     .collapse-rows {
       transition: opacity var(--dur-base) var(--ease-out);
+    }
+    .keycap {
+      transition-property: border-color, background-color, color;
+    }
+    .keycap[data-active="true"] {
+      transform: none;
+    }
+    .keycap-glyph {
+      animation: motion-fade-in 120ms var(--ease-out) both;
+    }
+    .keycap-caret {
+      animation: none;
+    }
+    .shake-x {
+      animation: none;
     }
     .meter-in {
       animation: none;

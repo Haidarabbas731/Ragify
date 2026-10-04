@@ -1,6 +1,7 @@
 import { FilePlus2 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 import { useOutletContext } from "react-router-dom";
+import { AiKeyNotice } from "@/components/dashboard/AiKeyNotice";
 import { AskBar } from "@/components/dashboard/AskBar";
 import { AttentionStrip } from "@/components/dashboard/AttentionStrip";
 import { CollectionsSummary } from "@/components/dashboard/CollectionsSummary";
@@ -102,6 +103,7 @@ export function DashboardPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4 sm:p-6">
+      <AiKeyNotice />
       {content}
     </div>
   );

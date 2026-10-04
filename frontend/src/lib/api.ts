@@ -20,6 +20,7 @@ import type {
   PasswordResetValidation,
 } from "../types/api";
 import type { TokenResponse } from "../types/auth";
+import { getApiErrorDetail } from "./errors";
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -163,7 +164,8 @@ api.interceptors.response.use(
     // Handle specific HTTP error codes with user-friendly messages
     if (error.response?.status === 413) {
       toast.error("File too large. Maximum size is 50MB.");
-    } else if (error.response?.status === 429) {
+    } else if (error.response?.status === 429 && !getApiErrorDetail(error)) {
+      // Endpoints that send their own reason (a locked code, a send wait) show it themselves
       toast.error("Rate limit exceeded. Please try again later.");
     } else if (error.response?.status === 504) {
       toast.error("Request timed out. Please try again.");

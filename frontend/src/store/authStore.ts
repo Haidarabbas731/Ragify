@@ -5,7 +5,7 @@
 import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { getApiErrorMessage } from "@/lib/errors";
+import { getApiErrorCode, getApiErrorMessage } from "@/lib/errors";
 import api from "../lib/api";
 import type {
   AuthActions,
@@ -83,34 +83,42 @@ export const useAuthStore = create<AuthStore>()(
             payload,
           );
 
-          // Store tokens in localStorage
-          localStorage.setItem("access_token", data.access_token);
-          localStorage.setItem("refresh_token", data.refresh_token);
-
-          // Decode access token to get user info
-          const user = decodeJWT(data.access_token);
-
-          if (!user) {
-            throw new Error("Failed to decode user information");
-          }
-
-          // Update state
-          set({
-            user,
-            accessToken: data.access_token,
-            refreshToken: data.refresh_token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-          });
+          get().loginWithTokens(data);
 
           toast.success("Login successful!");
         } catch (error: unknown) {
+          // The login page sends an unverified account to the verify screen instead
+          if (getApiErrorCode(error) === "email_not_verified") {
+            set({ isLoading: false, error: null });
+            throw error;
+          }
           const message = getApiErrorMessage(error, "Login failed");
           set({ isLoading: false, error: message });
           toast.error(message);
           throw error;
         }
+      },
+
+      /**
+       * Sign in with tokens the server already issued, e.g. after email verification
+       */
+      loginWithTokens: (data: TokenResponse) => {
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("refresh_token", data.refresh_token);
+
+        const user = decodeJWT(data.access_token);
+        if (!user) {
+          throw new Error("Failed to decode user information");
+        }
+
+        set({
+          user,
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
       },
 
       /**
