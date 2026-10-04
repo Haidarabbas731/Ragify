@@ -21,7 +21,7 @@ interface QueuedFile {
 
 interface UploadZoneProps {
   /** Called after a batch finishes uploading, whether or not every file succeeded. */
-  onUploadComplete?: () => void;
+  onUploadComplete?: (summary: { succeeded: number; failed: number }) => void;
 }
 
 const ALLOWED_TYPES = {
@@ -83,11 +83,15 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
         f.status === "pending" ? { ...f, status: "uploading" } : f,
       ),
     );
+    let succeeded = 0;
+    let failed = pending.length;
     try {
       const result = await bulkUpload.mutateAsync({
         files: pending.map((f) => f.file),
         collectionId: collectionId ?? undefined,
       });
+      succeeded = result.documents?.length ?? 0;
+      failed = pending.length - succeeded;
       setFiles((prev) =>
         prev.map((f) => {
           if (f.status !== "uploading") return f;
@@ -115,12 +119,12 @@ export function UploadZone({ onUploadComplete }: UploadZoneProps) {
         ),
       );
     } finally {
-      onUploadComplete?.();
+      onUploadComplete?.({ succeeded, failed });
     }
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4">
       <div
         {...getRootProps()}
         className={cn(

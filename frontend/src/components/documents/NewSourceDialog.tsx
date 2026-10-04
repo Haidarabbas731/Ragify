@@ -30,7 +30,13 @@ export function NewSourceDialog({
             questions about them.
           </DialogDescription>
         </DialogHeader>
-        <UploadZone onUploadComplete={onUploadComplete} />
+        <UploadZone
+          onUploadComplete={({ succeeded, failed }) => {
+            onUploadComplete?.();
+            // Close once everything is in; keep it open so failures can be retried.
+            if (succeeded > 0 && failed === 0) onClose();
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
