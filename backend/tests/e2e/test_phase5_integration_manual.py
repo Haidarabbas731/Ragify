@@ -28,32 +28,15 @@ PASSWORD = "Test123!@#"
 async def auth_token():
     """Create or login a test user, return auth token."""
     async with httpx.AsyncClient(timeout=60.0) as client:
-        # First, try to create an invite code (need admin user first)
         # Create a test user directly in the database
         import uuid
 
         from app.core.security import hash_password
         from app.db.database import async_session_maker
-        from app.models.invite_code import InviteCode
         from app.models.user import User
 
         async with async_session_maker() as session:
-            # Create invite code if not exists
             from sqlmodel import select
-            result = await session.exec(select(InviteCode).where(InviteCode.code == "KB-FREE-TIER-2024"))
-            invite = result.one_or_none()
-
-            if not invite:
-                invite = InviteCode(
-                    invite_code_id=str(uuid.uuid4()),
-                    code="KB-FREE-TIER-2024",
-                    max_uses=1000,
-                    current_uses=0,
-                    status="active",
-                    description="Test invite code",
-                )
-                session.add(invite)
-                await session.commit()
 
             # Check if user exists
             result = await session.exec(select(User).where(User.email == EMAIL))
@@ -70,7 +53,6 @@ async def auth_token():
                     storage_limit_bytes=1073741824,
                     status="active",
                     is_active=True,
-                    invited_by_code="KB-FREE-TIER-2024",
                 )
                 session.add(user)
                 await session.commit()

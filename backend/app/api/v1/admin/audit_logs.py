@@ -33,7 +33,7 @@ async def get_audit_logs(
         limit: Items per page (max 100)
         admin_user_id: Filter by admin user who performed action
         action: Filter by action type (SUSPEND_USER, ACTIVATE_USER, DELETE_USER, etc.)
-        target_type: Filter by target type (user, document, invite_code)
+        target_type: Filter by target type (user, document)
         start_date: Filter by start date (ISO format)
         end_date: Filter by end date (ISO format)
         admin_user: Authenticated admin user
@@ -49,13 +49,10 @@ async def get_audit_logs(
         - SUSPEND_USER: User suspension
         - ACTIVATE_USER: User activation
         - DELETE_USER: User deletion
-        - CREATE_INVITE_CODE: Invite code creation
-        - REVOKE_INVITE_CODE: Invite code revocation
 
     Example Target Types:
         - user: User account actions
         - document: Document-related actions
-        - invite_code: Invite code actions
     """
     # Validate admin_user_id if provided
     if params.admin_user_id:

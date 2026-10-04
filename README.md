@@ -10,7 +10,7 @@ A production RAG (Retrieval-Augmented Generation) app for chatting with your own
 - Semantic search over your documents via Milvus, with per-user isolation
 - Streaming RAG chat with source citations and conversation history
 - Collections to organize documents
-- JWT auth (access + refresh tokens), invite-code registration, admin panel
+- JWT auth (access + refresh tokens), open registration, admin panel
 
 ## Tech Stack
 

@@ -21,7 +21,6 @@ def real_errors(**overrides) -> list[dict]:
     values = {
         "email": "person@example.com",
         "password": "Str0ng!Passw0rd",
-        "invite_code": "KB-AAAA-BBBB-CCCC",
     }
     with pytest.raises(ValidationError) as exc:
         UserRegister(**(values | overrides))
@@ -47,9 +46,9 @@ def test_a_malformed_email_drops_the_library_prefix():
 
 def test_field_names_are_readable():
     """Snake_case fields become words."""
-    errors = [{"loc": ("body", "invite_code"), "msg": "Value error, bad code"}]
+    errors = [{"loc": ("body", "new_password"), "msg": "Value error, too short"}]
 
-    assert summarize_validation_errors(errors) == "Invite code: bad code"
+    assert summarize_validation_errors(errors) == "New password: too short"
 
 
 def test_only_the_first_few_errors_are_listed_with_a_count_of_the_rest():

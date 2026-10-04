@@ -3,7 +3,6 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.models.collection import Collection
 from app.models.document import Document, DocumentStatus
-from app.models.invite_code import InviteCode, InviteCodeStatus
 from app.models.user import User, UserStatus
 
 
@@ -61,25 +60,3 @@ async def test_collection_relationships(session: AsyncSession, sample_user: User
     assert collection.collection_id is not None
     assert collection.user_id == sample_user.user_id
     assert collection.name == "Test Collection"
-
-
-@pytest.mark.asyncio
-async def test_invite_code_validation_logic(session: AsyncSession) -> None:
-    invite = InviteCode(
-        code="KB-TEST-1234-ABCD",
-        max_uses=5,
-        current_uses=0,
-        status=InviteCodeStatus.ACTIVE,
-    )
-    session.add(invite)
-    await session.commit()
-    await session.refresh(invite)
-
-    assert invite.status == InviteCodeStatus.ACTIVE
-    assert invite.current_uses < invite.max_uses
-
-    invite.current_uses = 5
-    await session.commit()
-    await session.refresh(invite)
-
-    assert invite.current_uses == invite.max_uses

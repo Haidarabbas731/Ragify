@@ -250,7 +250,6 @@ async def get_stats(
         - Total documents
         - Total storage used
         - Total conversations
-        - Active invite codes
         - Failed documents
         - Timestamp
     """

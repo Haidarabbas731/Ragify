@@ -9,20 +9,16 @@ import {
   activateUser,
   cleanupAllDocuments,
   cleanupUserDocuments,
-  createInviteCode,
   deleteAdminDocument,
   deleteAdminUser,
   getAdminAuditLogs,
   getAdminDocuments,
-  getAdminInviteCodes,
   getAdminStats,
   getAdminUserDetails,
   getAdminUsers,
-  revokeInviteCode,
   suspendUser,
 } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/errors";
-import type { CreateInviteCodeRequest } from "@/types/api";
 
 // ============================================================================
 // System Stats
@@ -135,62 +131,6 @@ export const useDeleteUser = () => {
     onError: (error: unknown) => {
       const message = getApiErrorMessage(error, "Failed to delete user");
       toast.error(message);
-    },
-  });
-};
-
-// ============================================================================
-// Invite Codes
-// ============================================================================
-
-/**
- * Hook to fetch all invite codes
- * @returns React Query result with invite codes list
- */
-export const useAdminInviteCodes = () => {
-  return useQuery({
-    queryKey: ["admin", "invite-codes"],
-    queryFn: () => getAdminInviteCodes(),
-    staleTime: 1000 * 60, // 1 minute
-  });
-};
-
-/**
- * Hook to create a new invite code
- * @returns Mutation function and state for creating invite codes
- */
-export const useCreateInviteCode = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (codeData: CreateInviteCodeRequest) =>
-      createInviteCode(codeData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "invite-codes"] });
-      toast.success("Invite code created successfully");
-    },
-    onError: (error: unknown) => {
-      const message = getApiErrorMessage(error, "Failed to create invite code");
-      toast.error(message);
-    },
-  });
-};
-
-/**
- * Hook to revoke an invite code
- * @returns Mutation taking the code string (e.g. KB-XXXX-XXXX-XXXX)
- */
-export const useRevokeInviteCode = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (code: string) => revokeInviteCode(code),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "invite-codes"] });
-      toast.success("Invite code revoked");
-    },
-    onError: (error: unknown) => {
-      toast.error(getApiErrorMessage(error, "Failed to revoke invite code"));
     },
   });
 };

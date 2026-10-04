@@ -77,7 +77,6 @@ Tests complete RAG workflow:
 
 - ⚠️ These tests create real data in the database
 - ⚠️ Tests may take 1-2 minutes to complete (document processing)
-- ⚠️ Ensure invite-only mode is properly configured
 - ⚠️ Tests use hardcoded credentials - ensure they exist in your database
 - ✅ These tests verify the entire system works end-to-end
 - ✅ Run these before deploying to production

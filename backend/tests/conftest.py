@@ -50,12 +50,6 @@ os.environ["TESTING"] = "true"
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-# Monkey-patch settings to disable INVITE_ONLY mode for tests
-# Must be done after imports because settings is instantiated at module load
-
-settings.INVITE_ONLY = False
-
-
 async def _recreate_test_database() -> None:
     """Drop (if present) and recreate the test database so every run starts clean."""
     target = make_url(settings.DATABASE_URL)
@@ -147,7 +141,6 @@ async def cleanup_test_data(test_engine: AsyncEngine):
         )
         for email in test_emails:
             await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
-        await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
 
     yield
 
@@ -173,7 +166,6 @@ async def cleanup_test_data(test_engine: AsyncEngine):
         )
         for email in test_emails:
             await conn.execute(text("DELETE FROM users WHERE email = :email"), {"email": email})
-        await conn.execute(text("DELETE FROM invite_codes WHERE code LIKE 'KB-TEST%'"))
 
 
 @pytest.fixture
@@ -223,25 +215,6 @@ async def sample_admin(session: AsyncSession) -> User:
     await session.flush()
     await session.refresh(admin)
     return admin
-
-
-@pytest.fixture
-async def test_invite_code(session: AsyncSession):
-    """Create a test invite code for registration tests."""
-    from app.models.invite_code import InviteCode
-
-    invite = InviteCode(
-        code="KB-TEST-1234-5678",
-        created_by=None,
-        max_uses=100,
-        current_uses=0,
-        status="active",
-        description="Test invite code",
-    )
-    session.add(invite)
-    await session.flush()
-    await session.refresh(invite)
-    return invite
 
 
 @pytest.fixture

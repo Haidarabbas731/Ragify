@@ -8,15 +8,6 @@ class UserRegister(BaseModel):
 
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
-    invite_code: str | None = Field(
-        default=None, pattern=r"^KB-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$"
-    )
-
-
-class AuthConfigResponse(BaseModel):
-    """Public sign-up settings the login and register screens need (no secrets)."""
-
-    invite_only: bool
 
 
 class UserLogin(BaseModel):

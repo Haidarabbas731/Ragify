@@ -15,7 +15,6 @@ from app.core.security import decode_token, hash_password, validate_password_str
 from app.db.database import get_session
 from app.schemas.common import MessageResponse
 from app.schemas.user import (
-    AuthConfigResponse,
     LogoutRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
@@ -47,17 +46,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
-@router.get("/config", response_model=AuthConfigResponse)
-async def get_auth_config() -> AuthConfigResponse:
-    """
-    Public sign-up settings (no authentication needed).
-
-    Lets the frontend show or hide the invite code field to match the server's INVITE_ONLY
-    setting, so one environment variable controls both sides.
-    """
-    return AuthConfigResponse(invite_only=settings.INVITE_ONLY)
-
-
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     data: UserRegister,
@@ -68,11 +56,8 @@ async def register(
 
     - **email**: Valid email address
     - **password**: Min 8 chars, 1 uppercase, 1 number, 1 special char
-    - **invite_code**: Required if INVITE_ONLY=true (format: KB-XXXX-XXXX-XXXX)
     """
-    success, message, user_data = await register_user(
-        session, data.email, data.password, data.invite_code
-    )
+    success, message, user_data = await register_user(session, data.email, data.password)
 
     if not success:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)

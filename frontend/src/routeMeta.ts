@@ -19,7 +19,6 @@ const ADMIN_META: Record<string, { title: string; subtitle: string }> = {
   "/admin": { title: "Admin", subtitle: "System overview" },
   "/admin/users": { title: "Admin", subtitle: "Users" },
   "/admin/documents": { title: "Admin", subtitle: "All documents" },
-  "/admin/invite-codes": { title: "Admin", subtitle: "Invite codes" },
   "/admin/audit-logs": { title: "Admin", subtitle: "Audit log" },
 };
 

@@ -16,7 +16,7 @@ async def test_auth_flow():
     print("=" * 60)
 
     async with httpx.AsyncClient() as client:
-        # Test 1: Register new user (Skip in invite-only mode)
+        # Test 1: Register new user
         print("\n[1] Testing Registration...")
         test_email = f"testuser_{int(time.time())}@example.com"
         test_password = "TestPass123!"
@@ -34,11 +34,6 @@ async def test_auth_flow():
                 user_id = user_data.get("user_id")
                 print(f"   User ID: {user_id}")
                 user_registered = True
-            elif register_resp.status_code == 400 and "Invite code" in register_resp.text:
-                print("   [SKIPPED] System in invite-only mode, using existing test user")
-                # Use existing test user credentials
-                test_email = "user@example.com"
-                test_password = "User@1234"
             else:
                 print(f"   [FAILED] {register_resp.status_code} - {register_resp.text}")
                 return

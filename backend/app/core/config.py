@@ -110,9 +110,6 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 100
 
-    # Invite-Only Registration
-    INVITE_ONLY: bool = True
-
     # Seed admin credentials (used only on first run)
     ADMIN_EMAIL: str | None = None
     ADMIN_PASSWORD: str | None = None

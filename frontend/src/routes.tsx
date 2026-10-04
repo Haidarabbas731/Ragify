@@ -79,11 +79,6 @@ const AdminDocumentsPage = lazy(() =>
     default: m.AdminDocumentsPage,
   })),
 );
-const AdminInviteCodesPage = lazy(() =>
-  import("@/pages/admin/AdminInviteCodesPage").then((m) => ({
-    default: m.AdminInviteCodesPage,
-  })),
-);
 const AdminAuditLogsPage = lazy(() =>
   import("@/pages/admin/AdminAuditLogsPage").then((m) => ({
     default: m.AdminAuditLogsPage,
@@ -171,7 +166,6 @@ export function AppRoutes() {
           <Route index element={<AdminOverviewPage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="documents" element={<AdminDocumentsPage />} />
-          <Route path="invite-codes" element={<AdminInviteCodesPage />} />
           <Route path="audit-logs" element={<AdminAuditLogsPage />} />
         </Route>
       </Route>
