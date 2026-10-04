@@ -77,6 +77,7 @@ export function ResetPasswordPage() {
 
   return (
     <AuthShell
+      align="top"
       panel={<RecoveryPanel />}
       title="Choose a new password"
       description="Use a password you don't use anywhere else."
@@ -86,7 +87,7 @@ export function ResetPasswordPage() {
         noValidate
         className="flex flex-col gap-5"
       >
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col">
           <div className="flex flex-col gap-2">
             <Label htmlFor="password">New password</Label>
             <PasswordInput
