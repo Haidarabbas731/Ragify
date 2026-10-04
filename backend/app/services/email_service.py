@@ -71,9 +71,14 @@ def render_email(name: str, **context: object) -> tuple[str, str]:
     return html, text
 
 
+# The values the example env files ship with; they look like keys but are not.
+PLACEHOLDER_API_KEYS = {"your-resend-api-key-here", "re_your_resend_api_key_here"}
+
+
 def _email_configured() -> bool:
-    """True when a real Resend API key is set."""
-    return bool(settings.RESEND_API_KEY) and settings.RESEND_API_KEY != "your-resend-api-key-here"
+    """True when a real Resend API key is set (not empty and not an example placeholder)."""
+    key = settings.RESEND_API_KEY
+    return bool(key) and key not in PLACEHOLDER_API_KEYS
 
 
 async def _send(to_email: str, subject: str, html: str, text: str, kind: str) -> bool:

@@ -155,8 +155,12 @@ async def test_welcome_email_subject(settings):
 
 
 @pytest.mark.asyncio
-async def test_nothing_is_sent_when_the_provider_is_not_configured(settings):
-    settings.RESEND_API_KEY = ""
+@pytest.mark.parametrize(
+    "key", ["", "your-resend-api-key-here", "re_your_resend_api_key_here"], ids=["empty", "old", "example"]
+)
+async def test_nothing_is_sent_when_the_provider_is_not_configured(settings, key):
+    """An empty key and the placeholder from either example env file both count as not set up."""
+    settings.RESEND_API_KEY = key
     with patch("app.services.email_service.resend.Emails.send") as send:
         assert await send_welcome_email("user@example.com") is True
         assert await send_verification_code_email("user@example.com", CODE) is True
