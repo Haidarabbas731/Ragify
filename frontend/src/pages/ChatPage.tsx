@@ -42,8 +42,7 @@ export function ChatPage() {
     useConversation(conversationId);
   const { data: collectionsData } = useCollections();
   const collections = collectionsData?.collections || [];
-  const { isStreaming, currentResponse, activity, streamChat } =
-    useChatStream();
+  const { isStreaming, streamChat } = useChatStream();
 
   // Chat runs on the user's own key; the server has none. Without one, ask for it.
   const { data: aiSettings } = useAiSettings();
@@ -156,6 +155,13 @@ export function ChatPage() {
           ),
         );
       },
+      onStep: (steps) => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId ? { ...msg, steps } : msg,
+          ),
+        );
+      },
       onComplete: (fullResponse, sources, newConversationId) => {
         setMessages((prev) =>
           prev.map((msg) =>
@@ -226,8 +232,6 @@ export function ChatPage() {
         messages={messages}
         loading={loadingConversation}
         isStreaming={isStreaming}
-        hasResponseText={Boolean(currentResponse)}
-        activity={activity}
         onPickPrompt={handlePickPrompt}
       />
       <Composer

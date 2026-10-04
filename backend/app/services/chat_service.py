@@ -17,7 +17,7 @@ from app.prompts.chat_prompt import (
     SEARCH_TOOL_PARAMETERS,
     format_search_results,
 )
-from app.schemas.chat import ChatResponse, SourceCitation
+from app.schemas.chat import AgentStep, ChatResponse, SourceCitation
 from app.services.conversation_service import (
     add_message,
     get_last_messages,
@@ -260,6 +260,7 @@ async def _save_to_conversation(
     user_query: str,
     assistant_response: str,
     sources: list[SourceCitation],
+    steps: list[AgentStep],
 ) -> None:
     """
     Save user query and assistant response to conversation.
@@ -270,10 +271,16 @@ async def _save_to_conversation(
         user_query: User's question
         assistant_response: AI's response
         sources: Source documents used for the answer
+        steps: Tool calls the agent made while answering
     """
     await add_message(db, conversation_id, "user", user_query)
     await add_message(
-        db, conversation_id, "assistant", assistant_response, [s.model_dump() for s in sources]
+        db,
+        conversation_id,
+        "assistant",
+        assistant_response,
+        [s.model_dump() for s in sources],
+        [s.model_dump() for s in steps],
     )
 
     logger.info(f"Saved messages to conversation {conversation_id}")
@@ -296,8 +303,8 @@ async def execute_rag_query_stream(
 
     Yields dict events:
         {"type": "text", "text": str}                      answer text as it is generated
-        {"type": "tool_start", "name": str, "query": str}  the agent started a search
-        {"type": "tool_end", "name": str, "chunks": int, "documents": int, "error": bool}
+        {"type": "tool_start", "step": AgentStep}          the agent started a tool call
+        {"type": "tool_end", "step": AgentStep}            the same step, with its outcome
         {"type": "done", "conversation_id": str, "sources": list[SourceCitation]}   always last
 
     Args:
@@ -328,6 +335,7 @@ async def execute_rag_query_stream(
 
         answer_parts: list[str] = []
         all_chunks: list[dict] = []
+        steps: list[AgentStep] = []
         max_rounds = settings.AGENT_MAX_TOOL_ROUNDS
 
         # Final round runs without tools so the model must answer with what it has.
@@ -366,7 +374,13 @@ async def execute_rag_query_stream(
                     if name == SEARCH_TOOL_NAME
                     else ""
                 )
-                yield {"type": "tool_start", "name": name, "query": detail}
+                step = AgentStep(
+                    id=call.id or f"step-{len(steps) + 1}",
+                    name=name,
+                    query=detail,
+                    offset=len("".join(answer_parts)),
+                )
+                yield {"type": "tool_start", "step": step}
 
                 chunks: list[dict] = []
                 documents = 0
@@ -385,25 +399,35 @@ async def execute_rag_query_stream(
                     failed = True
 
                 all_chunks.extend(chunks)
-                yield {
-                    "type": "tool_end",
-                    "name": name,
-                    "chunks": len(chunks),
-                    "documents": documents,
-                    "error": failed,
-                }
+                if failed:
+                    status = "failed"
+                elif name == SEARCH_TOOL_NAME and not chunks:
+                    status = "empty"
+                else:
+                    status = "done"
+                step = step.model_copy(
+                    update={"status": status, "chunks": len(chunks), "documents": documents}
+                )
+                steps.append(step)
+                yield {"type": "tool_end", "step": step}
                 results.append(ToolResult(call, result))
 
             messages.append(Message(role="tool", tool_results=results))
 
-        answer = "".join(answer_parts).strip()
+        raw_answer = "".join(answer_parts)
+        answer = raw_answer.strip()
+        # The saved answer is trimmed, so move each step's position with it
+        trimmed = len(raw_answer) - len(raw_answer.lstrip())
+        saved_steps = [s.model_copy(update={"offset": max(0, s.offset - trimmed)}) for s in steps]
         if not answer:
             logger.warning("Agent finished without any answer text")
             answer = EMPTY_RESPONSE_MESSAGE
             yield {"type": "text", "text": answer}
 
         sources = _extract_sources(all_chunks)
-        await _save_to_conversation(db, conversation.conversation_id, query, answer, sources)
+        await _save_to_conversation(
+            db, conversation.conversation_id, query, answer, sources, saved_steps
+        )
 
         yield {
             "type": "done",

@@ -10,10 +10,13 @@ def text_turn(*texts: str) -> list[StreamEvent]:
     return events
 
 
-def call_turn(name: str = "search_documents", **args) -> list[StreamEvent]:
-    """A model turn that requests a tool call."""
-    message = Message(role="assistant", tool_calls=[ToolCall(name=name, args=args, id="call_0")])
-    return [StreamEvent(kind="done", message=message)]
+def call_turn(name: str = "search_documents", say: str = "", **args) -> list[StreamEvent]:
+    """A model turn that requests a tool call, optionally after streaming some text (`say`)."""
+    message = Message(
+        role="assistant", text=say, tool_calls=[ToolCall(name=name, args=args, id="call_0")]
+    )
+    events = [StreamEvent(kind="text", text=say)] if say else []
+    return [*events, StreamEvent(kind="done", message=message)]
 
 
 class FakeProvider:

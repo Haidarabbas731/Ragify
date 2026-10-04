@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { AgentActivity as AgentActivityState } from "@/hooks/useChatStream";
-import { AgentActivity } from "./AgentActivity";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { type DisplayMessage, MessageBubble } from "./MessageBubble";
 
@@ -10,9 +8,6 @@ interface MessageListProps {
   /** An existing conversation is still loading. */
   loading: boolean;
   isStreaming: boolean;
-  /** Streamed answer text has started, so the activity status is no longer needed. */
-  hasResponseText: boolean;
-  activity: AgentActivityState | null;
   onPickPrompt: (prompt: string) => void;
 }
 
@@ -21,8 +16,6 @@ export function MessageList({
   messages,
   loading,
   isStreaming,
-  hasResponseText,
-  activity,
   onPickPrompt,
 }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -70,13 +63,13 @@ export function MessageList({
         ) : isEmpty ? (
           <ChatEmptyState onPickPrompt={onPickPrompt} />
         ) : (
-          messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
+          messages.map((message, index) => (
+            <MessageBubble
+              key={message.id}
+              message={message}
+              live={isStreaming && index === messages.length - 1}
+            />
           ))
-        )}
-
-        {isStreaming && !hasResponseText && (
-          <AgentActivity activity={activity ?? { phase: "thinking" }} />
         )}
       </div>
     </div>

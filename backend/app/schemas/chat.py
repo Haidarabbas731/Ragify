@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -32,6 +33,18 @@ class SourceCitation(BaseModel):
     chunk_index: int
     chunk_text: str
     relevance_score: float
+
+
+class AgentStep(BaseModel):
+    """One tool call the chat agent made while preparing an answer."""
+
+    id: str
+    name: str
+    query: str = ""
+    status: Literal["running", "done", "empty", "failed"] = "running"
+    chunks: int = 0
+    documents: int = 0
+    offset: int = Field(0, description="Characters of the answer written before this call")
 
 
 class ChatResponse(BaseModel):

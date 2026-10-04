@@ -18,7 +18,7 @@ from app.core.config import settings
 from app.models.conversation import Conversation
 from app.models.document import Document, DocumentStatus
 from app.prompts.chat_prompt import AGENT_SYSTEM_PROMPT, LIST_TOOL_NAME, SEARCH_TOOL_NAME
-from app.schemas.chat import ChatResponse, SourceCitation
+from app.schemas.chat import AgentStep, ChatResponse, SourceCitation
 from app.services.chat_service import (
     EMPTY_RESPONSE_MESSAGE,
     _enrich_chunks_with_metadata,
@@ -149,6 +149,7 @@ async def test_greeting_answers_without_searching(agent_env, mock_user_id):
     saved = agent_env.save.call_args[0]
     assert saved[3] == "Hello! How can I help?"
     assert saved[4] == []
+    assert saved[5] == []
 
 
 # Test: document question -> tool call -> answer
@@ -165,10 +166,14 @@ async def test_document_question_uses_search_tool(agent_env, mock_user_id):
 
     types_seen = [e["type"] for e in events]
     assert types_seen == ["tool_start", "tool_end", "text", "done"]
-    assert events[0]["query"] == "vacation policy"
-    assert events[1]["chunks"] == 2
-    assert events[1]["documents"] == 1
-    assert events[1]["error"] is False
+    assert events[0]["step"].query == "vacation policy"
+    assert events[0]["step"].status == "running"
+    assert events[1]["step"].id == events[0]["step"].id
+    assert events[1]["step"].chunks == 2
+    assert events[1]["step"].documents == 1
+    assert events[1]["step"].status == "done"
+    # the finished step is what gets saved with the answer
+    assert agent_env.save.call_args[0][5] == [events[1]["step"]]
 
     agent_env.embedding_service.embed_query.assert_awaited_once_with("vacation policy")
 
@@ -239,7 +244,7 @@ async def test_tool_call_without_query_falls_back_to_user_message(agent_env, moc
 
     events = await collect(execute_rag_query_stream("find the budget", mock_user_id, MagicMock(), llm))
 
-    assert events[0]["query"] == "find the budget"
+    assert events[0]["step"].query == "find the budget"
 
 
 @pytest.mark.asyncio
@@ -272,7 +277,8 @@ async def test_search_with_no_results_returns_note(agent_env, mock_user_id):
 
     response = llm.requests[1]["messages"][-1].tool_results[0].result
     assert response == {"results": [], "note": "hint!"}
-    assert events[1]["chunks"] == 0
+    assert events[1]["step"].chunks == 0
+    assert events[1]["step"].status == "empty"
     assert events[-1]["sources"] == []
 
 
@@ -316,7 +322,7 @@ async def test_search_failure_is_reported_to_model(agent_env, mock_user_id):
     events = await collect(execute_rag_query_stream("x?", mock_user_id, MagicMock(), llm))
 
     tool_end = next(e for e in events if e["type"] == "tool_end")
-    assert tool_end["error"] is True
+    assert tool_end["step"].status == "failed"
     response = llm.requests[1]["messages"][-1].tool_results[0].result
     assert "error" in response
     assert events[-1]["type"] == "done"
@@ -479,6 +485,27 @@ async def test_no_results_hint_no_relevant_info(session: AsyncSession, sample_us
     assert "No relevant excerpts" in hint
 
 
+# Test: steps remember where in the answer they happened
+
+
+@pytest.mark.asyncio
+async def test_steps_record_how_much_text_came_before_them(agent_env, mock_user_id):
+    """Text written before a tool call is positioned ahead of it, trimmed like the saved answer."""
+    llm = FakeProvider(
+        [
+            call_turn(say="  Let me check: ", query="vacation"),
+            text_turn("You get 20 days."),
+        ]
+    )
+
+    events = await collect(execute_rag_query_stream("Vacation?", mock_user_id, MagicMock(), llm))
+
+    # streamed steps use the raw position; the saved one is shifted by the trimmed whitespace
+    assert events[1]["step"].offset == len("  Let me check: ")
+    saved = agent_env.save.call_args[0][5]
+    assert saved[0].offset == len("Let me check: ")
+
+
 # Test: _save_to_conversation
 
 
@@ -503,6 +530,7 @@ async def test_save_to_conversation_success(mock_conversation):
                     relevance_score=0.95,
                 )
             ],
+            [AgentStep(id="s1", name="search_documents", query="policy", status="done", chunks=2)],
         )
 
         assert mock_add_message.call_count == 2
@@ -518,6 +546,7 @@ async def test_save_to_conversation_success(mock_conversation):
         assert assistant_call[0][3] == "The policy is..."
         # stored as plain JSON-able dicts
         assert assistant_call[0][4][0]["filename"] == "a.pdf"
+        assert assistant_call[0][5][0]["status"] == "done"
 
 
 # Test: list_documents tool
@@ -626,9 +655,11 @@ async def test_agent_can_list_documents_without_searching(agent_env, mock_user_i
         )
 
     assert [e["type"] for e in events] == ["tool_start", "tool_end", "text", "done"]
-    assert events[0] == {"type": "tool_start", "name": LIST_TOOL_NAME, "query": ""}
-    assert events[1]["documents"] == 2
-    assert events[1]["chunks"] == 0
+    assert events[0]["step"].name == LIST_TOOL_NAME
+    assert events[0]["step"].query == ""
+    assert events[1]["step"].documents == 2
+    assert events[1]["step"].chunks == 0
+    assert events[1]["step"].status == "done"
     agent_env.embedding_service.embed_query.assert_not_called()
     assert llm.requests[1]["messages"][-1].tool_results[0].result == listing
     assert events[-1]["sources"] == []
@@ -646,7 +677,7 @@ async def test_a_failing_list_is_reported_and_the_agent_still_answers(agent_env,
             execute_rag_query_stream("list my docs", mock_user_id, MagicMock(), llm)
         )
 
-    assert next(e for e in events if e["type"] == "tool_end")["error"] is True
+    assert next(e for e in events if e["type"] == "tool_end")["step"].status == "failed"
     assert "error" in llm.requests[1]["messages"][-1].tool_results[0].result
     assert events[-1]["type"] == "done"
 

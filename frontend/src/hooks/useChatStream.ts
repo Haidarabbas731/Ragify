@@ -6,7 +6,7 @@
 import { useCallback, useRef, useState } from "react";
 import api from "../lib/api";
 import { useAuthStore } from "../store/authStore";
-import type { SourceCitation } from "../types/api";
+import type { AgentStep, SourceCitation } from "../types/api";
 
 interface ChatStreamOptions {
   query: string;
@@ -14,37 +14,14 @@ interface ChatStreamOptions {
   collectionId?: string;
   topK?: number;
   onChunk?: (chunk: string) => void;
+  /** Called with the full step list each time the agent starts or finishes a tool call. */
+  onStep?: (steps: AgentStep[]) => void;
   onComplete?: (
     fullResponse: string,
     sources: SourceCitation[],
     conversationId: string,
   ) => void;
   onError?: (error: string) => void;
-}
-
-/** Name of the agent tool that lists the user's documents (matches the backend). */
-const LIST_TOOL = "list_documents";
-
-/**
- * What the chat agent is doing while an answer is being prepared.
- * thinking: deciding what to do; searching: running a document search;
- * reading: has results and is writing the answer; empty / failed: search ended badly;
- * listing / listed: looking up which documents the user has, and the result.
- */
-export type AgentPhase =
-  | "thinking"
-  | "searching"
-  | "reading"
-  | "empty"
-  | "failed"
-  | "listing"
-  | "listed";
-
-export interface AgentActivity {
-  phase: AgentPhase;
-  query?: string;
-  chunks?: number;
-  documents?: number;
 }
 
 /** One JSON event from the chat SSE stream. */
@@ -54,20 +31,14 @@ interface StreamEvent {
   error?: string;
   conversation_id?: string;
   sources?: SourceCitation[];
-  tool_call?: { name: string; query: string };
-  tool_result?: {
-    name: string;
-    chunks: number;
-    documents: number;
-    error: boolean;
-  };
+  tool_call?: AgentStep;
+  tool_result?: AgentStep;
 }
 
 interface ChatStreamState {
   isStreaming: boolean;
   currentResponse: string;
   error: string | null;
-  activity: AgentActivity | null;
 }
 
 /**
@@ -79,7 +50,6 @@ export function useChatStream() {
     isStreaming: false,
     currentResponse: "",
     error: null,
-    activity: null,
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -95,6 +65,7 @@ export function useChatStream() {
       collectionId,
       topK = 5,
       onChunk,
+      onStep,
       onComplete,
       onError,
     }: ChatStreamOptions) => {
@@ -103,7 +74,6 @@ export function useChatStream() {
         isStreaming: true,
         currentResponse: "",
         error: null,
-        activity: { phase: "thinking" },
       });
 
       // Create abort controller for cancellation
@@ -146,6 +116,7 @@ export function useChatStream() {
         let sources: SourceCitation[] = [];
         let conversationIdFromStream = "";
         let finished = false;
+        const steps: AgentStep[] = [];
         // A network read can end mid-line; keep the unfinished part for the next read
         let buffer = "";
 
@@ -177,35 +148,12 @@ export function useChatStream() {
               throw new Error(data.error);
             }
 
-            if (data.tool_call) {
-              const { name, query } = data.tool_call;
-              setState((prev) => ({
-                ...prev,
-                activity:
-                  name === LIST_TOOL
-                    ? { phase: "listing" }
-                    : { phase: "searching", query },
-              }));
-            }
-
-            if (data.tool_result) {
-              const {
-                name,
-                chunks,
-                documents,
-                error: toolFailed,
-              } = data.tool_result;
-              const phase: AgentPhase = toolFailed
-                ? "failed"
-                : name === LIST_TOOL
-                  ? "listed"
-                  : chunks > 0
-                    ? "reading"
-                    : "empty";
-              setState((prev) => ({
-                ...prev,
-                activity: { phase, chunks, documents },
-              }));
+            const step = data.tool_call ?? data.tool_result;
+            if (step) {
+              const index = steps.findIndex((s) => s.id === step.id);
+              if (index === -1) steps.push(step);
+              else steps[index] = step;
+              onStep?.([...steps]);
             }
 
             if (data.chunk) {
@@ -229,7 +177,6 @@ export function useChatStream() {
                 isStreaming: false,
                 currentResponse: fullResponse,
                 error: null,
-                activity: null,
               });
               finished = true;
               onComplete?.(fullResponse, sources, conversationIdFromStream);
@@ -250,7 +197,6 @@ export function useChatStream() {
             isStreaming: false,
             currentResponse: "",
             error: "Request cancelled",
-            activity: null,
           });
           return;
         }
@@ -262,7 +208,6 @@ export function useChatStream() {
           isStreaming: false,
           currentResponse: "",
           error: errorMessage,
-          activity: null,
         });
         onError?.(errorMessage);
       }
@@ -288,7 +233,6 @@ export function useChatStream() {
       isStreaming: false,
       currentResponse: "",
       error: null,
-      activity: null,
     });
   }, []);
 

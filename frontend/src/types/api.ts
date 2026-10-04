@@ -197,6 +197,21 @@ export interface ChatMessage {
   content: string;
   timestamp?: string;
   sources?: SourceCitation[];
+  steps?: AgentStep[];
+}
+
+/**
+ * One tool call the chat agent made while preparing an answer
+ */
+export interface AgentStep {
+  id: string;
+  name: "search_documents" | "list_documents";
+  query: string;
+  status: "running" | "done" | "empty" | "failed";
+  chunks: number;
+  documents: number;
+  /** Characters of the answer written before this call, so it can be shown in place. */
+  offset: number;
 }
 
 /**

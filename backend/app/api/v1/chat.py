@@ -116,18 +116,9 @@ async def chat_query(
                         if event_type == "text":
                             payload = {"chunk": event["text"]}
                         elif event_type == "tool_start":
-                            payload = {
-                                "tool_call": {"name": event["name"], "query": event["query"]}
-                            }
+                            payload = {"tool_call": event["step"].model_dump()}
                         elif event_type == "tool_end":
-                            payload = {
-                                "tool_result": {
-                                    "name": event["name"],
-                                    "chunks": event["chunks"],
-                                    "documents": event["documents"],
-                                    "error": event["error"],
-                                }
-                            }
+                            payload = {"tool_result": event["step"].model_dump()}
                         else:  # done
                             payload = {
                                 "done": True,

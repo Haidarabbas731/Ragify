@@ -68,6 +68,7 @@ async def add_message(
     role: str,
     content: str,
     sources: list[dict] | None = None,
+    steps: list[dict] | None = None,
 ) -> Conversation:
     """
     Add a message to a conversation.
@@ -78,6 +79,7 @@ async def add_message(
         role: Message role ("user" or "assistant")
         content: Message content
         sources: Optional source citations for assistant messages
+        steps: Optional agent tool steps for assistant messages
 
     Returns:
         Conversation: Updated conversation
@@ -106,6 +108,9 @@ async def add_message(
 
     if sources and role == "assistant":
         message["sources"] = sources  # type:ignore
+
+    if steps and role == "assistant":
+        message["steps"] = steps  # type:ignore
 
     # Add message to conversation
     conversation.messages.append(message)

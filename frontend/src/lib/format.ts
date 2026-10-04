@@ -14,6 +14,11 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / GB).toFixed(2)} GB`;
 }
 
+/** Pluralizes a count with its noun (e.g. `1 passage`, `3 passages`). */
+export function pluralize(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+}
+
 interface FormatDateOptions {
   /** Append hours and minutes. */
   withTime?: boolean;

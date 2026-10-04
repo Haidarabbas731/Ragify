@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.chat import SourceCitation
+from app.schemas.chat import AgentStep, SourceCitation
 
 
 class Message(BaseModel):
@@ -12,6 +12,7 @@ class Message(BaseModel):
     content: str
     timestamp: datetime
     sources: list[SourceCitation] = Field(default_factory=list)
+    steps: list[AgentStep] = Field(default_factory=list)
 
 
 class ConversationResponse(BaseModel):

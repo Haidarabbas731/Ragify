@@ -1,5 +1,7 @@
+import { Fragment } from "react";
 import { formatTime } from "@/lib/format";
-import type { ChatMessage } from "@/types/api";
+import type { AgentStep, ChatMessage } from "@/types/api";
+import { AgentTrace } from "./AgentTrace";
 import { MarkdownContent } from "./MarkdownContent";
 import { SourcesLine } from "./SourcesLine";
 
@@ -9,13 +11,42 @@ export interface DisplayMessage extends ChatMessage {
 
 interface MessageBubbleProps {
   message: DisplayMessage;
+  /** This is the answer being prepared right now. */
+  live?: boolean;
+}
+
+interface MessagePart {
+  /** Where in the answer this part starts; unique, so it works as a React key. */
+  key: string;
+  /** Tool calls made at this point in the answer (none for text before the first call). */
+  steps: AgentStep[];
+  /** The answer text that follows them. */
+  text: string;
+}
+
+/** Cuts an answer where the agent used tools, so each run of calls sits between the text around it. */
+function splitAtSteps(content: string, steps: AgentStep[]): MessagePart[] {
+  const runs: AgentStep[][] = [];
+  for (const step of steps) {
+    const last = runs[runs.length - 1];
+    if (last && last[0].offset === step.offset) last.push(step);
+    else runs.push([step]);
+  }
+  const parts = runs.map((run, i) => ({
+    key: String(run[0].offset),
+    steps: run,
+    text: content.slice(run[0].offset, runs[i + 1]?.[0].offset).trim(),
+  }));
+  const intro = content.slice(0, runs[0]?.[0].offset).trim();
+  return intro ? [{ key: "intro", steps: [], text: intro }, ...parts] : parts;
 }
 
 /**
  * One chat message. Your messages sit in a tinted bubble on the right; answers are
- * plain text on the page (nothing to decorate on a reading surface) with their sources below.
+ * plain text on the page (nothing to decorate on a reading surface) with what the agent did above
+ * and their sources below.
  */
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, live = false }: MessageBubbleProps) {
   if (message.role === "user") {
     return (
       <div className="flex justify-end">
@@ -29,18 +60,32 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     );
   }
 
-  // The assistant placeholder stays empty until the first streamed text arrives.
-  if (!message.content) return null;
+  const parts = splitAtSteps(message.content, message.steps ?? []);
+  // The assistant placeholder shows only a "Thinking" trace until the first step or text arrives.
+  if (parts.length === 0 && !live) return null;
 
   return (
     <div className="flex flex-col">
-      <MarkdownContent content={message.content} />
+      {parts.length === 0 && <AgentTrace steps={[]} live />}
+      {parts.map((part, index) => (
+        <Fragment key={part.key}>
+          {part.steps.length > 0 && (
+            <AgentTrace
+              steps={part.steps}
+              live={live && index === parts.length - 1 && !part.text}
+            />
+          )}
+          {part.text && <MarkdownContent content={part.text} />}
+        </Fragment>
+      ))}
       {message.sources && message.sources.length > 0 && (
         <SourcesLine sources={message.sources} />
       )}
-      <p className="mt-2 text-meta tabular-nums text-muted-foreground">
-        {formatTime(message.timestamp)}
-      </p>
+      {message.content && (
+        <p className="mt-2 text-meta tabular-nums text-muted-foreground">
+          {formatTime(message.timestamp)}
+        </p>
+      )}
     </div>
   );
 }
