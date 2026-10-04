@@ -381,6 +381,12 @@ html, body {
     animation: motion-fade-out var(--dur-fast) var(--ease-out) both;
   }
 
+  /* Command menu: opened from the keyboard and reopened constantly, so opacity only, 100 ms, and an
+     instant close (no closed animation, so Radix unmounts it at once). */
+  .motion-palette[data-state="open"] {
+    animation: motion-fade-in 100ms var(--ease-out) both;
+  }
+
   /* Centered modal: stays centered (not anchored), exit is faster than enter. */
   .motion-dialog[data-state="open"] {
     animation: motion-dialog-in var(--dur-base) var(--ease-out) both;
@@ -518,6 +524,9 @@ html, body {
       transition: opacity var(--dur-base) var(--ease-out);
     }
     .meter-in {
+      animation: none;
+    }
+    .motion-palette[data-state="open"] {
       animation: none;
     }
     .motion-popover[data-state="open"],

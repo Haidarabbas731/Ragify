@@ -1,4 +1,4 @@
-import { Menu, Moon, Plus, Sun } from "lucide-react";
+import { Menu, Moon, Plus, Search, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDarkMode } from "@/contexts/DarkModeContext";
 import { ProfileMenu } from "./ProfileMenu";
@@ -8,7 +8,14 @@ interface TopbarProps {
   subtitle?: string;
   onOpenMenu: () => void;
   onNewSource: () => void;
+  onOpenCommandMenu: () => void;
 }
+
+/** ⌘ on Apple devices, Ctrl elsewhere, for the shortcut hint. */
+const SHORTCUT_HINT =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform)
+    ? "⌘K"
+    : "Ctrl K";
 
 /** Translucent top bar: page title on the left, theme, New source and account on the right. */
 export function Topbar({
@@ -16,6 +23,7 @@ export function Topbar({
   subtitle,
   onOpenMenu,
   onNewSource,
+  onOpenCommandMenu,
 }: TopbarProps) {
   const { darkMode, toggleDarkMode } = useDarkMode();
 
@@ -41,6 +49,28 @@ export function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          className="hidden w-48 justify-start gap-2 font-normal text-muted-foreground md:flex"
+          onClick={onOpenCommandMenu}
+          aria-label="Open command menu"
+          aria-keyshortcuts="Control+K Meta+K"
+        >
+          <Search />
+          Search
+          <kbd className="ml-auto rounded-md border border-border bg-muted px-1.5 py-0.5 font-sans text-meta">
+            {SHORTCUT_HINT}
+          </kbd>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden"
+          onClick={onOpenCommandMenu}
+          aria-label="Open command menu"
+        >
+          <Search />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
