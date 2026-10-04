@@ -10,6 +10,7 @@ this account is therefore reverted by the next restart unless ADMIN_PASSWORD is 
 
 import argparse
 import asyncio
+from datetime import UTC, datetime
 
 from sqlmodel import select
 
@@ -45,6 +46,7 @@ async def seed_admin(restore_access: bool = False) -> None:
                     role="admin",
                     status=UserStatus.ACTIVE.value,
                     is_active=True,
+                    email_verified_at=datetime.now(UTC),
                 )
             )
             await session.commit()
@@ -55,6 +57,9 @@ async def seed_admin(restore_access: bool = False) -> None:
         if not verify_password(password, admin.password_hash):
             admin.password_hash = hash_password(password)
             updated.append("password")
+        if admin.email_verified_at is None:
+            admin.email_verified_at = datetime.now(UTC)
+            updated.append("verification")
         if restore_access and (
             admin.role != "admin" or admin.status != UserStatus.ACTIVE.value or not admin.is_active
         ):

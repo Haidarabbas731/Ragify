@@ -8,6 +8,7 @@ Tests:
 - User logout (token revocation)
 """
 
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -102,7 +103,10 @@ async def test_register_user_email_exists(session: AsyncSession):
     ) as mock_get_user:
         mock_validate_pwd.return_value = (True, "")
         mock_get_user.return_value = User(
-            email="existing@example.com", password_hash="hash", role="user"
+            email="existing@example.com",
+            password_hash="hash",
+            role="user",
+            email_verified_at=datetime.now(UTC),
         )
 
         success, message, user_data = await register_user(
@@ -128,6 +132,7 @@ async def test_authenticate_user_success(session: AsyncSession):
         role="user",
         status="active",
         is_active=True,
+        email_verified_at=datetime.now(UTC),
     )
 
     with patch("app.services.auth_service.get_user_by_email") as mock_get_user, patch(
@@ -265,6 +270,7 @@ async def test_authenticate_user_session_revoked(session: AsyncSession):
         password_hash="hashed_password",
         role="user",
         is_active=True,
+        email_verified_at=datetime.now(UTC),
     )
 
     with patch("app.services.auth_service.get_user_by_email") as mock_get_user, patch(

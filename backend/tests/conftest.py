@@ -50,6 +50,17 @@ os.environ["TESTING"] = "true"
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+# Never send real email from tests: backend/.env holds a live Resend key.
+# Must be done after imports because settings is instantiated at module load.
+settings.RESEND_API_KEY = ""
+
+# The per-IP limits count in Redis for an hour, so repeated runs would trip them. The limit
+# tests set their own small values.
+settings.REGISTER_LIMIT_PER_IP_PER_HOUR = 10**6
+settings.VERIFY_ATTEMPTS_PER_IP_PER_HOUR = 10**6
+settings.RESEND_LIMIT_PER_IP_PER_HOUR = 10**6
+
+
 async def _recreate_test_database() -> None:
     """Drop (if present) and recreate the test database so every run starts clean."""
     target = make_url(settings.DATABASE_URL)
@@ -194,6 +205,7 @@ async def sample_user(session: AsyncSession) -> User:
         email="test@example.com",
         password_hash=hash_password("TestPassword123!"),
         role="user",
+        email_verified_at=datetime.now(UTC),
     )
     session.add(user)
     await session.flush()
@@ -210,6 +222,7 @@ async def sample_admin(session: AsyncSession) -> User:
         email="admin@example.com",
         password_hash=hash_password("AdminPassword123!"),
         role="admin",
+        email_verified_at=datetime.now(UTC),
     )
     session.add(admin)
     await session.flush()
@@ -278,8 +291,8 @@ async def auth_headers(test_engine: AsyncEngine) -> dict:
     async with test_engine.begin() as conn:
         await conn.execute(
             text("""
-                INSERT INTO users (user_id, email, password_hash, role, storage_used_bytes, storage_limit_bytes, status, is_active, created_at, updated_at)
-                VALUES (:user_id, :email, :password_hash, :role, :storage_used, :storage_limit, :status, :is_active, :now, :now)
+                INSERT INTO users (user_id, email, password_hash, role, storage_used_bytes, storage_limit_bytes, status, is_active, created_at, updated_at, email_verified_at)
+                VALUES (:user_id, :email, :password_hash, :role, :storage_used, :storage_limit, :status, :is_active, :now, :now, :now)
                 ON CONFLICT (email) DO UPDATE SET
                     password_hash = EXCLUDED.password_hash,
                     user_id = EXCLUDED.user_id,
@@ -312,3 +325,17 @@ def agen():
             yield item
 
     return _agen
+
+
+@pytest.fixture
+def mark_verified(test_engine: AsyncEngine):
+    """Mark a registered account's email as verified, as if its code had been entered."""
+
+    async def _mark(email: str) -> None:
+        async with test_engine.begin() as conn:
+            await conn.execute(
+                text("UPDATE users SET email_verified_at = :now WHERE email = :email"),
+                {"now": datetime.now(UTC), "email": email},
+            )
+
+    return _mark

@@ -2,7 +2,7 @@ import logging
 import secrets
 import time
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -15,24 +15,29 @@ from app.core.security import decode_token, hash_password, validate_password_str
 from app.db.database import get_session
 from app.schemas.common import MessageResponse
 from app.schemas.user import (
+    EmailVerifyRequest,
     LogoutRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
     PasswordResetValidation,
+    ResendCodeRequest,
     TokenResponse,
     UserLogin,
     UserRegister,
     UserResponse,
 )
 from app.services.auth_service import (
+    EMAIL_NOT_VERIFIED,
     authenticate_user,
     refresh_access_token_from_details,
     register_user,
+    verify_email,
 )
 from app.services.email_service import send_password_reset_email, send_welcome_email
 from app.services.redis_service import (
     add_jti_to_blocklist,
     check_email_rate_limit,
+    check_rate_limit,
     delete_password_reset_token,
     get_refresh_jti_from_access_jti,
     get_user_id_from_reset_token,
@@ -40,33 +45,88 @@ from app.services.redis_service import (
     store_password_reset_token,
 )
 from app.services.user_service import get_user_by_email, update_user_password
+from app.services.verification_service import SendBlocked, deliver_code, gate_code_send
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
+def _client_ip(request: Request) -> str:
+    """The caller's IP address (behind a proxy, set FORWARDED_ALLOW_IPS so uvicorn reads it)."""
+    return request.client.host if request.client else "unknown"
+
+
+def _too_many_requests(code: str, message: str, retry_after: int) -> HTTPException:
+    """A 429 whose body tells the client what happened and when to try again."""
+    return HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail={"code": code, "message": message, "retry_after": retry_after},
+        headers={"Retry-After": str(retry_after)},
+    )
+
+
+def _send_blocked_error(blocked: SendBlocked) -> HTTPException:
+    """The 429 for a verification email that may not be sent yet."""
+    if blocked.reason == "cooldown":
+        return _too_many_requests(
+            "resend_too_soon",
+            f"Wait {blocked.retry_after} seconds before asking for another code.",
+            blocked.retry_after,
+        )
+    return _too_many_requests(
+        "too_many_requests",
+        "Too many codes were sent to this address. Try again in an hour.",
+        blocked.retry_after,
+    )
+
+
+async def _email_new_code(session: AsyncSession, email: str) -> None:
+    """
+    Send a verification code to an unverified account, if the send limits allow it.
+
+    Failures are logged and swallowed: the caller already has its answer, and the verify screen
+    can ask for another code.
+    """
+    try:
+        if await gate_code_send(email):
+            return
+        user = await get_user_by_email(session, email)
+        if user and user.is_active and user.email_verified_at is None:
+            if not await deliver_code(user):
+                logger.error("Failed to send a verification code")
+    except Exception as e:
+        logger.error("Error sending a verification code: %s", e)
+
+
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
+    request: Request,
     data: UserRegister,
     session: AsyncSession = Depends(get_session),  # noqa: B008
 ):
     """
-    Register a new user.
+    Register a new user and email them a 6-digit code to verify the address.
 
     - **email**: Valid email address
     - **password**: Min 8 chars, 1 uppercase, 1 number, 1 special char
+
+    The account cannot sign in until the code is submitted to `/auth/verify-email`. Signing up
+    again with an address that was never verified replaces the password and sends a new code.
     """
+    if not await check_rate_limit(
+        f"register_ip:{_client_ip(request)}", settings.REGISTER_LIMIT_PER_IP_PER_HOUR, 3600
+    ):
+        raise _too_many_requests(
+            "too_many_requests", "Too many sign-ups from this network. Try again in an hour.", 3600
+        )
+
     success, message, user_data = await register_user(session, data.email, data.password)
 
     if not success:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
 
-    # Send welcome email (non-blocking, failures are logged but don't affect registration)
-    try:
-        await send_welcome_email(data.email)
-    except Exception as e:
-        logger.error(f"Failed to send welcome email to {data.email}: {str(e)}")
+    await _email_new_code(session, data.email)
 
     return UserResponse(**user_data)  # type: ignore
 
@@ -84,6 +144,17 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_session)): 
     success, message, auth_data = await authenticate_user(session, data.email, data.password)
 
     if not success:
+        if message == EMAIL_NOT_VERIFIED:
+            # The password was right, so it is safe to say why sign-in is refused. A fresh code
+            # goes out so the verify screen has something to enter.
+            await _email_new_code(session, data.email)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": "email_not_verified",
+                    "message": "Verify your email to sign in. We sent you a new code.",
+                },
+            )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=message)
 
     return TokenResponse(
@@ -91,6 +162,112 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_session)): 
         refresh_token=auth_data["refresh_token"],  # type: ignore
         token_type=auth_data["token_type"],  # type: ignore
         expires_in=auth_data["expires_in"],  # type: ignore
+    )
+
+
+@router.post("/verify-email", response_model=TokenResponse)
+async def verify_email_code(
+    request: Request,
+    data: EmailVerifyRequest,
+    session: AsyncSession = Depends(get_session),  # noqa: B008
+):
+    """
+    Verify an email address with the 6-digit code and sign the user in.
+
+    - **email**: The address that was signed up
+    - **code**: The 6-digit code from the email
+
+    A code works for 10 minutes and locks after 5 wrong tries (send a new one to continue).
+    """
+    if not await check_rate_limit(
+        f"verify_ip:{_client_ip(request)}", settings.VERIFY_ATTEMPTS_PER_IP_PER_HOUR, 3600
+    ):
+        raise _too_many_requests(
+            "too_many_requests", "Too many attempts from this network. Try again later.", 3600
+        )
+
+    result = await verify_email(session, data.email, data.code)
+
+    if result.status == "ok" and result.tokens:
+        try:
+            await send_welcome_email(data.email)
+        except Exception as e:
+            logger.error("Failed to send the welcome email: %s", e)
+        return TokenResponse(
+            access_token=result.tokens["access_token"],
+            refresh_token=result.tokens["refresh_token"],
+            token_type=result.tokens["token_type"],
+            expires_in=result.tokens["expires_in"],
+        )
+
+    if result.status == "already_verified":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "already_verified",
+                "message": "This email is already verified. Sign in.",
+            },
+        )
+    if result.status == "expired":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "code_expired", "message": "That code has expired. Send a new one."},
+        )
+    if result.status == "locked":
+        raise _too_many_requests(
+            "too_many_attempts", "Too many wrong codes. Send a new code to try again.", 0
+        )
+    if result.status == "wrong":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "invalid_code",
+                "message": "That code isn't right.",
+                "attempts_left": result.attempts_left,
+            },
+        )
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Your email is verified but we could not sign you in. Try signing in.",
+    )
+
+
+@router.post("/resend-code", response_model=MessageResponse)
+async def resend_verification_code(
+    request: Request,
+    data: ResendCodeRequest,
+    session: AsyncSession = Depends(get_session),  # noqa: B008
+):
+    """
+    Send a new verification code to an address that has not been verified.
+
+    - **email**: The address that was signed up
+
+    Always answers the same way, whether or not an account exists, so it cannot be used to find
+    out who has one. Limited to one send a minute and five an hour per address.
+    """
+    if not await check_rate_limit(
+        f"resend_ip:{_client_ip(request)}", settings.RESEND_LIMIT_PER_IP_PER_HOUR, 3600
+    ):
+        raise _too_many_requests(
+            "too_many_requests", "Too many requests from this network. Try again later.", 3600
+        )
+
+    blocked = await gate_code_send(data.email)
+    if blocked:
+        raise _send_blocked_error(blocked)
+
+    try:
+        user = await get_user_by_email(session, data.email)
+        if user and user.is_active and user.email_verified_at is None:
+            if not await deliver_code(user):
+                logger.error("Failed to send a verification code")
+    except Exception as e:
+        logger.error("Error sending a verification code: %s", e)
+
+    return JSONResponse(
+        content={"message": "If that address needs verifying, we sent a new code."},
+        status_code=status.HTTP_200_OK,
     )
 
 

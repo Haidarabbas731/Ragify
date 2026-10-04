@@ -123,6 +123,15 @@ class Settings(BaseSettings):
     EMAIL_FROM_NAME: str = "Ragify"
     PASSWORD_RESET_TOKEN_EXPIRY: int = 900  # 15 minutes in seconds
 
+    # Email verification (6-digit code sent after sign-up)
+    EMAIL_VERIFICATION_CODE_EXPIRY: int = 600  # 10 minutes in seconds
+    EMAIL_VERIFICATION_MAX_ATTEMPTS: int = 5  # tries per code before it is locked
+    EMAIL_VERIFICATION_RESEND_COOLDOWN: int = 60  # seconds between sends to one address
+    EMAIL_VERIFICATION_SENDS_PER_HOUR: int = 5  # sends per address per hour
+    REGISTER_LIMIT_PER_IP_PER_HOUR: int = 10  # sign-ups per IP address per hour
+    VERIFY_ATTEMPTS_PER_IP_PER_HOUR: int = 30  # code submissions per IP address per hour
+    RESEND_LIMIT_PER_IP_PER_HOUR: int = 20  # "send a new code" requests per IP address per hour
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore"
     )

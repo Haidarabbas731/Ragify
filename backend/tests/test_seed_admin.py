@@ -4,6 +4,7 @@ Unit tests for scripts/seed_admin.py: creating the admin and keeping its passwor
 
 import importlib.util
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -74,7 +75,14 @@ async def test_a_changed_admin_password_is_synced_on_the_next_start(session: Asy
 async def test_an_up_to_date_admin_is_left_completely_untouched(session: AsyncSession, capsys):
     """When the password already matches nothing is rehashed or written."""
     original = hash_password("New-Admin-Pass-1")
-    session.add(User(email=EMAIL, password_hash=original, role="admin"))
+    session.add(
+        User(
+            email=EMAIL,
+            password_hash=original,
+            role="admin",
+            email_verified_at=datetime.now(UTC),
+        )
+    )
     await session.flush()
 
     await seed_admin()

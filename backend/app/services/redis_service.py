@@ -232,6 +232,100 @@ async def delete_password_reset_token(token: str) -> None:
         await redis.aclose()
 
 
+async def store_verification_code(user_id: str, code_hash: str, ttl: int) -> None:
+    """
+    Store the hash of an email verification code and reset its wrong-attempt counter.
+
+    Args:
+        user_id: User the code was issued to
+        code_hash: HMAC of the code (never the code itself)
+        ttl: Time to live in seconds
+    """
+    redis = await get_redis()
+    try:
+        async with redis.pipeline(transaction=True) as pipe:
+            pipe.set(f"email_verify:{user_id}", code_hash, ex=ttl)
+            pipe.delete(f"email_verify_attempts:{user_id}")
+            await pipe.execute()
+    finally:
+        await redis.aclose()
+
+
+async def get_verification_code_hash(user_id: str) -> str | None:
+    """
+    Get the stored hash of a user's current verification code.
+
+    Args:
+        user_id: User ID
+
+    Returns:
+        The hash, or None if no code is active (never sent, used, or expired)
+    """
+    redis = await get_redis()
+    try:
+        return await redis.get(f"email_verify:{user_id}")
+    finally:
+        await redis.aclose()
+
+
+async def count_verification_attempt(user_id: str, ttl: int) -> int:
+    """
+    Count one code submission for a user. The increment is atomic, so parallel requests cannot
+    exceed the attempt limit.
+
+    Args:
+        user_id: User ID
+        ttl: Seconds the counter lives (the code's lifetime)
+
+    Returns:
+        The number of submissions so far, including this one
+    """
+    redis = await get_redis()
+    try:
+        key = f"email_verify_attempts:{user_id}"
+        attempts = await redis.incr(key)
+        if attempts == 1:
+            await redis.expire(key, ttl)
+        return int(attempts)
+    finally:
+        await redis.aclose()
+
+
+async def delete_verification_code(user_id: str) -> None:
+    """
+    Delete a user's verification code and attempt counter (single use).
+
+    Args:
+        user_id: User ID
+    """
+    redis = await get_redis()
+    try:
+        await redis.delete(f"email_verify:{user_id}", f"email_verify_attempts:{user_id}")
+    finally:
+        await redis.aclose()
+
+
+async def acquire_resend_cooldown(email: str, seconds: int) -> int:
+    """
+    Start the wait before another verification email may be sent to an address.
+
+    Args:
+        email: Email address
+        seconds: Length of the wait
+
+    Returns:
+        0 if the wait was started (sending is allowed), otherwise the seconds still to wait
+    """
+    redis = await get_redis()
+    try:
+        key = f"email_verify_cooldown:{email}"
+        if await redis.set(key, "1", nx=True, ex=seconds):
+            return 0
+        return max(int(await redis.ttl(key)), 1)
+    finally:
+        await redis.aclose()
+
+
 async def check_rate_limit(key: str, max_requests: int, window_seconds: int) -> bool:
     """
     Check if a key has exceeded its rate limit using Redis INCR.

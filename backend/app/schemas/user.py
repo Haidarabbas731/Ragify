@@ -78,6 +78,19 @@ class PasswordResetConfirm(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class EmailVerifyRequest(BaseModel):
+    """Schema for submitting the 6-digit email verification code."""
+
+    email: EmailStr
+    code: str = Field(pattern=r"^\d{6}$")
+
+
+class ResendCodeRequest(BaseModel):
+    """Schema for asking for a new email verification code."""
+
+    email: EmailStr
+
+
 class PasswordResetValidation(BaseModel):
     """Whether a password reset link can still be used."""
 

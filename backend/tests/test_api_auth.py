@@ -80,7 +80,7 @@ async def test_register_weak_password(client: AsyncClient):
 
 @skip_on_windows_event_loop_issue
 @pytest.mark.asyncio
-async def test_register_duplicate_email(client: AsyncClient):
+async def test_register_duplicate_email(client: AsyncClient, mark_verified):
     """Test registration fails with duplicate email."""
     with patch("app.api.v1.auth.send_welcome_email") as mock_email:
         mock_email.return_value = None
@@ -93,6 +93,8 @@ async def test_register_duplicate_email(client: AsyncClient):
                 "password": "StrongP@ss123",
             },
         )
+
+        await mark_verified("duplicate@example.com")
 
         # Small delay to avoid event loop conflicts on Windows
         await asyncio.sleep(0.01)
@@ -114,7 +116,7 @@ async def test_register_duplicate_email(client: AsyncClient):
 
 @skip_on_windows_event_loop_issue
 @pytest.mark.asyncio
-async def test_login_success(client: AsyncClient):
+async def test_login_success(client: AsyncClient, mark_verified):
     """Test successful login with valid credentials."""
     # First register a user
     with patch("app.api.v1.auth.send_welcome_email") as mock_email:
@@ -127,6 +129,8 @@ async def test_login_success(client: AsyncClient):
                 "password": "StrongP@ss123",
             },
         )
+
+    await mark_verified("logintest@example.com")
 
     # Then login
     response = await client.post(
@@ -177,7 +181,7 @@ async def test_login_invalid_credentials(client: AsyncClient):
 
 @skip_on_windows_event_loop_issue
 @pytest.mark.asyncio
-async def test_token_refresh(client: AsyncClient):
+async def test_token_refresh(client: AsyncClient, mark_verified):
     """Test token refresh with valid refresh token."""
     # Register and login
     with patch("app.api.v1.auth.send_welcome_email") as mock_email:
@@ -190,6 +194,8 @@ async def test_token_refresh(client: AsyncClient):
                 "password": "StrongP@ss123",
             },
         )
+
+    await mark_verified("refreshtest@example.com")
 
     login_response = await client.post(
         "/api/v1/auth/login",
@@ -215,7 +221,7 @@ async def test_token_refresh(client: AsyncClient):
 
 @skip_on_windows_event_loop_issue
 @pytest.mark.asyncio
-async def test_logout(client: AsyncClient):
+async def test_logout(client: AsyncClient, mark_verified):
     """Test logout revokes tokens."""
     # Register and login
     with patch("app.api.v1.auth.send_welcome_email") as mock_email:
@@ -228,6 +234,8 @@ async def test_logout(client: AsyncClient):
                 "password": "StrongP@ss123",
             },
         )
+
+    await mark_verified("logouttest@example.com")
 
     # Small delay to avoid event loop conflicts on Windows
     await asyncio.sleep(0.01)
