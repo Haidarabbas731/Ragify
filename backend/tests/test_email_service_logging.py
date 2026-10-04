@@ -36,6 +36,7 @@ async def test_reset_token_not_logged_when_sending_fails(caplog):
     ):
         settings.RESEND_API_KEY = "re_real_looking_key"
         settings.FRONTEND_URL = "http://localhost:5173"
+        settings.PASSWORD_RESET_TOKEN_EXPIRY = 900
         settings.EMAIL_FROM_NAME = "Ragify"
         settings.EMAIL_FROM_ADDRESS = "no-reply@example.com"
         result = await send_password_reset_email("user@example.com", TOKEN)

@@ -82,6 +82,7 @@ services:
       STORAGE_LOCAL_PATH: /app/storage
     volumes:
       - ./app:/app/app
+      - ./public:/app/public:ro
       - ./main.py:/app/main.py
       - ./alembic:/app/alembic
       - ./scripts:/app/scripts

@@ -2,7 +2,7 @@ import logging
 import secrets
 import time
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -19,6 +19,7 @@ from app.schemas.user import (
     LogoutRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
+    PasswordResetValidation,
     TokenResponse,
     UserLogin,
     UserRegister,
@@ -78,7 +79,7 @@ async def register(
 
     # Send welcome email (non-blocking, failures are logged but don't affect registration)
     try:
-        await send_welcome_email(data.email, data.email)
+        await send_welcome_email(data.email)
     except Exception as e:
         logger.error(f"Failed to send welcome email to {data.email}: {str(e)}")
 
@@ -235,6 +236,20 @@ async def request_password_reset(
         },
         status_code=status.HTTP_200_OK,
     )
+
+
+@router.get("/password-reset/validate", response_model=PasswordResetValidation)
+async def validate_password_reset_token(
+    token: str = Query(min_length=1, max_length=200),
+) -> PasswordResetValidation:
+    """
+    Check whether a password reset link can still be used, without using it.
+
+    - **token**: Reset token from the email link
+
+    An expired link and one that was already used look the same: both are simply not valid.
+    """
+    return PasswordResetValidation(valid=await get_user_id_from_reset_token(token) is not None)
 
 
 @router.post("/password-reset/confirm", response_model=MessageResponse)

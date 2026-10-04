@@ -298,3 +298,40 @@ async def test_password_reset_flow(client: AsyncClient):
     # Note: Confirming password reset requires a valid reset token from Redis,
     # which is difficult to test in integration tests without mocking extensively.
     # The E2E test covers this flow end-to-end.
+
+
+@pytest.mark.asyncio
+async def test_password_reset_validate_accepts_a_live_token(client):
+    """A token that exists in Redis validates, and validating does not consume it."""
+    with (
+        patch("app.api.v1.auth.get_user_id_from_reset_token", return_value="user-1"),
+        patch("app.api.v1.auth.delete_password_reset_token") as delete,
+    ):
+        response = await client.get(
+            "/api/v1/auth/password-reset/validate", params={"token": "live-token"}
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {"valid": True}
+    delete.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_password_reset_validate_rejects_an_expired_or_used_token(client):
+    """Expired and already-used tokens are gone from Redis, so both come back invalid."""
+    with patch("app.api.v1.auth.get_user_id_from_reset_token", return_value=None):
+        response = await client.get(
+            "/api/v1/auth/password-reset/validate", params={"token": "gone-token"}
+        )
+
+    assert response.status_code == 200
+    assert response.json() == {"valid": False}
+
+
+@pytest.mark.asyncio
+async def test_password_reset_validate_requires_a_token(client):
+    """A missing or empty token is a malformed request, not a lookup."""
+    for params in ({}, {"token": ""}):
+        response = await client.get("/api/v1/auth/password-reset/validate", params=params)
+        assert response.status_code == 422
+
