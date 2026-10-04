@@ -20,6 +20,7 @@ import type {
   CreateInviteCodeRequest,
   InviteCode,
   MessageResponse,
+  PasswordResetValidation,
 } from "../types/api";
 import type { TokenResponse } from "../types/auth";
 
@@ -181,6 +182,21 @@ api.interceptors.response.use(
  */
 export const getAuthConfig = async (): Promise<AuthConfig> => {
   const { data } = await api.get("/auth/config");
+  return data;
+};
+
+/**
+ * Check whether a password reset link can still be used, without using it
+ * @param token - The token from the reset link
+ * @returns Whether the link is still valid (expired and already-used links both come back invalid)
+ */
+export const validatePasswordResetToken = async (
+  token: string,
+): Promise<PasswordResetValidation> => {
+  const { data } = await api.get("/auth/password-reset/validate", {
+    params: { token },
+    timeout: 10000,
+  });
   return data;
 };
 
