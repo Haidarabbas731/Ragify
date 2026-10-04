@@ -12,7 +12,7 @@ import { ResumePanel } from "@/components/auth/panels/ResumePanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getApiErrorMessage } from "@/lib/errors";
+import { getApiErrorCode, getApiErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "@/store/authStore";
 
 const loginSchema = z.object({
@@ -43,6 +43,11 @@ export function LoginPage() {
       await login(data.email, data.password);
       navigate("/dashboard");
     } catch (err) {
+      // Right password, but the email was never verified: a fresh code was just emailed
+      if (getApiErrorCode(err) === "email_not_verified") {
+        navigate(`/verify-email?email=${encodeURIComponent(data.email)}`);
+        return;
+      }
       setFormError(
         getApiErrorMessage(err, "Invalid email or password. Try again."),
       );

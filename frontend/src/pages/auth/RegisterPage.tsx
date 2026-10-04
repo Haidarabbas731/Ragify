@@ -3,7 +3,6 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { z } from "zod";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { FieldError } from "@/components/auth/FieldError";
@@ -57,8 +56,7 @@ export function RegisterPage() {
         email: data.email,
         password: data.password,
       });
-      toast.success("Account created. Sign in to continue.");
-      navigate("/login");
+      navigate(`/verify-email?email=${encodeURIComponent(data.email)}`);
     } catch (error: unknown) {
       setFormError(
         getApiErrorMessage(error, "Registration failed. Try again."),

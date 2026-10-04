@@ -48,6 +48,8 @@ export interface AuthState {
  */
 export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
+  /** Signs in with tokens the server already issued (for example after email verification). */
+  loginWithTokens: (tokens: TokenResponse) => void;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<void>;
   initializeAuth: () => void;

@@ -31,6 +31,11 @@ const ResetPasswordPage = lazy(() =>
     default: m.ResetPasswordPage,
   })),
 );
+const VerifyEmailPage = lazy(() =>
+  import("@/pages/auth/VerifyEmailPage").then((m) => ({
+    default: m.VerifyEmailPage,
+  })),
+);
 const DashboardPage = lazy(() =>
   import("@/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
 );
@@ -120,6 +125,14 @@ export function AppRoutes() {
         element={
           <GuestOnly>
             <RegisterPage />
+          </GuestOnly>
+        }
+      />
+      <Route
+        path="/verify-email"
+        element={
+          <GuestOnly>
+            <VerifyEmailPage />
           </GuestOnly>
         }
       />
