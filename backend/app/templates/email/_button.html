@@ -1,0 +1,10 @@
+{#- Bulletproof button: the colour sits on the <td> and the <a>, so it survives clients that drop one. -#}
+{% macro button(url, label) %}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0 0;">
+  <tr>
+    <td class="btn-cell" align="center" bgcolor="#6e56cf" style="background-color:#6e56cf;border:1px solid #6e56cf;border-radius:8px;">
+      <a href="{{ url }}" class="btn-link" target="_blank" style="display:inline-block;min-height:20px;padding:14px 28px;font-family:{{ font_sans }};font-size:16px;font-weight:600;line-height:20px;color:#ffffff;background-color:#6e56cf;text-decoration:none;border-radius:8px;">{{ label }}</a>
+    </td>
+  </tr>
+</table>
+{% endmacro %}

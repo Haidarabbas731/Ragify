@@ -1,0 +1,7 @@
+Your {{ app_name }} code is {{ code_spaced }}
+
+Enter this code in {{ app_name }} to finish creating your account:
+
+{{ code }}
+
+The code works for {{ expiry_minutes }} minutes. If you did not create a {{ app_name }} account, ignore this email.

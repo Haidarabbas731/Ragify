@@ -87,6 +87,12 @@ class PasswordResetConfirm(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class PasswordResetValidation(BaseModel):
+    """Whether a password reset link can still be used."""
+
+    valid: bool
+
+
 class UserUpdateRequest(BaseModel):
     """Schema for updating user profile."""
 

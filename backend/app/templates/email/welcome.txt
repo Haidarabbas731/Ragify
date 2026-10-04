@@ -1,0 +1,9 @@
+Your {{ app_name }} account is ready
+
+{{ app_name }} answers questions from your own documents and shows the passage each answer came from.
+
+1. Add your AI key. Open Profile, then AI model, and save a Gemini or OpenRouter key. Chat uses your key.
+2. Upload a document. PDF, DOCX, TXT or MD, up to 50 MB.
+3. Ask a question. Check the cited source under the answer.
+
+Open {{ app_name }}: {{ app_url }}
