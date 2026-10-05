@@ -4,6 +4,7 @@ Handles text extraction, chunking, embedding generation, and vector storage.
 """
 
 import json
+import uuid
 from datetime import UTC, datetime
 from io import BytesIO
 
@@ -167,7 +168,8 @@ async def process_document(ctx: dict, document_id: str, user_id: str) -> dict:
                 for i, (chunk, _embedding) in enumerate(
                     zip(chunks_data, embeddings, strict=True)
                 ):
-                    chunk_ids.append(f"{document_id}_{i}")
+                    # Deterministic 36-char ID (fits the Milvus chunk_id field) so a retry reuses the same IDs
+                    chunk_ids.append(str(uuid.uuid5(uuid.UUID(document_id), str(i))))
                     chunk_texts.append(chunk["text"])
                     chunk_indices.append(chunk["chunk_index"])
 

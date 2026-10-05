@@ -140,7 +140,7 @@ async def upload_document(
         ) from e
 
     # Extract document_id from storage_key (format: documents/{user_id}/{uuid}-{filename})
-    document_id = storage_key.split("/")[-1].split("-")[0]
+    document_id = storage_key.split("/")[-1][:36]
 
     # Validate collection_id if provided
     validated_collection_id = None
@@ -350,7 +350,7 @@ async def bulk_upload_documents(
             storage_key = await b2_service.upload_file(file, current_user.user_id)
 
             # Extract document_id from storage_key
-            document_id = storage_key.split("/")[-1].split("-")[0]
+            document_id = storage_key.split("/")[-1][:36]
 
             # Create document record
             document = Document(
