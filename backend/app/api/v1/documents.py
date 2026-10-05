@@ -1185,8 +1185,10 @@ async def update_document_metadata(
 
     # Update fields
     if collection_id is not None:
-        validate_uuid(collection_id, "collection_id")
-        document.collection_id = collection_id if collection_id else None
+        # Empty string means "remove from collection"
+        if collection_id:
+            validate_uuid(collection_id, "collection_id")
+        document.collection_id = collection_id or None
 
     # Update metadata
     if category is not None:
