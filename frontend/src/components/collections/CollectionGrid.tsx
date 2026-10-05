@@ -9,6 +9,7 @@ import {
   useUpdateCollection,
 } from "@/hooks/useCollections";
 import type { Collection } from "@/types/api";
+import { AddDocumentsDialog } from "./AddDocumentsDialog";
 import { CollectionCard } from "./CollectionCard";
 import {
   CollectionFormDialog,
@@ -22,12 +23,13 @@ interface CollectionGridProps {
   onCreateOpenChange: (open: boolean) => void;
 }
 
-/** Collection cards with the edit, create and delete dialogs they open. */
+/** Collection cards with the add, edit, create and delete dialogs they open. */
 export function CollectionGrid({
   collections,
   createOpen,
   onCreateOpenChange,
 }: CollectionGridProps) {
+  const [adding, setAdding] = useState<Collection | null>(null);
   const [editing, setEditing] = useState<Collection | null>(null);
   const [deleting, setDeleting] = useState<Collection | null>(null);
   const create = useCreateCollection();
@@ -87,12 +89,18 @@ export function CollectionGrid({
                   ? index
                   : undefined
               }
+              onAddDocuments={setAdding}
               onEdit={setEditing}
               onDelete={setDeleting}
             />
           ))}
         </ul>
       )}
+
+      <AddDocumentsDialog
+        collection={adding}
+        onOpenChange={(open) => !open && setAdding(null)}
+      />
 
       <CollectionFormDialog
         open={createOpen}

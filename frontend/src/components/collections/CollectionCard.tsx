@@ -1,4 +1,11 @@
-import { FolderOpen, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+  FilePlus,
+  FolderOpen,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,6 +24,7 @@ interface CollectionCardProps {
   collection: Collection;
   /** Position in the first-paint stagger; omit for cards added later. */
   staggerIndex?: number;
+  onAddDocuments: (collection: Collection) => void;
   onEdit: (collection: Collection) => void;
   onDelete: (collection: Collection) => void;
 }
@@ -25,6 +33,7 @@ interface CollectionCardProps {
 export function CollectionCard({
   collection,
   staggerIndex,
+  onAddDocuments,
   onEdit,
   onDelete,
 }: CollectionCardProps) {
@@ -69,6 +78,9 @@ export function CollectionCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => onAddDocuments(collection)}>
+              <FilePlus /> Add documents
+            </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onEdit(collection)}>
               <Pencil /> Edit
             </DropdownMenuItem>
@@ -93,11 +105,25 @@ export function CollectionCard({
         {description || "No description"}
       </p>
 
-      <div className="flex items-center justify-between text-meta text-muted-foreground">
-        <span className="tabular-nums text-foreground">
-          {document_count} {document_count === 1 ? "document" : "documents"}
+      <div className="flex items-center justify-between gap-2 text-meta text-muted-foreground">
+        <span className="min-w-0 truncate">
+          <span className="tabular-nums text-foreground">
+            {document_count} {document_count === 1 ? "document" : "documents"}
+          </span>
+          <span className="hidden sm:inline">
+            {" · "}Updated {formatRelative(collection.updated_at)}
+          </span>
         </span>
-        <span>Updated {formatRelative(collection.updated_at)}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={`Add documents to ${name}`}
+          onClick={() => onAddDocuments(collection)}
+          className="relative z-10 -mb-1.5 -mr-2 h-8 shrink-0 gap-1 px-2 text-meta active:scale-[0.97]"
+        >
+          <Plus className="size-3.5" />
+          {document_count === 0 ? "Add documents" : "Add"}
+        </Button>
       </div>
     </li>
   );

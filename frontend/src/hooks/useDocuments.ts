@@ -203,6 +203,8 @@ export const useBatchMoveDocuments = () => {
     }: {
       documentIds: string[];
       collectionId: string | null;
+      /** Skip the default "moved" toast when the caller shows its own. */
+      silent?: boolean;
     }) => {
       // The backend accepts at most 100 documents per request.
       let updated = 0;
@@ -215,9 +217,10 @@ export const useBatchMoveDocuments = () => {
       }
       return { updated_count: updated };
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       queryClient.invalidateQueries({ queryKey: ["collections"] });
+      if (variables.silent) return;
       toast.success(
         `${data.updated_count} document${data.updated_count === 1 ? "" : "s"} moved`,
       );
