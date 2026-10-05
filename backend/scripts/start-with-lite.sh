@@ -7,7 +7,7 @@
 #
 # Settings (environment):
 #   MILVUS_LITE_PATH  database folder (default /app/milvus_data/ragify.db; keep it on a volume)
-#   ARQ_WATCH         if set, the worker reloads when files in that folder change (dev only)
+#   ARQ_WATCH         if set, the worker restarts when .py files in that folder change (dev only)
 set -e
 
 MILVUS_LITE_PATH="${MILVUS_LITE_PATH:-/app/milvus_data/ragify.db}"
@@ -32,7 +32,14 @@ export VECTOR_DB_URI="$(cat "$URI_FILE")"
 echo "==> Milvus Lite ready at ${VECTOR_DB_URI}"
 
 echo "==> Starting ARQ worker..."
-arq app.tasks.worker.WorkerSettings ${ARQ_WATCH:+--watch "$ARQ_WATCH"} &
+if [ -n "${ARQ_WATCH:-}" ]; then
+    # `arq --watch` only restarts the job loop in the same process and never re-imports task
+    # modules, so edits to worker code would not take effect. watchfiles restarts the whole
+    # process on a .py change instead.
+    watchfiles --filter python "arq app.tasks.worker.WorkerSettings" "$ARQ_WATCH" &
+else
+    arq app.tasks.worker.WorkerSettings &
+fi
 
 bash ./scripts/start-api.sh &
 
