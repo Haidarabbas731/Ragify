@@ -138,6 +138,11 @@ class DocumentListParams(BaseModel):
     page: int = Field(1, ge=1, description="Page number (1-indexed)")
     limit: int = Field(50, ge=1, le=100, description="Items per page")
     collection_id: str | None = Field(None, description="Filter by collection ID")
+    search: str | None = Field(
+        None,
+        max_length=200,
+        description="Case-insensitive match on filename, category or tags",
+    )
     status_filter: str | None = Field(
         None, description="Filter by status (processing, active, error)"
     )

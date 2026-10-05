@@ -19,6 +19,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import StreamingResponse
+from sqlalchemy import String, cast
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -648,6 +649,20 @@ async def search_documents(
     }
 
 
+def _search_filter(term: str | None):
+    """Match filename, category or tags, ignoring case. `%` and `_` in the term are literal."""
+    term = (term or "").strip()
+    if not term:
+        return None
+    escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    pattern = f"%{escaped}%"
+    return (
+        Document.filename.ilike(pattern, escape="\\")  # type: ignore
+        | Document.doc_metadata["category"].as_string().ilike(pattern, escape="\\")  # type: ignore
+        | cast(Document.doc_metadata["tags"], String).ilike(pattern, escape="\\")  # type: ignore
+    )
+
+
 @router.get("", response_model=DocumentsListResponse)
 async def list_documents(
     params: DocumentListParams = Depends(),
@@ -660,7 +675,7 @@ async def list_documents(
     Users can only see their own documents.
 
     Args:
-        params: Query parameters (page, limit, collection_id, status_filter)
+        params: Query parameters (page, limit, collection_id, search, status_filter)
         current_user: Authenticated user
         db: Database session
 
@@ -677,6 +692,10 @@ async def list_documents(
         validate_uuid(params.collection_id, "collection_id")
         query = query.where(Document.collection_id == params.collection_id)
 
+    search_filter = _search_filter(params.search)
+    if search_filter is not None:
+        query = query.where(search_filter)
+
     if params.status_filter:
         query = query.where(Document.status == params.status_filter)
 
@@ -688,6 +707,8 @@ async def list_documents(
 
     if params.collection_id:
         count_query = count_query.where(Document.collection_id == params.collection_id)
+    if search_filter is not None:
+        count_query = count_query.where(search_filter)
     if params.status_filter:
         count_query = count_query.where(Document.status == params.status_filter)
 
